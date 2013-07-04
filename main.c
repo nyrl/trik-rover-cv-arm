@@ -93,7 +93,7 @@ static bool parse_args(int _argc, char* const _argv[])
             else
             {
               fprintf(stderr, "Unknown v4l2 format '%s'\n"
-                              "Known formats: rgb888, rgb565, yuv422\n",
+                              "Known formats: rgb888, rgb565\n",
                       optarg);
               return false;
             }
