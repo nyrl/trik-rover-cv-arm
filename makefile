@@ -103,8 +103,8 @@ endif
 #  Note: You do not need to set CGTOOLS_V5T and CC_V5T if they have been
 #  set in xdcpaths.mak.
 #
-CGTOOLS_V5T ?= <__your_CGTOOLS_V5T__>
-CC_V5T ?= <__your_CC_V5T__>
+CGTOOLS_V5T ?= __your_CGTOOLS_V5T__
+CC_V5T ?= __your_CC_V5T__
 CC = $(CGTOOLS_V5T)/$(CC_V5T)
 
 CCPROFILE.debug = -g -D_DEBUG_=1 
@@ -120,10 +120,6 @@ LDFLAGS = $(LNKPROFILE.$(PROFILE))
 LDLIBS = -lpthread -lrt -ldl -lv4l2
 
 #
-#  ======== example sources ========
-#
-#  This example is built with the following source files:
-#
 #  $(CE_REPO)/ti/sdo/ce/utils/rtcfg/
 #      rtcfg.c
 #      rtcfg_fcinit.c	
@@ -135,12 +131,10 @@ LDLIBS = -lpthread -lrt -ldl -lv4l2
 #      copy it to this directory and modify as needed. The vpath variable
 #      below sets the search path for these source files.
 #
-#  $(EXAMPLES_ROOTDIR)/ti/sdo/ce/examples/apps/universal_copy/
-#
 #  $(CURDIR)/
-#      app.c
+#      main.c
 #
-#      The file app.c contains the main application source code.
+#      The file main.c contains the main application source code.
 #
 #      The file, rtcfg_remote_config.c, contains application and device
 #      specific configuration.  This file is located in
@@ -152,7 +146,7 @@ APP.srcs =                      \
 	rtcfg.c                 \
 	rtcfg_fcinit.c          \
 	rtcfg_remote_config.c   \
-	app.c                   \
+	main.c                   \
 	v4l2.c
 
 APP.objs = $(addprefix bin/$(PROFILE)/, \
@@ -177,12 +171,12 @@ vpath %.c $(CE_REPO)/ti/sdo/ce/utils/rtcfg
 #  command files in this directory just contain the codec libraries needed
 #  by this app.
 #
-#  The common linker command files, in ti/sdo/ce/utils/rtcfg/linux/OMAP3530,
+#  The common linker command files, in ti/sdo/ce/utils/rtcfg/linux/OMAPL138,
 #  shouldn't need modification, but in the chance that they did, they could be
 #  copied to this directory and modified as needed. The vpath will cause
 #  any modified linker command files to be found first.
 #
-vpath %.cmd $(CE_REPO)/ti/sdo/ce/utils/rtcfg/linux/OMAP3530
+vpath %.cmd $(CE_REPO)/ti/sdo/ce/utils/rtcfg/linux/OMAPL138
 
 # Codec Engine libraries
 CE_LINKER_FILE = ce_remote_$(PROFILE).cmd
@@ -263,28 +257,12 @@ osal/release/lib/cstubs.a:
             CROSS_COMPILE=$(CROSS_COMPILE) \
             CFLAGS=-O2
 
-install:
-	@$(ECHO) "#"
-	@$(ECHO) "# Making $@ ..."
-	@$(MKDIR) -p $(INSTALL_DIR)
-	@$(MKDIR) -p $(INSTALL_DIR)/ex01_universalcopy_remote
-	$(CP) bin/$(PROFILE)/$(PROGRAM).xv5T $(INSTALL_DIR)/ex01_universalcopy_remote
-	$(CP) run_remote.sh $(INSTALL_DIR)/ex01_universalcopy_remote
-	$(CP) omap3530_memmap.txt $(INSTALL_DIR)/ex01_universalcopy_remote
-
 #
 #  ======== clean ========
 #
 clean::
 	$(RMDIR) bin
 	$(RMDIR) osal
-
-#  ======== install validation ========
-ifeq (install,$(MAKECMDGOALS))
-ifeq (,$(INSTALL_DIR))
-$(error must specify INSTALL_DIR)
-endif
-endif
 
 ifneq (clean,$(MAKECMDGOALS))
 ifneq (,$(PROFILE))
