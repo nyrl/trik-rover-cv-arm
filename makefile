@@ -110,14 +110,14 @@ CC = $(CGTOOLS_V5T)/$(CC_V5T)
 CCPROFILE.debug = -g -D_DEBUG_=1 
 CCPROFILE.release = -O2
 CFLAGS = -fPIC -Wall -fno-strict-aliasing $(CCPROFILE.$(PROFILE)) \
-    -I. $(addprefix -I,$(REPO_PATH))
+    -I. -I./include $(addprefix -I,$(REPO_PATH))
 CPPFLAGS = -Dxdc_target_name__=GCArmv5T \
     -Dxdc_target_types__=gnu/targets/arm/std.h
 
 LNKPROFILE.debug = -g
 LNKPROFILE.release =
 LDFLAGS = $(LNKPROFILE.$(PROFILE))
-LDLIBS = -lpthread -lrt -ldl
+LDLIBS = -lpthread -lrt -ldl -lv4l2
 
 #
 #  ======== example sources ========
@@ -151,8 +151,9 @@ LDLIBS = -lpthread -lrt -ldl
 APP.srcs =                      \
 	rtcfg.c                 \
 	rtcfg_fcinit.c          \
-        rtcfg_remote_config.c   \
-        app.c
+	rtcfg_remote_config.c   \
+	app.c                   \
+	v4l2.c
 
 APP.objs = $(addprefix bin/$(PROFILE)/, \
     $(patsubst %.c,%.o$(SUFFIX),$(APP.srcs)))
