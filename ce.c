@@ -263,10 +263,42 @@ int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config,
   }
 
 
+#warning TODO configure vidtranscode
+#warning Dirty dynamic params configuration
+#if 1
+  if (1)
+  {
+#if 1
+    printf("VIDTRANSCODE_control(%zux%zu[%zu] -> %zux%zu[%zu])\n",
+           _srcWidth, _srcHeight, _srcLineLength, _dstWidth, _dstHeight, _dstLineLength);
+#endif
+
+    TRIK_VIDTRANSCODE_RESAMPLE_DynamicParams dp;
+    memset(&dp, 0, sizeof(&dp));
+    dp.base.size = sizeof(dp);
+  
+    dp.base.outputWidth[0] = _dstWidth;
+    dp.base.outputHeight[0] = _dstHeight;
+    dp.outputLineLength[0] = _dstLineLength;
+    dp.base.keepInputFrameRateFlag[0] = XDAS_TRUE;
+  
+    dp.inputWidth = _srcWidth;
+    dp.inputHeight = _srcHeight;
+    dp.inputLineLength = _srcLineLength;
+  
+    IVIDTRANSCODE_Status st;
+    memset(&st, 0, sizeof(st));
+    st.size = sizeof(st);
+    XDAS_Int32 ctrlResult = VIDTRANSCODE_control(_ce->m_vidtranscodeHandle, XDM_SETPARAMS, &dp.base, &st);
+    fprintf(stderr, "VIDTRANSCODE_control(XDM_SETPARAMS) returned %d\n", (int)ctrlResult);
+    fflush(stderr);
+  }
+
 #if 1
   printf("Codec engine start: %zux%zu to %zux%zu\n", _srcWidth, _srcHeight, _dstWidth, _dstHeight);
 #endif
-#warning TODO configure vidtranscode
+#endif
+
 
   return 0;
 }
