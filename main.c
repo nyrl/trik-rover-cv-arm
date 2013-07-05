@@ -77,13 +77,14 @@ static bool parse_args(int _argc, char* const _argv[])
           case 3: s_cfgV4L2Input.m_width = atoi(optarg);	break;
           case 4: s_cfgV4L2Input.m_height = atoi(optarg);	break;
           case 5:
-            if (!strcasecmp(optarg, "rgb888")) s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB24;
-            else if (!strcasecmp(optarg, "rgb565")) s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB565;
-            else if (!strcasecmp(optarg, "yuv422")) s_cfgV4L2Input.m_format = V4L2_PIX_FMT_YUYV;
+            if	    (!strcasecmp(optarg, "rgb888"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB24;
+            else if (!strcasecmp(optarg, "rgb565"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB565;
+            else if (!strcasecmp(optarg, "rgb565x"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB565X;
+            else if (!strcasecmp(optarg, "yuv422"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_YUYV;
             else
             {
               fprintf(stderr, "Unknown v4l2 format '%s'\n"
-                              "Known formats: rgb888, rgb565, yuv422\n",
+                              "Known formats: rgb888, rgb565, rgb565x, yuv422\n",
                       optarg);
               return false;
             }

@@ -104,7 +104,7 @@ static int do_fbOutputGetFormat(FBOutput* _fb,
   *_imageSize = _fb->m_fbFixInfo.smem_len;
 
 #warning TODO check and get framebuffer format!
-  *_format = V4L2_PIX_FMT_RGB565;
+  *_format = V4L2_PIX_FMT_RGB565X;
 
   return 0;
 }
