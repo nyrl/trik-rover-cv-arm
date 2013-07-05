@@ -80,11 +80,12 @@ static bool parse_args(int _argc, char* const _argv[])
             if	    (!strcasecmp(optarg, "rgb888"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB24;
             else if (!strcasecmp(optarg, "rgb565"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB565;
             else if (!strcasecmp(optarg, "rgb565x"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB565X;
+            else if (!strcasecmp(optarg, "yuv444"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_YUV32;
             else if (!strcasecmp(optarg, "yuv422"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_YUYV;
             else
             {
               fprintf(stderr, "Unknown v4l2 format '%s'\n"
-                              "Known formats: rgb888, rgb565, rgb565x, yuv422\n",
+                              "Known formats: rgb888, rgb565, rgb565x, yuv444, yuv422\n",
                       optarg);
               return false;
             }
