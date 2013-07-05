@@ -124,24 +124,25 @@ int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config)
   if (_ce->m_handle != NULL)
     return EALREADY;
 
-  Engine_Error err;
+  Engine_Error ceError;
   Engine_Desc desc;
   Engine_initDesc(&desc);
   desc.name = "dsp-server";
   desc.remoteName = strdup(_config->m_serverPath);
+  errno = 0;
 
-  err = Engine_add(&desc);
-  if (err != Engine_EOK)
+  ceError = Engine_add(&desc);
+  if (ceError != Engine_EOK)
   {
     free(desc.remoteName);
-    fprintf(stderr, "Engine_add(%s) failed: %d/%d\n", _config->m_serverPath, errno, err);
+    fprintf(stderr, "Engine_add(%s) failed: %d/%"PRIi32"\n", _config->m_serverPath, errno, ceError);
     return ENOMEM;
   }
   free(desc.remoteName);
 
-  if ((_ce->m_handle = Engine_open("dsp-server", NULL, &err)) == NULL)
+  if ((_ce->m_handle = Engine_open("dsp-server", NULL, &ceError)) == NULL)
   {
-    fprintf(stderr, "Engine_open(%s) failed: %d\n", _config->m_serverPath, err);
+    fprintf(stderr, "Engine_open(%s) failed: %d/%"PRIi32"\n", _config->m_serverPath, errno, ceError);
     return ENOMEM;
   }
 
