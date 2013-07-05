@@ -95,6 +95,80 @@ static int do_releaseCodec(CodecEngine* _ce)
   return 0;
 }
 
+static int do_transcodeFrame(CodecEngine* _ce,
+                             const void* _srcFramePtr, size_t _srcFrameSize,
+                             void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed)
+{
+  if (_ce->m_srcBuffer == NULL || _ce->m_dstBuffer == NULL)
+    return ENOTCONN;
+  if (_srcFramePtr == NULL || _dstFramePtr == NULL)
+    return EINVAL;
+  if (_srcFrameSize > _ce->m_srcBufferSize || _dstFrameSize > _ce->m_dstBufferSize)
+    return ENOSPC;
+
+
+  VIDTRANSCODE_InArgs tcInArgs;
+  memset(&tcInArgs, 0, sizeof(tcInArgs));
+  tcInArgs.size = sizeof(tcInArgs);
+  tcInArgs.numBytes = _srcFrameSize;
+  tcInArgs.inputID = 0;
+
+  VIDTRANSCODE_OutArgs tcOutArgs;
+  memset(&tcOutArgs,    0, sizeof(tcOutArgs));
+  tcOutArgs.size = sizeof(tcOutArgs);
+
+  XDM1_BufDesc tcInBufDesc;
+  memset(&tcInBufDesc,  0, sizeof(tcInBufDesc));
+  tcInBufDesc.numBufs = 1;
+  tcInBufDesc.descs[0].buf = _ce->m_srcBuffer;
+  tcInBufDesc.descs[0].bufSize = _srcFrameSize;
+
+  XDM_BufDesc tcOutBufDesc;
+  memset(&tcOutBufDesc, 0, sizeof(tcOutBufDesc));
+  XDAS_Int8* tcOutBufDesc_bufs[1];
+  XDAS_Int32 tcOutBufDesc_bufSizes[1];
+  tcOutBufDesc.numBufs = 1;
+  tcOutBufDesc.bufs = tcOutBufDesc_bufs;
+  tcOutBufDesc.bufs[0] = _ce->m_dstBuffer;
+  tcOutBufDesc.bufSizes = tcOutBufDesc_bufSizes;
+  tcOutBufDesc.bufSizes[0] = _dstFrameSize;
+
+  memcpy(_ce->m_srcBuffer, _srcFramePtr, _srcFrameSize);
+
+  Memory_cacheWbInv(_ce->m_srcBuffer, _ce->m_srcBufferSize); // invalidate *whole* cache, not only written portion, just in case
+  Memory_cacheInv(_ce->m_dstBuffer, _ce->m_dstBufferSize); // invalidate *whole* cache, not only expected portion, just in case
+
+  XDAS_Int32 processResult = VIDTRANSCODE_process(_ce->m_vidtranscodeHandle, &tcInBufDesc, &tcOutBufDesc, &tcInArgs, &tcOutArgs);
+  if (processResult != IVIDTRANSCODE_EOK)
+  {
+    fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) failed: %"PRIi32"/%"PRIi32"\n",
+            _srcFrameSize, _dstFrameSize, processResult, tcOutArgs.extendedError);
+    return EILSEQ;
+  }
+
+  if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[0].accessMask))
+    Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize); // write-back *whole* cache, not only modified portion, just in case
+
+  if (tcOutArgs.encodedBuf[0].bufSize > _dstFrameSize)
+  {
+    *_dstFrameUsed = _dstFrameSize;
+    fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) returned too large buffer %zu, truncated\n",
+            _srcFrameSize, _dstFrameSize, *_dstFrameUsed);
+  }
+  else if (tcOutArgs.encodedBuf[0].bufSize < 0)
+  {
+    *_dstFrameUsed = 0;
+    fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) returned negative buffer size\n",
+            _srcFrameSize, _dstFrameSize);
+  }
+  else
+    *_dstFrameUsed = tcOutArgs.encodedBuf[0].bufSize;
+
+  memcpy(_dstFramePtr, _ce->m_dstBuffer, *_dstFrameUsed);
+
+  return 0;
+}
+
 
 
 
@@ -215,12 +289,13 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
                               const void* _srcFramePtr, size_t _srcFrameSize,
                               void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed)
 {
-#warning TODO stub
+  if (_ce == NULL)
+    return EINVAL;
 
-  size_t s = _srcFrameSize < _dstFrameSize ? _srcFrameSize : _dstFrameSize;
-  memcpy(_dstFramePtr, _srcFramePtr, s);
-  *_dstFrameUsed = s;
-  return 0;
+  if (_ce->m_handle == NULL)
+    return ENOTCONN;
+
+  return do_transcodeFrame(_ce, _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, _dstFrameUsed);
 }
 
 
