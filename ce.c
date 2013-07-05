@@ -172,7 +172,7 @@ int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config,
   if (_ce == NULL || _config == NULL)
     return EINVAL;
 
-  if (_ce->m_handle != NULL)
+  if (_ce->m_handle == NULL)
     return ENOTCONN;
 
   if ((res = do_memoryAlloc(_ce, _srcImageSize, _dstImageSize)) != 0)
@@ -198,7 +198,7 @@ int codecEngineStop(CodecEngine* _ce)
   if (_ce == NULL)
     return EINVAL;
 
-  if (_ce->m_handle != NULL)
+  if (_ce->m_handle == NULL)
     return ENOTCONN;
 
   do_releaseCodec(_ce);

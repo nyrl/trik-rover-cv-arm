@@ -356,7 +356,8 @@ static int do_v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
 
 int v4l2InputInit(bool _verbose)
 {
-  v4l2_log_file = stderr;
+  if (_verbose)
+    v4l2_log_file = stderr;
   return 0;
 }
 
