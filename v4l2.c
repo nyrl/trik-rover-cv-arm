@@ -16,7 +16,7 @@
 
 
 
-static int do_v4l2inputOpen(V4L2Input* _v4l2, const char* _path)
+static int do_v4l2InputOpen(V4L2Input* _v4l2, const char* _path)
 {
   int res;
 
@@ -35,7 +35,7 @@ static int do_v4l2inputOpen(V4L2Input* _v4l2, const char* _path)
   return 0;
 }
 
-static int do_v4l2inputClose(V4L2Input* _v4l2)
+static int do_v4l2InputClose(V4L2Input* _v4l2)
 {
   int res;
   if (_v4l2 == NULL)
@@ -51,7 +51,7 @@ static int do_v4l2inputClose(V4L2Input* _v4l2)
   return 0;
 }
 
-static int do_v4l2inputSetFormat(V4L2Input* _v4l2, size_t _width, size_t _height, uint32_t _format)
+static int do_v4l2InputSetFormat(V4L2Input* _v4l2, size_t _width, size_t _height, uint32_t _format)
 {
   int res;
 
@@ -63,7 +63,9 @@ static int do_v4l2inputSetFormat(V4L2Input* _v4l2, size_t _width, size_t _height
   _v4l2->m_imageFormat.fmt.pix.width = _width;
   _v4l2->m_imageFormat.fmt.pix.height = _height;
   _v4l2->m_imageFormat.fmt.pix.pixelformat = _format;
+#if 0
   _v4l2->m_imageFormat.fmt.pix.field = V4L2_FIELD_NONE;
+#endif
 
   if (v4l2_ioctl(_v4l2->m_fd, VIDIOC_S_FMT, &_v4l2->m_imageFormat) != 0)
   {
@@ -77,7 +79,7 @@ static int do_v4l2inputSetFormat(V4L2Input* _v4l2, size_t _width, size_t _height
   return 0;
 }
 
-static int do_v4l2inputUnsetFormat(V4L2Input* _v4l2)
+static int do_v4l2InputUnsetFormat(V4L2Input* _v4l2)
 {
   if (_v4l2 == NULL)
     return EINVAL;
@@ -87,7 +89,7 @@ static int do_v4l2inputUnsetFormat(V4L2Input* _v4l2)
   return 0;
 }
 
-static int do_v4l2inputMmapBuffers(V4L2Input* _v4l2)
+static int do_v4l2InputMmapBuffers(V4L2Input* _v4l2)
 {
   int res = 0;
 
@@ -176,7 +178,7 @@ exit:
   return res;
 }
 
-static int do_v4l2inputMunmapBuffers(V4L2Input* _v4l2)
+static int do_v4l2InputMunmapBuffers(V4L2Input* _v4l2)
 {
   int res = 0;
 
@@ -201,7 +203,7 @@ static int do_v4l2inputMunmapBuffers(V4L2Input* _v4l2)
   return res;
 }
 
-static int do_v4l2inputStart(V4L2Input* _v4l2)
+static int do_v4l2InputStart(V4L2Input* _v4l2)
 {
   int res = 0;
 
@@ -248,7 +250,7 @@ exit_stop:
   return res;
 }
 
-static int do_v4l2inputStop(V4L2Input* _v4l2)
+static int do_v4l2InputStop(V4L2Input* _v4l2)
 {
   int res = 0;
 
@@ -267,7 +269,7 @@ static int do_v4l2inputStop(V4L2Input* _v4l2)
   return 0;
 }
 
-static int do_v4l2inputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t* _frameSize, size_t* _frameIndex)
+static int do_v4l2InputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t* _frameSize, size_t* _frameIndex)
 {
   int res = 0;
 
@@ -302,7 +304,7 @@ static int do_v4l2inputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t
   return 0;
 }
 
-static int do_v4l2inputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
+static int do_v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
 {
   int res = 0;
 
@@ -333,7 +335,18 @@ static int do_v4l2inputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
 
 
 
-int v4l2inputOpen(V4L2Input* _v4l2, const V4L2Config* _config)
+int v4l2InputInit(bool _verbose)
+{
+  v4l2_log_file = stderr;
+  return 0;
+}
+
+int v4l2InputFini()
+{
+  return 0;
+}
+
+int v4l2InputOpen(V4L2Input* _v4l2, const V4L2Config* _config)
 {
   int ret = 0;
 
@@ -342,15 +355,15 @@ int v4l2inputOpen(V4L2Input* _v4l2, const V4L2Config* _config)
   if (_v4l2->m_fd != -1)
     return EALREADY;
 
-  ret = do_v4l2inputOpen(_v4l2, _config->m_path);
+  ret = do_v4l2InputOpen(_v4l2, _config->m_path);
   if (ret != 0)
     goto exit;
 
-  ret = do_v4l2inputSetFormat(_v4l2, _config->m_width, _config->m_height, _config->m_format);
+  ret = do_v4l2InputSetFormat(_v4l2, _config->m_width, _config->m_height, _config->m_format);
   if (ret != 0)
     goto exit_close;
 
-  ret = do_v4l2inputMmapBuffers(_v4l2);
+  ret = do_v4l2InputMmapBuffers(_v4l2);
   if (ret != 0)
     goto exit_unset_format;
 
@@ -358,65 +371,65 @@ int v4l2inputOpen(V4L2Input* _v4l2, const V4L2Config* _config)
 
 
  exit_unset_format:
-  do_v4l2inputUnsetFormat(_v4l2);
+  do_v4l2InputUnsetFormat(_v4l2);
  exit_close:
-  do_v4l2inputClose(_v4l2);
+  do_v4l2InputClose(_v4l2);
  exit:
   return ret;
 }
 
-int v4l2inputClose(V4L2Input* _v4l2)
+int v4l2InputClose(V4L2Input* _v4l2)
 {
   if (_v4l2 == NULL)
     return EINVAL;
   if (_v4l2->m_fd == -1)
     return EALREADY;
 
-  do_v4l2inputMunmapBuffers(_v4l2);
-  do_v4l2inputUnsetFormat(_v4l2);
-  do_v4l2inputClose(_v4l2);
+  do_v4l2InputMunmapBuffers(_v4l2);
+  do_v4l2InputUnsetFormat(_v4l2);
+  do_v4l2InputClose(_v4l2);
 
   return 0;
 }
 
-int v4l2inputStart(V4L2Input* _v4l2)
+int v4l2InputStart(V4L2Input* _v4l2)
 {
   if (_v4l2 == NULL)
     return EINVAL;
   if (_v4l2->m_fd == -1)
     return ENOTCONN;
 
-  return do_v4l2inputStart(_v4l2);
+  return do_v4l2InputStart(_v4l2);
 }
 
-int v4l2inputStop(V4L2Input* _v4l2)
+int v4l2InputStop(V4L2Input* _v4l2)
 {
   if (_v4l2 == NULL)
     return EINVAL;
   if (_v4l2->m_fd == -1)
     return ENOTCONN;
 
-  return do_v4l2inputStop(_v4l2);
+  return do_v4l2InputStop(_v4l2);
 }
 
-int v4l2inputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t* _frameSize, size_t* _frameIndex)
+int v4l2InputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t* _frameSize, size_t* _frameIndex)
 {
   if (_v4l2 == NULL)
     return EINVAL;
   if (_v4l2->m_fd == -1)
     return ENOTCONN;
 
-  return do_v4l2inputGetFrame(_v4l2, _framePtr, _frameSize, _frameIndex);
+  return do_v4l2InputGetFrame(_v4l2, _framePtr, _frameSize, _frameIndex);
 }
 
-int v4l2inputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
+int v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
 {
   if (_v4l2 == NULL)
     return EINVAL;
   if (_v4l2->m_fd == -1)
     return ENOTCONN;
 
-  return do_v4l2inputPutFrame(_v4l2, _frameIndex);
+  return do_v4l2InputPutFrame(_v4l2, _frameIndex);
 }
 
 

@@ -1,11 +1,3 @@
-
-#include <xdc/std.h>
-#include <xdc/runtime/Diags.h>
-#include <ti/sdo/ce/Engine.h>
-#include <ti/sdo/ce/CERuntime.h>
-#include <ti/sdo/ce/osal/Memory.h>
-#include <ti/sdo/ce/vidtranscode/vidtranscode.h>
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,16 +7,10 @@
 #include <errno.h>
 #include <signal.h>
 
-#include <libv4l2.h>
-
+#include "internal/ce.h"
+#include "internal/fb.h"
 #include "internal/v4l2.h"
 
-#warning Check BUFALIGN usage!
-#ifndef BUFALIGN
-#define BUFALIGN 128
-#endif
-
-#define ALIGN_UP(v, a) ((((v)+(a)-1)/(a))*(a))
 
 
 static sig_atomic_t s_terminate = false;
@@ -50,9 +36,9 @@ static void sigterm_action_setup()
 
 
 static bool s_cfgVerbose = false;
-static char* s_cfgCeServerName = "dsp_server.xe674";
-static char* s_cfgCeCodecName = "vidtranscode_resample";
+static CodecEngineConfig s_cfgCodecEngine = { "dsp_server.xe674", "vidtranscode_resample" };
 static V4L2Config s_cfgV4L2Input = { "/dev/video0", 640, 480, V4L2_PIX_FMT_RGB24 };
+static FBConfig s_cfgFBOutput = { "/dev/fb" };
 
 
 
@@ -62,11 +48,11 @@ static bool parse_args(int _argc, char* const _argv[])
   int opt;
   int longopt;
 
-  static const char* optstring = "s:c:vh";
+  static const char* optstring = "vh";
   static const struct option longopts[] =
   {
-    { "server",			1,	NULL,	's' },
-    { "codec",			1,	NULL,	'c' },
+    { "ce-server",		1,	NULL,	0   },
+    { "ce-codec",		1,	NULL,	0   },
     { "v4l2-path",		1,	NULL,	0   },
     { "v4l2-width",		1,	NULL,	0   },
     { "v4l2-height",		1,	NULL,	0   },
@@ -79,16 +65,16 @@ static bool parse_args(int _argc, char* const _argv[])
   {
     switch (opt)
     {
-      case 's':	s_cfgCeServerName = optarg;	break;
-      case 'c':	s_cfgCeCodecName = optarg;	break;
       case 'v':	s_cfgVerbose = true;		break;
 
       case 0:
         switch (longopt)
         {
-          case 2: s_cfgV4L2Input.m_path = optarg; break;
-          case 3: s_cfgV4L2Input.m_width = atoi(optarg); break;
-          case 4: s_cfgV4L2Input.m_height = atoi(optarg); break;
+          case 0: s_cfgCodecEngine.m_serverPath = optarg;	break;
+          case 1: s_cfgCodecEngine.m_codecName = optarg;	break;
+          case 2: s_cfgV4L2Input.m_path = optarg;		break;
+          case 3: s_cfgV4L2Input.m_width = atoi(optarg);	break;
+          case 4: s_cfgV4L2Input.m_height = atoi(optarg);	break;
           case 5:
             if (!strcasecmp(optarg, "rgb888")) s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB24;
             else if (!strcasecmp(optarg, "rgb565")) s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB565;
@@ -135,84 +121,84 @@ int main(int _argc, char* const _argv[])
     goto exit;
   }
 
-  CERuntime_init(); /* init Codec Engine */
 
-  if (s_cfgVerbose)
+  if ((res = codecEngineInit(s_cfgVerbose)) != 0)
   {
-    Diags_setMask("xdc.runtime.Main+EX1234567");
-    Diags_setMask(Engine_MODNAME"+EX1234567");
-    v4l2_log_file = stderr;
-  }
-
-  Engine_Error ceError;
-  Engine_Desc ceDesc;
-  Engine_initDesc(&ceDesc);
-  ceDesc.name = "dsp-server";
-  ceDesc.remoteName = s_cfgCeServerName;
-  ceError = Engine_add(&ceDesc);
-  if (ceError != Engine_EOK)
-  {
-    fprintf(stderr, "Engine_add(%s) failed: %d\n", s_cfgCeServerName, errno);
+    fprintf(stderr, "codecEngineInit() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
     goto exit;
   }
 
-  Engine_Handle ce = Engine_open("dsp-server", NULL, &ceError);
-  if (ce == NULL)
+  if ((res = v4l2InputInit(s_cfgVerbose)) != 0)
   {
-    fprintf(stderr, "Engine_open(dsp-server@%s) failed: %d\n", s_cfgCeServerName, errno);
+    fprintf(stderr, "v4l2InputInit() failed: %d\n", res);
+    exit_code = EX_SOFTWARE;
+    goto exit_ce_fini;
+  }
+
+  if ((res = fbOutputInit(s_cfgVerbose)) != 0)
+  {
+    fprintf(stderr, "fbOutputInit() failed: %d\n", res);
+    exit_code = EX_SOFTWARE;
+    goto exit_v4l2_fini;
+  }
+
+
+  CodecEngine codecEngine;
+  memset(&codecEngine, 0, sizeof(codecEngine));
+  if ((res = codecEngineOpen(&codecEngine, &s_cfgCodecEngine)) != 0)
+  {
+    fprintf(stderr, "codecEngineOpen() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
-    goto exit;
+    goto exit_fb_fini;
   }
 
   V4L2Input v4l2src;
   memset(&v4l2src, 0, sizeof(v4l2src));
   v4l2src.m_fd = -1;
-  if ((res = v4l2inputOpen(&v4l2src, &s_cfgV4L2Input)) != 0)
+  if ((res = v4l2InputOpen(&v4l2src, &s_cfgV4L2Input)) != 0)
   {
-    fprintf(stderr, "v4l2inputOpen() failed: %d\n", res);
+    fprintf(stderr, "v4l2InputOpen() failed: %d\n", res);
     exit_code = EX_NOINPUT;
-    goto exit_engine_close;
+    goto exit_ce_close;
   }
 
-#warning TODO open dst?
-
-  Memory_AllocParams ceAllocParams;
-  ceAllocParams.type = Memory_CONTIGPOOL;
-  ceAllocParams.flags = Memory_NONCACHED;
-  ceAllocParams.align = BUFALIGN;
-  ceAllocParams.seg = 0;
-
-  const XDAS_Int32 ceSrcBufferSize = v4l2src.m_imageFormat.fmt.pix.sizeimage;
-  XDAS_Int8* ceSrcBuffer = (XDAS_Int8*)Memory_alloc(ALIGN_UP(ceSrcBufferSize, BUFALIGN), &ceAllocParams);
-
-#warning TODO dst size unknown
-  const XDAS_Int32 ceDstBufferSize = v4l2src.m_imageFormat.fmt.pix.sizeimage;
-  XDAS_Int8* ceDstBuffer = (XDAS_Int8*)Memory_alloc(ALIGN_UP(ceDstBufferSize, BUFALIGN), &ceAllocParams);
-
-  if (ceSrcBuffer == NULL || ceDstBuffer == NULL)
+  FBOutput fbDst;
+  memset(&fbDst, 0, sizeof(fbDst));
+  fbDst.m_fd = -1;
+  if ((res = fbOutputOpen(&fbDst, &s_cfgFBOutput)) != 0)
   {
-    fprintf(stderr, "Memory_alloc() failed for src/dst buffer\n");
+    fprintf(stderr, "fbOutputOpen() failed: %d\n", res);
+    exit_code = EX_IOERR;
+    goto exit_v4l2_close;
+  }
+
+
+#warning TODO FB buffer size
+  if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine, v4l2src.m_imageFormat.fmt.pix.sizeimage, 0)) != 0)
+  {
+    fprintf(stderr, "codecEngineStart() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
-    goto exit_v4l2close;
+    goto exit_fb_close;
   }
 
-  VIDTRANSCODE_Handle transcoder;
-  transcoder = VIDTRANSCODE_create(ce, s_cfgCeCodecName, NULL);
-  if (transcoder == NULL)
+  if ((res = v4l2InputStart(&v4l2src)) != 0)
   {
-    fprintf(stderr, "VIDTRANSCODE_create(%s) failed: %d\n", s_cfgCeCodecName, errno);
-    exit_code = EX_PROTOCOL;
-    goto exit_memory_free;
-  }
-
-
-  if ((res = v4l2inputStart(&v4l2src)) != 0)
-  {
-    fprintf(stderr, "v4l2inputStart() failed: %d\n", res);
+    fprintf(stderr, "v4l2InputStart() failed: %d\n", res);
     exit_code = EX_NOINPUT;
-    goto exit_vidtranscode_delete;
+    goto exit_ce_stop;
   }
+
+  if ((res = fbOutputStart(&fbDst)) != 0)
+  {
+    fprintf(stderr, "fbOutputStart() failed: %d\n", res);
+    exit_code = EX_IOERR;
+    goto exit_v4l2_stop;
+  }
+
+
+
+
 
 
   printf("Entering main loop\n");
@@ -231,7 +217,7 @@ int main(int _argc, char* const _argv[])
     {
       fprintf(stderr, "select() failed: %d\n", errno);
       exit_code = EX_OSERR;
-      goto exit_v4l2stop;
+      goto exit_mainloop;
     }
 
     if (FD_ISSET(v4l2src.m_fd, &fdsIn))
@@ -239,9 +225,9 @@ int main(int _argc, char* const _argv[])
       const void* frameSrcPtr;
       size_t frameSrcSize;
       size_t frameSrcIndex;
-      if ((res = v4l2inputGetFrame(&v4l2src, &frameSrcPtr, &frameSrcSize, &frameSrcIndex)) != 0)
+      if ((res = v4l2InputGetFrame(&v4l2src, &frameSrcPtr, &frameSrcSize, &frameSrcIndex)) != 0)
       {
-        fprintf(stderr, "v4l2inputGetFrame() failed: %d\n", res);
+        fprintf(stderr, "v4l2InputGetFrame() failed: %d\n", res);
         exit_code = res;
         goto exit_mainloop;
       }
@@ -250,6 +236,8 @@ int main(int _argc, char* const _argv[])
       printf("Frame %p, %zu [%zu]\n", frameSrcPtr, frameSrcSize, frameSrcIndex);
 #endif
 
+#warning transcode
+
 #if 0
   /* use engine to encode, then decode the data */
   transcode(transcoder, in, out);
@@ -257,9 +245,9 @@ int main(int _argc, char* const _argv[])
 
 
 
-      if ((res = v4l2inputPutFrame(&v4l2src, frameSrcIndex)) != 0)
+      if ((res = v4l2InputPutFrame(&v4l2src, frameSrcIndex)) != 0)
       {
-        fprintf(stderr, "v4l2inputPutFrame() failed: %d\n", res);
+        fprintf(stderr, "v4l2InputPutFrame() failed: %d\n", res);
         exit_code = res;
         goto exit_mainloop;
       }
@@ -268,24 +256,49 @@ int main(int _argc, char* const _argv[])
   printf("Left main loop\n");
 
 
+
+
+
 exit_mainloop:
-exit_v4l2stop:
-  if ((res = v4l2inputStop(&v4l2src)) != 0)
-    fprintf(stderr, "v4l2inputStop() failed: %d\n", res);
 
-exit_vidtranscode_delete:
-  VIDTRANSCODE_delete(transcoder);
+exit_fb_stop:
+  if ((res = fbOutputStop(&fbDst)) != 0)
+    fprintf(stderr, "fbOutputStop() failed: %d\n", res);
 
-exit_memory_free:
-  Memory_free(ceSrcBuffer, ceSrcBufferSize, &ceAllocParams);
-  Memory_free(ceDstBuffer, ceDstBufferSize, &ceAllocParams);
+exit_v4l2_stop:
+  if ((res = v4l2InputStop(&v4l2src)) != 0)
+    fprintf(stderr, "v4l2InputStop() failed: %d\n", res);
 
-exit_v4l2close:
-  if ((res = v4l2inputClose(&v4l2src)) != 0)
-    fprintf(stderr, "v4l2inputClose() failed: %d\n", res);
+exit_ce_stop:
+  if ((res = codecEngineStop(&codecEngine)) != 0)
+    fprintf(stderr, "codecEngineStop() failed: %d\n", res);
 
-exit_engine_close:
-  Engine_close(ce);
+
+exit_fb_close:
+  if ((res = fbOutputClose(&fbDst)) != 0)
+    fprintf(stderr, "fbOutputClose() failed: %d\n", res);
+
+exit_v4l2_close:
+  if ((res = v4l2InputClose(&v4l2src)) != 0)
+    fprintf(stderr, "v4l2InputClose() failed: %d\n", res);
+
+exit_ce_close:
+  if ((res = codecEngineClose(&codecEngine)) != 0)
+    fprintf(stderr, "codecEngineClose() failed: %d\n", res);
+
+
+exit_fb_fini:
+  if ((res = fbOutputFini()) != 0)
+    fprintf(stderr, "fbOutputFini() failed: %d\n", res);
+
+exit_v4l2_fini:
+  if ((res = v4l2InputFini()) != 0)
+    fprintf(stderr, "v4l2InputFini() failed: %d\n", res);
+
+exit_ce_fini:
+  if ((res = codecEngineFini()) != 0)
+    fprintf(stderr, "ceFini() failed: %d\n", res);
+
 
 exit:
   return exit_code;

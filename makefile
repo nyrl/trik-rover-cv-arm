@@ -146,7 +146,9 @@ APP.srcs =                      \
 	rtcfg.c                 \
 	rtcfg_fcinit.c          \
 	rtcfg_remote_config.c   \
-	main.c                   \
+	main.c                  \
+	ce.c                    \
+	fb.c                    \
 	v4l2.c
 
 APP.objs = $(addprefix bin/$(PROFILE)/, \
