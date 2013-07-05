@@ -2,6 +2,7 @@
 #define TRIK_V4L2_DSP_FB_INTERNAL_FB_H_
 
 #include <stdbool.h>
+#include <inttypes.h>
 
 #include <linux/fb.h>
 
@@ -35,6 +36,9 @@ int fbOutputStop(FBOutput* _fb);
 int fbOutputGetFrame(FBOutput* _fb, void** _framePtr, size_t* _frameSize);
 int fbOutputPutFrame(FBOutput* _fb);
 
+int fbOutputGetFormat(FBOutput* _fb,
+                      size_t* _width, size_t* _height,
+                      size_t* _lineLength, size_t* _imageSize, uint32_t* _format);
 
 #ifdef __cplusplus
 } // extern "C"

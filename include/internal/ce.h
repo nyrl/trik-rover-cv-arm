@@ -2,6 +2,8 @@
 #define TRIK_V4L2_DSP_FB_INTERNAL_CE_H_
 
 #include <stdbool.h>
+#include <inttypes.h>
+
 #include <xdc/std.h>
 #include <ti/xdais/xdas.h>
 #include <ti/sdo/ce/Engine.h>
@@ -42,12 +44,16 @@ int codecEngineFini();
 
 int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config);
 int codecEngineClose(CodecEngine* _ce);
-int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config, size_t _srcBufferSize, size_t _dstBufferSize);
+int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config,
+                     size_t _srcWidth, size_t _srcHeight,
+                     size_t _srcLineLength, size_t _srcImageSize, uint32_t _srcFormat,
+                     size_t _dstWidth, size_t _dstHeight,
+                     size_t _dstLineLength, size_t _dstImageSize, uint32_t _dstFormat);
 int codecEngineStop(CodecEngine* _ce);
 
 int codecEngineTranscodeFrame(CodecEngine* _ce,
-                              const void* _frameSrcPtr, size_t _frameSrcSize,
-                              void* _frameDstPtr, size_t _frameDstSize, size_t* _frameDstUsed);
+                              const void* _srcFramePtr, size_t _srcFrameSize,
+                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed);
 
 
 #ifdef __cplusplus

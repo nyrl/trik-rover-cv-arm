@@ -177,9 +177,24 @@ int main(int _argc, char* const _argv[])
   }
 
 
-#warning TODO get input and output dimension (params)
+  size_t srcWidth, srcHeight, srcLineLength, srcImageSize;
+  size_t dstWidth, dstHeight, dstLineLength, dstImageSize;
+  uint32_t srcFormat, dstFormat;
+  if ((res = v4l2InputGetFormat(&v4l2Src, &srcWidth, &srcHeight, &srcLineLength, &srcImageSize, &srcFormat)) != 0)
+  {
+    fprintf(stderr, "v4l2InputGetFormat() failed: %d\n", res);
+    exit_code = EX_PROTOCOL;
+    goto exit_fb_close;
+  }
+  if ((res = fbOutputGetFormat(&fbDst, &dstWidth, &dstHeight, &dstLineLength, &dstImageSize, &dstFormat)) != 0)
+  {
+    fprintf(stderr, "fbOutputGetFormat() failed: %d\n", res);
+    exit_code = EX_PROTOCOL;
+    goto exit_fb_close;
+  }
   if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine,
-                              v4l2Src.m_imageFormat.fmt.pix.sizeimage, fbDst.m_fbFixInfo.smem_len)) != 0)
+                              srcWidth, srcHeight, srcLineLength, srcImageSize, srcFormat,
+                              dstWidth, dstHeight, dstLineLength, dstImageSize, dstFormat)) != 0)
   {
     fprintf(stderr, "codecEngineStart() failed: %d\n", res);
     exit_code = EX_PROTOCOL;

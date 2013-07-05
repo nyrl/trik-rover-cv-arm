@@ -40,6 +40,10 @@ int v4l2InputStop(V4L2Input* _v4l2);
 int v4l2InputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t* _frameSize, size_t* _frameIndex);
 int v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex);
 
+int v4l2InputGetFormat(V4L2Input* _v4l2,
+                       size_t* _width, size_t* _height,
+                       size_t* _lineLength, size_t* _imageSize, uint32_t* _format);
+
 
 #ifdef __cplusplus
 } // extern "C"

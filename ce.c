@@ -17,72 +17,6 @@
 #define ALIGN_UP(v, a) ((((v)+(a)-1)/(a))*(a))
 
 
-int codecEngineInit(bool _verbose)
-{
-  CERuntime_init(); /* init Codec Engine */
-
-  if (_verbose)
-  {
-    Diags_setMask("xdc.runtime.Main+EX1234567");
-    Diags_setMask(Engine_MODNAME"+EX1234567");
-  }
-
-  return 0;
-}
-
-int codecEngineFini()
-{
-  return 0;
-}
-
-
-int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config)
-{
-  if (_ce == NULL || _config == NULL)
-    return EINVAL;
-
-  if (_ce->m_handle != NULL)
-    return EALREADY;
-
-  Engine_Error err;
-  Engine_Desc desc;
-  Engine_initDesc(&desc);
-  desc.name = "dsp-server";
-  desc.remoteName = strdup(_config->m_serverPath);
-
-  err = Engine_add(&desc);
-  if (err != Engine_EOK)
-  {
-    free(desc.remoteName);
-    fprintf(stderr, "Engine_add(%s) failed: %d/%d\n", _config->m_serverPath, errno, err);
-    return ENOMEM;
-  }
-  free(desc.remoteName);
-
-  if ((_ce->m_handle = Engine_open("dsp-server", NULL, &err)) == NULL)
-  {
-    fprintf(stderr, "Engine_open(%s) failed: %d\n", _config->m_serverPath, err);
-    return ENOMEM;
-  }
-
-  return 0;
-}
-
-int codecEngineClose(CodecEngine* _ce)
-{
-  if (_ce == NULL)
-    return EINVAL;
-
-  if (_ce->m_handle == NULL)
-    return EALREADY;
-
-  Engine_close(_ce->m_handle);
-  _ce->m_handle = NULL;
-
-  return 0;
-}
-
-
 static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBufferSize)
 {
   memset(&_ce->m_allocParams, 0, sizeof(_ce->m_allocParams));
@@ -159,7 +93,79 @@ static int do_releaseCodec(CodecEngine* _ce)
 }
 
 
-int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config, size_t _srcBufferSize, size_t _dstBufferSize)
+
+
+int codecEngineInit(bool _verbose)
+{
+  CERuntime_init(); /* init Codec Engine */
+
+  if (_verbose)
+  {
+    Diags_setMask("xdc.runtime.Main+EX1234567");
+    Diags_setMask(Engine_MODNAME"+EX1234567");
+  }
+
+  return 0;
+}
+
+int codecEngineFini()
+{
+  return 0;
+}
+
+
+int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config)
+{
+  if (_ce == NULL || _config == NULL)
+    return EINVAL;
+
+  if (_ce->m_handle != NULL)
+    return EALREADY;
+
+  Engine_Error err;
+  Engine_Desc desc;
+  Engine_initDesc(&desc);
+  desc.name = "dsp-server";
+  desc.remoteName = strdup(_config->m_serverPath);
+
+  err = Engine_add(&desc);
+  if (err != Engine_EOK)
+  {
+    free(desc.remoteName);
+    fprintf(stderr, "Engine_add(%s) failed: %d/%d\n", _config->m_serverPath, errno, err);
+    return ENOMEM;
+  }
+  free(desc.remoteName);
+
+  if ((_ce->m_handle = Engine_open("dsp-server", NULL, &err)) == NULL)
+  {
+    fprintf(stderr, "Engine_open(%s) failed: %d\n", _config->m_serverPath, err);
+    return ENOMEM;
+  }
+
+  return 0;
+}
+
+int codecEngineClose(CodecEngine* _ce)
+{
+  if (_ce == NULL)
+    return EINVAL;
+
+  if (_ce->m_handle == NULL)
+    return EALREADY;
+
+  Engine_close(_ce->m_handle);
+  _ce->m_handle = NULL;
+
+  return 0;
+}
+
+
+int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config,
+                     size_t _srcWidth, size_t _srcHeight,
+                     size_t _srcLineLength, size_t _srcImageSize, uint32_t _srcFormat,
+                     size_t _dstWidth, size_t _dstHeight,
+                     size_t _dstLineLength, size_t _dstImageSize, uint32_t _dstFormat)
 {
   int res;
 
@@ -169,7 +175,7 @@ int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config, size_t 
   if (_ce->m_handle != NULL)
     return ENOTCONN;
 
-  if ((res = do_memoryAlloc(_ce, _srcBufferSize, _dstBufferSize)) != 0)
+  if ((res = do_memoryAlloc(_ce, _srcImageSize, _dstImageSize)) != 0)
     return res;
 
   if ((res = do_setupCodec(_ce, _config->m_codecName)) != 0)
@@ -178,6 +184,10 @@ int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config, size_t 
     return res;
   }
 
+
+#if 1
+  printf("Codec engine start: %zux%zu to %zux%zu\n", _srcWidth, _srcHeight, _dstWidth, _dstHeight);
+#endif
 #warning TODO configure vidtranscode
 
   return 0;
@@ -198,14 +208,14 @@ int codecEngineStop(CodecEngine* _ce)
 }
 
 int codecEngineTranscodeFrame(CodecEngine* _ce,
-                              const void* _frameSrcPtr, size_t _frameSrcSize,
-                              void* _frameDstPtr, size_t _frameDstSize, size_t* _frameDstUsed)
+                              const void* _srcFramePtr, size_t _srcFrameSize,
+                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed)
 {
 #warning TODO stub
 
-  size_t s = _frameSrcSize < _frameDstSize ? _frameSrcSize : _frameDstSize;
-  memcpy(_frameDstPtr, _frameSrcPtr, s);
-  *_frameDstUsed = s;
+  size_t s = _srcFrameSize < _dstFrameSize ? _srcFrameSize : _dstFrameSize;
+  memcpy(_dstFramePtr, _srcFramePtr, s);
+  *_dstFrameUsed = s;
   return 0;
 }
 

@@ -89,6 +89,25 @@ static int do_v4l2InputUnsetFormat(V4L2Input* _v4l2)
   return 0;
 }
 
+static int do_v4l2InputGetFormat(V4L2Input* _v4l2,
+                                 size_t* _width, size_t* _height,
+                                 size_t* _lineLength, size_t* _imageSize, uint32_t* _format)
+{
+  if (_v4l2 == NULL)
+    return EINVAL;
+  if (_width == NULL || _height == NULL || _lineLength == NULL || _imageSize == NULL || _format == NULL)
+    return EINVAL;
+
+  *_width = _v4l2->m_imageFormat.fmt.pix.width;
+  *_height = _v4l2->m_imageFormat.fmt.pix.height;
+  *_lineLength = _v4l2->m_imageFormat.fmt.pix.bytesperline;
+  *_imageSize = _v4l2->m_imageFormat.fmt.pix.sizeimage;
+  *_format = _v4l2->m_imageFormat.fmt.pix.pixelformat;
+
+  return 0;
+}
+
+
 static int do_v4l2InputMmapBuffers(V4L2Input* _v4l2)
 {
   int res = 0;
@@ -432,4 +451,15 @@ int v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
   return do_v4l2InputPutFrame(_v4l2, _frameIndex);
 }
 
+int v4l2InputGetFormat(V4L2Input* _v4l2,
+                       size_t* _width, size_t* _height,
+                       size_t* _lineLength, size_t* _imageSize, uint32_t* _format)
+{
+  if (_v4l2 == NULL)
+    return EINVAL;
+  if (_v4l2->m_fd == -1)
+    return ENOTCONN;
+
+  return do_v4l2InputGetFormat(_v4l2, _width, _height, _lineLength, _imageSize, _format);
+}
 

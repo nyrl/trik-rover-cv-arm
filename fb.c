@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include <linux/videodev2.h> // pixel formats
+
 #include "internal/fb.h"
 
 
@@ -87,6 +89,27 @@ static int do_fbOutputUnsetFormat(FBOutput* _fb)
   return 0;
 }
 
+static int do_fbOutputGetFormat(FBOutput* _fb,
+                                size_t* _width, size_t* _height,
+                                size_t* _lineLength, size_t* _imageSize, uint32_t* _format)
+{
+  if (_fb == NULL)
+    return EINVAL;
+  if (_width == NULL || _height == NULL || _lineLength == NULL || _imageSize == NULL || _format == NULL)
+    return EINVAL;
+
+  *_width = _fb->m_fbVarInfo.xres;
+  *_height = _fb->m_fbVarInfo.yres;
+  *_lineLength = _fb->m_fbFixInfo.line_length;
+  *_imageSize = _fb->m_fbFixInfo.smem_len;
+
+#warning TODO check and get framebuffer format!
+  *_format = V4L2_PIX_FMT_RGB565;
+
+  return 0;
+}
+
+
 static int do_fbOutputMmap(FBOutput* _fb)
 {
   int res;
@@ -127,8 +150,6 @@ static int do_fbOutputMunmap(FBOutput* _fb)
 
 static int do_fbOutputGetFrame(FBOutput* _fb, void** _framePtr, size_t* _frameSize)
 {
-  int res = 0;
-
   if (_fb == NULL || _framePtr == NULL || _frameSize == NULL)
     return EINVAL;
 
@@ -239,6 +260,18 @@ int fbOutputPutFrame(FBOutput* _fb)
     return ENOTCONN;
 
   return 0;
+}
+
+int fbOutputGetFormat(FBOutput* _fb,
+                      size_t* _width, size_t* _height,
+                      size_t* _lineLength, size_t* _imageSize, uint32_t* _format)
+{
+  if (_fb == NULL)
+    return EINVAL;
+  if (_fb->m_fd == -1)
+    return ENOTCONN;
+
+  return do_fbOutputGetFormat(_fb, _width, _height, _lineLength, _imageSize, _format);
 }
 
 
