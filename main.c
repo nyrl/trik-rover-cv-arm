@@ -227,7 +227,7 @@ int main(int _argc, char* const _argv[])
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
 
-    if ((res = select(maxFd, &fdsIn, NULL, NULL, &timeout)) == -1)
+    if ((res = select(maxFd, &fdsIn, NULL, NULL, &timeout)) < 0)
     {
       fprintf(stderr, "select() failed: %d\n", errno);
       exit_code = EX_OSERR;
@@ -236,17 +236,18 @@ int main(int _argc, char* const _argv[])
 
     if (FD_ISSET(v4l2src.m_fd, &fdsIn))
     {
-      printf("Frame!\n");
+      const void* frameSrcPtr;
+      size_t frameSrcSize;
+      size_t frameSrcIndex;
+      if ((res = v4l2inputGetFrame(&v4l2src, &frameSrcPtr, &frameSrcSize, &frameSrcIndex)) != 0)
+      {
+        fprintf(stderr, "v4l2inputGetFrame() failed: %d\n", res);
+        exit_code = res;
+        goto exit_mainloop;
+      }
 
-#warning TODO capture frame
-#if 0
-int v4l2inputGetFrame(V4L2Input* _v4l2, void** _framePtr, size_t* _frameSize, size_t* _frameIndex);
-int v4l2inputPutFrame(V4L2Input* _v4l2, size_t _frameIndex);
-typedef struct V4L2Input
-{
-  int                    m_fd;
-  struct v4l2_format     m_imageFormat;
-} V4L2Input;
+#if 1
+      printf("Frame %p, %zu [%zu]\n", frameSrcPtr, frameSrcSize, frameSrcIndex);
 #endif
 
 #if 0
