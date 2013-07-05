@@ -15,6 +15,8 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <libv4l2.h>
+
 #include "internal/v4l2.h"
 
 #warning Check BUFALIGN usage!
@@ -139,6 +141,7 @@ int main(int _argc, char* const _argv[])
   {
     Diags_setMask("xdc.runtime.Main+EX1234567");
     Diags_setMask(Engine_MODNAME"+EX1234567");
+    v4l2_log_file = stderr;
   }
 
   Engine_Error ceError;
@@ -167,7 +170,7 @@ int main(int _argc, char* const _argv[])
   v4l2src.m_fd = -1;
   if ((res = v4l2inputOpen(&v4l2src, &s_cfgV4L2Input)) != 0)
   {
-    fprintf(stderr, "v4l2inputOpen failed: %d\n", res);
+    fprintf(stderr, "v4l2inputOpen() failed: %d\n", res);
     exit_code = EX_NOINPUT;
     goto exit_engine_close;
   }
@@ -189,7 +192,7 @@ int main(int _argc, char* const _argv[])
 
   if (ceSrcBuffer == NULL || ceDstBuffer == NULL)
   {
-    fprintf(stderr, "Memory_alloc failed for src/dst buffer\n");
+    fprintf(stderr, "Memory_alloc() failed for src/dst buffer\n");
     exit_code = EX_PROTOCOL;
     goto exit_v4l2close;
   }
@@ -206,7 +209,7 @@ int main(int _argc, char* const _argv[])
 
   if ((res = v4l2inputStart(&v4l2src)) != 0)
   {
-    fprintf(stderr, "v4l2inputStart failed: %d\n", res);
+    fprintf(stderr, "v4l2inputStart() failed: %d\n", res);
     exit_code = EX_NOINPUT;
     goto exit_vidtranscode_delete;
   }
@@ -252,14 +255,22 @@ typedef struct V4L2Input
 #endif
 
 
+
+      if ((res = v4l2inputPutFrame(&v4l2src, frameSrcIndex)) != 0)
+      {
+        fprintf(stderr, "v4l2inputPutFrame() failed: %d\n", res);
+        exit_code = res;
+        goto exit_mainloop;
+      }
     }
   }
   printf("Left main loop\n");
 
 
+exit_mainloop:
 exit_v4l2stop:
   if ((res = v4l2inputStop(&v4l2src)) != 0)
-    fprintf(stderr, "v4l2inputStop failed: %d\n", res);
+    fprintf(stderr, "v4l2inputStop() failed: %d\n", res);
 
 exit_vidtranscode_delete:
   VIDTRANSCODE_delete(transcoder);
@@ -270,7 +281,7 @@ exit_memory_free:
 
 exit_v4l2close:
   if ((res = v4l2inputClose(&v4l2src)) != 0)
-    fprintf(stderr, "v4l2inputClose failed: %d\n", res);
+    fprintf(stderr, "v4l2inputClose() failed: %d\n", res);
 
 exit_engine_close:
   Engine_close(ce);
