@@ -6,6 +6,8 @@
 #include <xdc/runtime/Diags.h>
 #include <ti/sdo/ce/CERuntime.h>
 
+#include <linux/videodev2.h>
+
 #include <trik/vidtranscode_resample/trik_vidtranscode_resample.h>
 
 #include "internal/ce.h"
@@ -68,20 +70,80 @@ static int do_memoryFree(CodecEngine* _ce)
   return 0;
 }
 
-static int do_setupCodec(CodecEngine* _ce, const char* _codecName)
+static XDAS_Int32 do_convertPixelFormat(CodecEngine* _ce, uint32_t _format)
+{
+  switch (_format)
+  {
+    case V4L2_PIX_FMT_RGB24:	return TRIK_VIDTRANSCODE_RESAMPLE_VIDEO_FORMAT_RGB888;
+    case V4L2_PIX_FMT_RGB565:	return TRIK_VIDTRANSCODE_RESAMPLE_VIDEO_FORMAT_RGB565;
+    case V4L2_PIX_FMT_RGB565X:	return TRIK_VIDTRANSCODE_RESAMPLE_VIDEO_FORMAT_RGB565X;
+    case V4L2_PIX_FMT_YUV32:	return TRIK_VIDTRANSCODE_RESAMPLE_VIDEO_FORMAT_YUV444;
+    case V4L2_PIX_FMT_YUYV:	return TRIK_VIDTRANSCODE_RESAMPLE_VIDEO_FORMAT_YUV422;
+    default:
+      fprintf(stderr, "Unknown pixel format %c%c%c%c\n",
+              _format&0xff, (_format>>8)&0xff, (_format>>16)&0xff, (_format>>24)&0xff);
+      return TRIK_VIDTRANSCODE_RESAMPLE_VIDEO_FORMAT_UNKNOWN;
+  }
+}
+
+static int do_setupCodec(CodecEngine* _ce, const char* _codecName,
+                         size_t _srcWidth, size_t _srcHeight,
+                         size_t _srcLineLength, size_t _srcImageSize, uint32_t _srcFormat,
+                         size_t _dstWidth, size_t _dstHeight,
+                         size_t _dstLineLength, size_t _dstImageSize, uint32_t _dstFormat)
 {
   if (_codecName == NULL)
     return EINVAL;
 
-#warning Ignoring video format for now!
+#if 1
+  fprintf(stderr, "VIDTRANSCODE_control(%c%c%c%c@%zux%zu[%zu] -> %c%c%c%c@%zux%zu[%zu])\n",
+          _srcFormat&0xff, (_srcFormat>>8)&0xff, (_srcFormat>>16)&0xff, (_srcFormat>>24)&0xff,
+          _srcWidth, _srcHeight, _srcLineLength,
+          _dstFormat&0xff, (_dstFormat>>8)&0xff, (_dstFormat>>16)&0xff, (_dstFormat>>24)&0xff,
+          _dstWidth, _dstHeight, _dstLineLength);
+#endif
+
+  TRIK_VIDTRANSCODE_RESAMPLE_Params ceParams;
+  memset(&ceParams, 0, sizeof(ceParams));
+  ceParams.base.size = sizeof(ceParams);
+  ceParams.base.numOutputStreams = 1;
+  ceParams.base.formatInput = do_convertPixelFormat(_ce, _srcFormat);
+  ceParams.base.formatOutput[0] = do_convertPixelFormat(_ce, _dstFormat);
+  ceParams.base.maxHeightInput = _srcHeight;
+  ceParams.base.maxWidthInput = _srcWidth;
+  ceParams.base.maxHeightOutput[0] = _dstHeight;
+  ceParams.base.maxWidthOutput[0] = _dstWidth;
+  ceParams.base.dataEndianness = XDM_BYTE;
+
   char* codec = strdup(_codecName);
-  if ((_ce->m_vidtranscodeHandle = VIDTRANSCODE_create(_ce->m_handle, codec, NULL)) == NULL)
+  if ((_ce->m_vidtranscodeHandle = VIDTRANSCODE_create(_ce->m_handle, codec, &ceParams.base)) == NULL)
   {
     free(codec);
     fprintf(stderr, "VIDTRANSCODE_create(%s) failed\n", _codecName);
     return EBADRQC;
   }
   free(codec);
+
+  TRIK_VIDTRANSCODE_RESAMPLE_DynamicParams ceDynamicParams;
+  memset(&ceDynamicParams, 0, sizeof(&ceDynamicParams));
+  ceDynamicParams.base.size = sizeof(ceDynamicParams);
+  ceDynamicParams.base.outputHeight[0] = _dstHeight;
+  ceDynamicParams.base.outputWidth[0] = _dstWidth;
+  ceDynamicParams.base.keepInputFrameRateFlag[0] = XDAS_TRUE;
+  ceDynamicParams.inputHeight = _srcHeight;
+  ceDynamicParams.inputWidth = _srcWidth;
+  ceDynamicParams.inputLineLength = _srcLineLength;
+  ceDynamicParams.outputLineLength[0] = _dstLineLength;
+
+  IVIDTRANSCODE_Status ceStatus;
+  memset(&ceStatus, 0, sizeof(ceStatus));
+  ceStatus.size = sizeof(ceStatus);
+  XDAS_Int32 controlResult = VIDTRANSCODE_control(_ce->m_vidtranscodeHandle, XDM_SETPARAMS, &ceDynamicParams.base, &ceStatus);
+  if (controlResult != IVIDTRANSCODE_EOK)
+  {
+    fprintf(stderr, "VIDTRANSCODE_control() failed: %"PRIi32"/%"PRIi32"\n", controlResult, ceStatus.extendedError);
+    return EBADRQC;
+  }
 
   return 0;
 }
@@ -256,49 +318,13 @@ int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config,
   if ((res = do_memoryAlloc(_ce, _srcImageSize, _dstImageSize)) != 0)
     return res;
 
-  if ((res = do_setupCodec(_ce, _config->m_codecName)) != 0)
+  if ((res = do_setupCodec(_ce, _config->m_codecName,
+                           _srcWidth, _srcHeight, _srcLineLength, _srcImageSize, _srcFormat,
+                           _dstWidth, _dstHeight, _dstLineLength, _dstImageSize, _dstFormat)) != 0)
   {
     do_memoryFree(_ce);
     return res;
   }
-
-
-#warning TODO configure vidtranscode
-#warning Dirty dynamic params configuration
-#if 1
-  if (1)
-  {
-#if 1
-    printf("VIDTRANSCODE_control(%zux%zu[%zu] -> %zux%zu[%zu])\n",
-           _srcWidth, _srcHeight, _srcLineLength, _dstWidth, _dstHeight, _dstLineLength);
-#endif
-
-    TRIK_VIDTRANSCODE_RESAMPLE_DynamicParams dp;
-    memset(&dp, 0, sizeof(&dp));
-    dp.base.size = sizeof(dp);
-  
-    dp.base.outputWidth[0] = _dstWidth;
-    dp.base.outputHeight[0] = _dstHeight;
-    dp.outputLineLength[0] = _dstLineLength;
-    dp.base.keepInputFrameRateFlag[0] = XDAS_TRUE;
-  
-    dp.inputWidth = _srcWidth;
-    dp.inputHeight = _srcHeight;
-    dp.inputLineLength = _srcLineLength;
-  
-    IVIDTRANSCODE_Status st;
-    memset(&st, 0, sizeof(st));
-    st.size = sizeof(st);
-    XDAS_Int32 ctrlResult = VIDTRANSCODE_control(_ce->m_vidtranscodeHandle, XDM_SETPARAMS, &dp.base, &st);
-    fprintf(stderr, "VIDTRANSCODE_control(XDM_SETPARAMS) returned %d\n", (int)ctrlResult);
-    fflush(stderr);
-  }
-
-#if 1
-  printf("Codec engine start: %zux%zu to %zux%zu\n", _srcWidth, _srcHeight, _dstWidth, _dstHeight);
-#endif
-#endif
-
 
   return 0;
 }
