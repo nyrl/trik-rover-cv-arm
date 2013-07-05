@@ -71,7 +71,8 @@ REPO_PATH = \
 	$(XDAIS_INSTALL_DIR)/packages \
 	$(FC_INSTALL_DIR)/packages \
 	$(CMEM_INSTALL_DIR)/packages \
-	$(EXAMPLES_ROOTDIR)
+	$(EXAMPLES_ROOTDIR) \
+	$(EXTRA_PACKAGES_DIR)
 
 
 #PROFILE = release

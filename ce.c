@@ -6,6 +6,8 @@
 #include <xdc/runtime/Diags.h>
 #include <ti/sdo/ce/CERuntime.h>
 
+#include <trik/vidtranscode_resample/trik_vidtranscode_resample.h>
+
 #include "internal/ce.h"
 
 

@@ -49,6 +49,7 @@ LINK_INSTALL_DIR?=$(DEPOT)/syslink_2_21_01_05
 OSAL_INSTALL_DIR?=$(DEPOT)/osal_1_23_00_04
 CMEM_INSTALL_DIR?=$(DEPOT)/linuxutils_3_23_00_01
 EDMA3_LLD_INSTALL_DIR?=$(DEPOT)/edma3_lld_02_11_07_04
+EXTRA_PACKAGES_DIR?=$(DEPOT)/trik-dsp
 
 # Note that GCC targets are 'special' and require more than one var to be set.
 #
