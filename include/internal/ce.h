@@ -25,10 +25,10 @@ typedef struct CodecEngine
 
   Memory_AllocParams m_allocParams;
   size_t     m_srcBufferSize;
-  XDAS_Int8* m_srcBuffer;
+  void*      m_srcBuffer;
 
   size_t     m_dstBufferSize;
-  XDAS_Int8* m_dstBuffer;
+  void*      m_dstBuffer;
 
   VIDTRANSCODE_Handle m_vidtranscodeHandle;
 
@@ -44,6 +44,10 @@ int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config);
 int codecEngineClose(CodecEngine* _ce);
 int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config, size_t _srcBufferSize, size_t _dstBufferSize);
 int codecEngineStop(CodecEngine* _ce);
+
+int codecEngineTranscodeFrame(CodecEngine* _ce,
+                              const void* _frameSrcPtr, size_t _frameSrcSize,
+                              void* _frameDstPtr, size_t _frameDstSize, size_t* _frameDstUsed);
 
 
 #ifdef __cplusplus

@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#include <linux/fb.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -15,10 +17,12 @@ typedef struct FBConfig // what user wants to set
 
 typedef struct FBOutput
 {
-  int m_fd;
+  int                      m_fd;
+  struct fb_fix_screeninfo m_fbFixInfo;
+  struct fb_var_screeninfo m_fbVarInfo;
+  void*                    m_fbPtr;
+  size_t                   m_fbSize;
 } FBOutput;
-
-
 
 
 int fbOutputInit(bool _verbose);
@@ -28,6 +32,8 @@ int fbOutputOpen(FBOutput* _fb, const FBConfig* _config);
 int fbOutputClose(FBOutput* _fb);
 int fbOutputStart(FBOutput* _fb);
 int fbOutputStop(FBOutput* _fb);
+int fbOutputGetFrame(FBOutput* _fb, void** _framePtr, size_t* _frameSize);
+int fbOutputPutFrame(FBOutput* _fb);
 
 
 #ifdef __cplusplus

@@ -177,8 +177,9 @@ int main(int _argc, char* const _argv[])
   }
 
 
-#warning TODO FB buffer size
-  if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine, v4l2Src.m_imageFormat.fmt.pix.sizeimage, 0)) != 0)
+#warning TODO get input and output dimension (params)
+  if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine,
+                              v4l2Src.m_imageFormat.fmt.pix.sizeimage, fbDst.m_fbFixInfo.smem_len)) != 0)
   {
     fprintf(stderr, "codecEngineStart() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
@@ -249,7 +250,7 @@ exit_v4l2_fini:
 
 exit_ce_fini:
   if ((res = codecEngineFini()) != 0)
-    fprintf(stderr, "ceFini() failed: %d\n", res);
+    fprintf(stderr, "codecEngineFini() failed: %d\n", res);
 
 
 exit:
@@ -290,13 +291,33 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst)
       return res;
     }
 
+    void* frameDstPtr;
+    size_t frameDstSize;
+    if ((res = fbOutputGetFrame(_fbDst, &frameDstPtr, &frameDstSize)) != 0)
+    {
+      fprintf(stderr, "fbOutputGetFrame() failed: %d\n", res);
+      return res;
+    }
 
-#if 1
-    printf("Frame %p, %zu [%zu]\n", frameSrcPtr, frameSrcSize, frameSrcIndex);
-#endif
+    size_t frameDstUsed = frameDstSize;
+    if ((res = codecEngineTranscodeFrame(_ce,
+                                         frameSrcPtr, frameSrcSize,
+                                         frameDstPtr, frameDstSize, &frameDstUsed)) != 0)
+    {
+      fprintf(stderr, "codecEngineTranscodeFrame(%p[%zu] -> %p[%zu]) failed: %d\n",
+              frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, res);
+      return res;
+    }
 
-#warning transcode
+    if (s_cfgVerbose)
+      fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
+              frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, frameDstUsed);
 
+    if ((res = fbOutputPutFrame(_fbDst)) != 0)
+    {
+      fprintf(stderr, "fbOutputPutFrame() failed: %d\n", res);
+      return res;
+    }
 
     if ((res = v4l2InputPutFrame(_v4l2Src, frameSrcIndex)) != 0)
     {

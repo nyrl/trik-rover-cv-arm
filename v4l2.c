@@ -165,7 +165,7 @@ static int do_v4l2InputMmapBuffers(V4L2Input* _v4l2)
 
 
   size_t idx;
-exit_unmap:
+ exit_unmap:
   for (idx = 0; idx < bufferIndex; ++idx)
   {
     if (v4l2_munmap(_v4l2->m_buffers[idx], _v4l2->m_bufferSize[idx]) != 0)
@@ -174,7 +174,7 @@ exit_unmap:
               idx, _v4l2->m_buffers[idx], _v4l2->m_bufferSize[idx], errno);
   }
 
-exit:
+ exit:
   return res;
 }
 
@@ -240,13 +240,13 @@ static int do_v4l2InputStart(V4L2Input* _v4l2)
   return 0;
 
 
-exit_stop:
+ exit_stop:
   capture = _v4l2->m_imageFormat.type;
   if (v4l2_ioctl(_v4l2->m_fd, VIDIOC_STREAMOFF, &capture) != 0)
     // do not update res!
     fprintf(stderr, "v4l2_ioctl(VIDIOC_STREAMOFF) failed: %d\n", errno);
 
-//exit:
+ //exit:
   return res;
 }
 

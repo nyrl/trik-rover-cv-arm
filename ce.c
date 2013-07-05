@@ -92,7 +92,7 @@ static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBu
   _ce->m_allocParams.seg = 0;
 
   _ce->m_srcBufferSize = ALIGN_UP(_srcBufferSize, BUFALIGN);
-  if ((_ce->m_srcBuffer = (XDAS_Int8*)Memory_alloc(_ce->m_srcBufferSize, &_ce->m_allocParams)) == NULL)
+  if ((_ce->m_srcBuffer = Memory_alloc(_ce->m_srcBufferSize, &_ce->m_allocParams)) == NULL)
   {
     fprintf(stderr, "Memory_alloc(src, %zu) failed\n", _ce->m_srcBufferSize);
     _ce->m_srcBufferSize = 0;
@@ -100,7 +100,7 @@ static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBu
   }
 
   _ce->m_dstBufferSize = ALIGN_UP(_dstBufferSize, BUFALIGN);
-  if ((_ce->m_dstBuffer = (XDAS_Int8*)Memory_alloc(_ce->m_dstBufferSize, &_ce->m_allocParams)) == NULL)
+  if ((_ce->m_dstBuffer = Memory_alloc(_ce->m_dstBufferSize, &_ce->m_allocParams)) == NULL)
   {
     fprintf(stderr, "Memory_alloc(dst, %zu) failed\n", _ce->m_dstBufferSize);
     _ce->m_dstBufferSize = 0;
@@ -196,4 +196,17 @@ int codecEngineStop(CodecEngine* _ce)
 
   return 0;
 }
+
+int codecEngineTranscodeFrame(CodecEngine* _ce,
+                              const void* _frameSrcPtr, size_t _frameSrcSize,
+                              void* _frameDstPtr, size_t _frameDstSize, size_t* _frameDstUsed)
+{
+#warning TODO stub
+
+  size_t s = _frameSrcSize < _frameDstSize ? _frameSrcSize : _frameDstSize;
+  memcpy(_frameDstPtr, _frameSrcPtr, s);
+  *_frameDstUsed = s;
+  return 0;
+}
+
 
