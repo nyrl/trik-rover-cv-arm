@@ -34,7 +34,7 @@ int v4l2inputOpen(V4L2Input* _v4l2, const V4L2Config* _config);
 int v4l2inputClose(V4L2Input* _v4l2);
 int v4l2inputStart(V4L2Input* _v4l2);
 int v4l2inputStop(V4L2Input* _v4l2);
-int v4l2inputGetFrame(V4L2Input* _v4l2, void** _framePtr, size_t* _frameSize, size_t* _frameIndex);
+int v4l2inputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t* _frameSize, size_t* _frameIndex);
 int v4l2inputPutFrame(V4L2Input* _v4l2, size_t _frameIndex);
 
 

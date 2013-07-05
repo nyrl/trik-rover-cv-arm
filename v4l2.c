@@ -267,7 +267,7 @@ static int do_v4l2inputStop(V4L2Input* _v4l2)
   return 0;
 }
 
-static int do_v4l2inputGetFrame(V4L2Input* _v4l2, void** _framePtr, size_t* _frameSize, size_t* _frameIndex)
+static int do_v4l2inputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t* _frameSize, size_t* _frameIndex)
 {
   int res = 0;
 
@@ -399,7 +399,7 @@ int v4l2inputStop(V4L2Input* _v4l2)
   return do_v4l2inputStop(_v4l2);
 }
 
-int v4l2inputGetFrame(V4L2Input* _v4l2, void** _framePtr, size_t* _frameSize, size_t* _frameIndex)
+int v4l2inputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t* _frameSize, size_t* _frameIndex)
 {
   if (_v4l2 == NULL)
     return EINVAL;
