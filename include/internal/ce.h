@@ -55,6 +55,8 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
                               const void* _srcFramePtr, size_t _srcFrameSize,
                               void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed);
 
+int codecEngineReportLoad(CodecEngine* _ce);
+
 
 #ifdef __cplusplus
 } // extern "C"

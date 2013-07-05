@@ -5,6 +5,7 @@
 #include <xdc/std.h>
 #include <xdc/runtime/Diags.h>
 #include <ti/sdo/ce/CERuntime.h>
+#include <ti/sdo/ce/Server.h>
 
 #include <linux/videodev2.h>
 
@@ -232,6 +233,36 @@ static int do_transcodeFrame(CodecEngine* _ce,
   return 0;
 }
 
+static int do_reportLoad(CodecEngine* _ce)
+{
+  Server_Handle ceServerHandle = Engine_getServer(_ce->m_handle);
+  if (ceServerHandle == NULL)
+  {
+    fprintf(stderr, "Engine_getServer() failed\n");
+    return ENOTCONN;
+  }
+
+  fprintf(stderr, "DSP load %d%%\n", (int)Server_getCpuLoad(ceServerHandle));
+  size_t heapIdx;
+  for (heapIdx = 0; ; ++heapIdx)
+  {
+    Server_MemStat sMemStat;
+    Server_Status sStatus = Server_getMemStat(ceServerHandle, heapIdx, &sMemStat);
+    if (sStatus == Server_ENOTFOUND)
+      break;
+    else if (sStatus != Server_EOK)
+    {
+      fprintf(stderr, "Server_getMemStat() failed: %d\n", (int)sStatus);
+      break;
+    }
+    fprintf(stderr, "DSP memory %#08x..%#08x, used %10u: %s\n",
+            (unsigned)sMemStat.base, (unsigned)(sMemStat.base+sMemStat.size),
+            (unsigned)sMemStat.used, sMemStat.name);
+  }
+
+  return 0;
+}
+
 
 
 
@@ -355,6 +386,17 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
     return ENOTCONN;
 
   return do_transcodeFrame(_ce, _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, _dstFrameUsed);
+}
+
+int codecEngineReportLoad(CodecEngine* _ce)
+{
+  if (_ce == NULL)
+    return EINVAL;
+
+  if (_ce->m_handle == NULL)
+    return ENOTCONN;
+
+  return do_reportLoad(_ce);
 }
 
 

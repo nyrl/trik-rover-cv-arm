@@ -21,7 +21,15 @@ static void sigterm_action(int _signal, siginfo_t* _siginfo, void* _context)
   (void)_context;
   s_terminate = true;
 }
-static void sigterm_action_setup()
+static sig_atomic_t s_reportLoad = false;
+static void sigquit_action(int _signal, siginfo_t* _siginfo, void* _context)
+{
+  (void)_signal;
+  (void)_siginfo;
+  (void)_context;
+  s_reportLoad = true;
+}
+static void sigactions_setup()
 {
   struct sigaction action;
   memset(&action, 0, sizeof(action));
@@ -32,6 +40,10 @@ static void sigterm_action_setup()
     fprintf(stderr, "sigaction(SIGTERM) failed: %d\n", errno);
   if (sigaction(SIGINT,  &action, NULL) != 0)
     fprintf(stderr, "sigaction(SIGINT) failed: %d\n", errno);
+
+  action.sa_sigaction = &sigquit_action;
+  if (sigaction(SIGINT,  &action, NULL) != 0)
+    fprintf(stderr, "sigaction(SIGQUIT) failed: %d\n", errno);
 }
 
 
@@ -114,7 +126,7 @@ int main(int _argc, char* const _argv[])
   int res = 0;
   int exit_code = EX_OK;
 
-  sigterm_action_setup();
+  sigactions_setup();
 
   if (!parse_args(_argc, _argv))
   {
@@ -221,6 +233,14 @@ int main(int _argc, char* const _argv[])
   printf("Entering main loop\n");
   while (!s_terminate)
   {
+    if (s_reportLoad)
+    {
+      s_reportLoad = false;
+      if ((res = codecEngineReportLoad(&codecEngine)) != 0)
+        fprintf(stderr, "codecEngineReportLoad() failed: %d\n", res);
+    }
+
+
     if ((res = mainLoop(&codecEngine, &v4l2Src, &fbDst)) != 0)
     {
       fprintf(stderr, "mainLoop() failed: %d\n", res);
