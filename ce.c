@@ -73,6 +73,7 @@ static int do_setupCodec(CodecEngine* _ce, const char* _codecName)
   if (_codecName == NULL)
     return EINVAL;
 
+#warning Ignoring video format for now!
   char* codec = strdup(_codecName);
   if ((_ce->m_vidtranscodeHandle = VIDTRANSCODE_create(_ce->m_handle, codec, NULL)) == NULL)
   {
