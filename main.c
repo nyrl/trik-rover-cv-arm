@@ -40,7 +40,7 @@ static CodecEngineConfig s_cfgCodecEngine = { "dsp_server.xe674", "vidtranscode_
 static V4L2Config s_cfgV4L2Input = { "/dev/video0", 640, 480, V4L2_PIX_FMT_RGB24 };
 static FBConfig s_cfgFBOutput = { "/dev/fb" };
 
-
+static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst);
 
 
 static bool parse_args(int _argc, char* const _argv[])
@@ -57,6 +57,7 @@ static bool parse_args(int _argc, char* const _argv[])
     { "v4l2-width",		1,	NULL,	0   },
     { "v4l2-height",		1,	NULL,	0   },
     { "v4l2-format",		1,	NULL,	0   },
+    { "fb-path",		1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
   };
@@ -87,6 +88,7 @@ static bool parse_args(int _argc, char* const _argv[])
               return false;
             }
             break;
+          case 6: s_cfgFBOutput.m_path = optarg;		break;
 
           default:
             return false;
@@ -101,6 +103,7 @@ static bool parse_args(int _argc, char* const _argv[])
 
   return true;
 }
+
 
 
 
@@ -153,10 +156,10 @@ int main(int _argc, char* const _argv[])
     goto exit_fb_fini;
   }
 
-  V4L2Input v4l2src;
-  memset(&v4l2src, 0, sizeof(v4l2src));
-  v4l2src.m_fd = -1;
-  if ((res = v4l2InputOpen(&v4l2src, &s_cfgV4L2Input)) != 0)
+  V4L2Input v4l2Src;
+  memset(&v4l2Src, 0, sizeof(v4l2Src));
+  v4l2Src.m_fd = -1;
+  if ((res = v4l2InputOpen(&v4l2Src, &s_cfgV4L2Input)) != 0)
   {
     fprintf(stderr, "v4l2InputOpen() failed: %d\n", res);
     exit_code = EX_NOINPUT;
@@ -175,14 +178,14 @@ int main(int _argc, char* const _argv[])
 
 
 #warning TODO FB buffer size
-  if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine, v4l2src.m_imageFormat.fmt.pix.sizeimage, 0)) != 0)
+  if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine, v4l2Src.m_imageFormat.fmt.pix.sizeimage, 0)) != 0)
   {
     fprintf(stderr, "codecEngineStart() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
     goto exit_fb_close;
   }
 
-  if ((res = v4l2InputStart(&v4l2src)) != 0)
+  if ((res = v4l2InputStart(&v4l2Src)) != 0)
   {
     fprintf(stderr, "v4l2InputStart() failed: %d\n", res);
     exit_code = EX_NOINPUT;
@@ -197,76 +200,25 @@ int main(int _argc, char* const _argv[])
   }
 
 
-
-
-
-
   printf("Entering main loop\n");
   while (!s_terminate)
   {
-    fd_set fdsIn;
-    FD_ZERO(&fdsIn);
-    FD_SET(v4l2src.m_fd, &fdsIn);
-    int maxFd = v4l2src.m_fd+1;
-
-    struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
-
-    if ((res = select(maxFd, &fdsIn, NULL, NULL, &timeout)) < 0)
+    if ((res = mainLoop(&codecEngine, &v4l2Src, &fbDst)) != 0)
     {
-      fprintf(stderr, "select() failed: %d\n", errno);
-      exit_code = EX_OSERR;
-      goto exit_mainloop;
-    }
-
-    if (FD_ISSET(v4l2src.m_fd, &fdsIn))
-    {
-      const void* frameSrcPtr;
-      size_t frameSrcSize;
-      size_t frameSrcIndex;
-      if ((res = v4l2InputGetFrame(&v4l2src, &frameSrcPtr, &frameSrcSize, &frameSrcIndex)) != 0)
-      {
-        fprintf(stderr, "v4l2InputGetFrame() failed: %d\n", res);
-        exit_code = res;
-        goto exit_mainloop;
-      }
-
-#if 1
-      printf("Frame %p, %zu [%zu]\n", frameSrcPtr, frameSrcSize, frameSrcIndex);
-#endif
-
-#warning transcode
-
-#if 0
-  /* use engine to encode, then decode the data */
-  transcode(transcoder, in, out);
-#endif
-
-
-
-      if ((res = v4l2InputPutFrame(&v4l2src, frameSrcIndex)) != 0)
-      {
-        fprintf(stderr, "v4l2InputPutFrame() failed: %d\n", res);
-        exit_code = res;
-        goto exit_mainloop;
-      }
+      fprintf(stderr, "mainLoop() failed: %d\n", res);
+      exit_code = EX_SOFTWARE;
+      break;
     }
   }
   printf("Left main loop\n");
 
 
-
-
-
-exit_mainloop:
-
-exit_fb_stop:
+//exit_fb_stop:
   if ((res = fbOutputStop(&fbDst)) != 0)
     fprintf(stderr, "fbOutputStop() failed: %d\n", res);
 
 exit_v4l2_stop:
-  if ((res = v4l2InputStop(&v4l2src)) != 0)
+  if ((res = v4l2InputStop(&v4l2Src)) != 0)
     fprintf(stderr, "v4l2InputStop() failed: %d\n", res);
 
 exit_ce_stop:
@@ -279,7 +231,7 @@ exit_fb_close:
     fprintf(stderr, "fbOutputClose() failed: %d\n", res);
 
 exit_v4l2_close:
-  if ((res = v4l2InputClose(&v4l2src)) != 0)
+  if ((res = v4l2InputClose(&v4l2Src)) != 0)
     fprintf(stderr, "v4l2InputClose() failed: %d\n", res);
 
 exit_ce_close:
@@ -303,5 +255,60 @@ exit_ce_fini:
 exit:
   return exit_code;
 }
+
+
+
+
+static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst)
+{
+  int res;
+
+  fd_set fdsIn;
+  FD_ZERO(&fdsIn);
+  FD_SET(_v4l2Src->m_fd, &fdsIn);
+  int maxFd = _v4l2Src->m_fd+1;
+
+  struct timeval timeout;
+  timeout.tv_sec = 1;
+  timeout.tv_usec = 0;
+
+  if ((res = select(maxFd, &fdsIn, NULL, NULL, &timeout)) < 0)
+  {
+    res = errno;
+    fprintf(stderr, "select() failed: %d\n", res);
+    return res;
+  }
+
+  if (FD_ISSET(_v4l2Src->m_fd, &fdsIn))
+  {
+    const void* frameSrcPtr;
+    size_t frameSrcSize;
+    size_t frameSrcIndex;
+    if ((res = v4l2InputGetFrame(_v4l2Src, &frameSrcPtr, &frameSrcSize, &frameSrcIndex)) != 0)
+    {
+      fprintf(stderr, "v4l2InputGetFrame() failed: %d\n", res);
+      return res;
+    }
+
+
+#if 1
+    printf("Frame %p, %zu [%zu]\n", frameSrcPtr, frameSrcSize, frameSrcIndex);
+#endif
+
+#warning transcode
+
+
+    if ((res = v4l2InputPutFrame(_v4l2Src, frameSrcIndex)) != 0)
+    {
+      fprintf(stderr, "v4l2InputPutFrame() failed: %d\n", res);
+      return res;
+    }
+  }
+
+  return 0;
+}
+
+
+
 
 
