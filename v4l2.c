@@ -63,6 +63,7 @@ static int do_v4l2InputSetFormat(V4L2Input* _v4l2, size_t _width, size_t _height
   _v4l2->m_imageFormat.fmt.pix.width = _width;
   _v4l2->m_imageFormat.fmt.pix.height = _height;
   _v4l2->m_imageFormat.fmt.pix.pixelformat = _format;
+#warning Check me
 #if 0
   _v4l2->m_imageFormat.fmt.pix.field = V4L2_FIELD_NONE;
 #endif
