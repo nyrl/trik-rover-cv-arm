@@ -77,6 +77,32 @@ static int do_v4l2InputSetFormat(V4L2Input* _v4l2, size_t _width, size_t _height
 
   // on return, m_imageFormat contains actually used image format
 
+  // warn if format is emulated
+  size_t fmtIdx;
+  for (fmtIdx = 0; ; ++fmtIdx)
+  {
+    struct v4l2_fmtdesc fmtDesc;
+    fmtDesc.index = fmtIdx;
+    fmtDesc.type = _v4l2->m_imageFormat.type;
+    if (v4l2_ioctl(_v4l2->m_fd, VIDIOC_ENUM_FMT, &fmtDesc) != 0)
+    {
+      // either fault or unknown format
+      fprintf(stderr, "v4l2_ioctl(VIDIOC_ENUM_FMT) failed: %d\n", errno);
+      break; // just warn, do not fail
+    }
+
+    if (fmtDesc.pixelformat == _v4l2->m_imageFormat.fmt.pix.pixelformat)
+    {
+      if (fmtDesc.flags & V4L2_FMT_FLAG_EMULATED)
+        fprintf(stderr, "V4L2 format %c%c%c%c is emulated, performance will be degraded\n",
+                (_v4l2->m_imageFormat.fmt.pix.pixelformat    ) & 0xff,
+                (_v4l2->m_imageFormat.fmt.pix.pixelformat>>8 ) & 0xff,
+                (_v4l2->m_imageFormat.fmt.pix.pixelformat>>16) & 0xff,
+                (_v4l2->m_imageFormat.fmt.pix.pixelformat>>24) & 0xff);
+      break;
+    }
+  }
+
   return 0;
 }
 
