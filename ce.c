@@ -26,6 +26,7 @@ static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBu
 {
   memset(&_ce->m_allocParams, 0, sizeof(_ce->m_allocParams));
   _ce->m_allocParams.type = Memory_CONTIGPOOL;
+#warning TODO check - maybe Memory_CACHED?
   _ce->m_allocParams.flags = Memory_NONCACHED;
   _ce->m_allocParams.align = BUFALIGN;
   _ce->m_allocParams.seg = 0;
