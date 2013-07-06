@@ -56,7 +56,7 @@ EXTRA_PACKAGES_DIR?=$(DEPOT)/trik-dsp
 # The CGTOOLS_* var points at the base of the toolchain.
 # The CC_* var points at the gcc binary (e.g. bin/arm-none-linux-gnueabi-gcc)
 #
-CGTOOLS_V5T = /home/nyrl/trik/oe-core/build-eglibc/sysroots/x86_64-linux/usr/bin/armv5te-oe-linux-gnueabi/
+CGTOOLS_V5T = /opt/trik-sdk/sysroots/i686-oesdk-linux/usr/bin/armv5te-oe-linux-gnueabi/
 CC_V5T      = arm-oe-linux-gnueabi-gcc
 
 # The AR_* var points at the ar binary (e.g. bin/arm-none-linux-gnueabi-ar)
