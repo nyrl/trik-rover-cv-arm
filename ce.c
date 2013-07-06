@@ -128,9 +128,9 @@ static int do_setupCodec(CodecEngine* _ce, const char* _codecName,
   TRIK_VIDTRANSCODE_RESAMPLE_DynamicParams ceDynamicParams;
   memset(&ceDynamicParams, 0, sizeof(ceDynamicParams));
   ceDynamicParams.base.size = sizeof(ceDynamicParams);
+  ceDynamicParams.base.keepInputResolutionFlag[0] = XDAS_FALSE;
   ceDynamicParams.base.outputHeight[0] = _dstHeight;
   ceDynamicParams.base.outputWidth[0] = _dstWidth;
-  ceDynamicParams.base.keepInputResolutionFlag[0] = XDAS_FALSE;
   ceDynamicParams.base.keepInputFrameRateFlag[0] = XDAS_TRUE;
   ceDynamicParams.inputHeight = _srcHeight;
   ceDynamicParams.inputWidth = _srcWidth;
