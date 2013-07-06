@@ -22,6 +22,7 @@ typedef struct V4L2Config // what user wants to set
 typedef struct V4L2Input
 {
   int                    m_fd;
+  unsigned               m_frameCounter;
   struct v4l2_format     m_imageFormat;
 
   void*                  m_buffers[2];
@@ -43,6 +44,8 @@ int v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex);
 int v4l2InputGetFormat(V4L2Input* _v4l2,
                        size_t* _width, size_t* _height,
                        size_t* _lineLength, size_t* _imageSize, uint32_t* _format);
+
+int v4l2InputReportFPS(V4L2Input* _v4l2, unsigned long long _ms);
 
 
 #ifdef __cplusplus

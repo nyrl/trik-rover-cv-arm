@@ -238,12 +238,19 @@ int main(int _argc, char* const _argv[])
     struct timespec currentTime;
     if (clock_gettime(CLOCK_MONOTONIC, &currentTime) != 0)
       fprintf(stderr, "clock_gettime(CLOCK_MONOTONIC) failed: %d\n", errno);
-    else if (currentTime.tv_sec > lastReportTime.tv_sec+5)
+    else if (currentTime.tv_sec > lastReportTime.tv_sec+5) // approx check that ~5sec elapsed
     {
+      unsigned long long elapsedMs = currentTime.tv_sec - lastReportTime.tv_sec;
+      elapsedMs *= 1000;
+      elapsedMs += currentTime.tv_nsec/1000000;
+      elapsedMs -= lastReportTime.tv_nsec/1000000;
+
       lastReportTime = currentTime;
-#warning TODO more statistics - fps, skipped video frames
       if ((res = codecEngineReportLoad(&codecEngine)) != 0)
         fprintf(stderr, "codecEngineReportLoad() failed: %d\n", res);
+
+      if ((res = v4l2InputReportFPS(&v4l2Src, elapsedMs)) != 0)
+        fprintf(stderr, "v4l2InputReportFPS() failed: %d\n", res);
     }
 
 

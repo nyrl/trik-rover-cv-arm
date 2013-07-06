@@ -248,6 +248,8 @@ static int do_v4l2InputStart(V4L2Input* _v4l2)
       }
     }
 
+  _v4l2->m_frameCounter = 0;
+
   enum v4l2_buf_type capture = _v4l2->m_imageFormat.type;
   if (v4l2_ioctl(_v4l2->m_fd, VIDIOC_STREAMON, &capture) != 0)
   {
@@ -276,6 +278,8 @@ static int do_v4l2InputStop(V4L2Input* _v4l2)
   assert(sizeof(_v4l2->m_buffers)/sizeof(*_v4l2->m_buffers) == sizeof(_v4l2->m_bufferSize)/sizeof(*_v4l2->m_bufferSize));
   if (_v4l2 == NULL)
     return EINVAL;
+
+  _v4l2->m_frameCounter = 0;
 
   enum v4l2_buf_type capture = _v4l2->m_imageFormat.type;
   if (v4l2_ioctl(_v4l2->m_fd, VIDIOC_STREAMOFF, &capture) != 0)
@@ -316,6 +320,8 @@ static int do_v4l2InputGetFrame(V4L2Input* _v4l2, const void** _framePtr, size_t
     return res;
   }
 
+  ++_v4l2->m_frameCounter;
+
   *_frameIndex = buffer.index;
   *_framePtr = _v4l2->m_buffers[buffer.index];
   *_frameSize = buffer.bytesused;
@@ -351,6 +357,22 @@ static int do_v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
   return 0;
 }
 
+int do_v4l2InputReportFPS(V4L2Input* _v4l2, unsigned long long _ms)
+{
+  unsigned long long fps = _v4l2->m_frameCounter;
+  _v4l2->m_frameCounter = 0;
+
+  if (_ms > 0)
+  {
+    fps *= 1000;
+    fps /= _ms;
+    fprintf(stderr, "V4L2 processing %llu fps\n", fps);
+  }
+  else
+    fprintf(stderr, "V4L2 processed %llu frames\n", fps);
+
+  return 0;
+}
 
 
 
@@ -462,5 +484,15 @@ int v4l2InputGetFormat(V4L2Input* _v4l2,
     return ENOTCONN;
 
   return do_v4l2InputGetFormat(_v4l2, _width, _height, _lineLength, _imageSize, _format);
+}
+
+int v4l2InputReportFPS(V4L2Input* _v4l2, unsigned long long _ms)
+{
+  if (_v4l2 == NULL)
+    return EINVAL;
+  if (_v4l2->m_fd == -1)
+    return ENOTCONN;
+
+  return do_v4l2InputReportFPS(_v4l2, _ms);
 }
 
