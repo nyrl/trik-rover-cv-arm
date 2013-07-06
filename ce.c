@@ -244,21 +244,28 @@ static int do_reportLoad(CodecEngine* _ce)
   }
 
   fprintf(stderr, "DSP load %d%%\n", (int)Server_getCpuLoad(ceServerHandle));
-  size_t heapIdx;
-  for (heapIdx = 0; ; ++heapIdx)
+
+  Int sNumSegs;
+  Server_Status sStatus = Server_getNumMemSegs(ceServerHandle, &sNumSegs);
+  if (sStatus != Server_EOK)
+    fprintf(stderr, "Server_getNumMemSegs() failed: %d\n", (int)sStatus);
+  else
   {
-    Server_MemStat sMemStat;
-    Server_Status sStatus = Server_getMemStat(ceServerHandle, heapIdx, &sMemStat);
-    if (sStatus == Server_ENOTFOUND)
-      break;
-    else if (sStatus != Server_EOK)
+    Int sSegIdx;
+    for (sSegIdx = 0; sSegIdx < sNumSegs; ++sSegIdx)
     {
-      fprintf(stderr, "Server_getMemStat() failed: %d\n", (int)sStatus);
-      break;
+      Server_MemStat sMemStat;
+      sStatus = Server_getMemStat(ceServerHandle, sSegIdx, &sMemStat);
+      if (sStatus != Server_EOK)
+      {
+        fprintf(stderr, "Server_getMemStat() failed: %d\n", (int)sStatus);
+        break;
+      }
+
+      fprintf(stderr, "DSP memory %#08x..%#08x, used %10u: %s\n",
+              (unsigned)sMemStat.base, (unsigned)(sMemStat.base+sMemStat.size),
+              (unsigned)sMemStat.used, sMemStat.name);
     }
-    fprintf(stderr, "DSP memory %#08x..%#08x, used %10u: %s\n",
-            (unsigned)sMemStat.base, (unsigned)(sMemStat.base+sMemStat.size),
-            (unsigned)sMemStat.used, sMemStat.name);
   }
 
   return 0;
