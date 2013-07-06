@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 
 #include "internal/ce.h"
 #include "internal/fb.h"
@@ -21,14 +22,6 @@ static void sigterm_action(int _signal, siginfo_t* _siginfo, void* _context)
   (void)_context;
   s_terminate = true;
 }
-static sig_atomic_t s_reportLoad = false;
-static void sigquit_action(int _signal, siginfo_t* _siginfo, void* _context)
-{
-  (void)_signal;
-  (void)_siginfo;
-  (void)_context;
-  s_reportLoad = true;
-}
 static void sigactions_setup()
 {
   struct sigaction action;
@@ -40,10 +33,6 @@ static void sigactions_setup()
     fprintf(stderr, "sigaction(SIGTERM) failed: %d\n", errno);
   if (sigaction(SIGINT,  &action, NULL) != 0)
     fprintf(stderr, "sigaction(SIGINT) failed: %d\n", errno);
-
-  action.sa_sigaction = &sigquit_action;
-  if (sigaction(SIGINT,  &action, NULL) != 0)
-    fprintf(stderr, "sigaction(SIGQUIT) failed: %d\n", errno);
 }
 
 
@@ -240,11 +229,19 @@ int main(int _argc, char* const _argv[])
 
 
   printf("Entering main loop\n");
+  struct timespec lastReportTime;
+  if (clock_gettime(CLOCK_MONOTONIC, &lastReportTime) != 0)
+    fprintf(stderr, "clock_gettime(CLOCK_MONOTONIC) failed: %d\n", errno);
+
   while (!s_terminate)
   {
-    if (s_reportLoad)
+    struct timespec currentTime;
+    if (clock_gettime(CLOCK_MONOTONIC, &currentTime) != 0)
+      fprintf(stderr, "clock_gettime(CLOCK_MONOTONIC) failed: %d\n", errno);
+    else if (currentTime.tv_sec > lastReportTime.tv_sec+5)
     {
-      s_reportLoad = false;
+      lastReportTime = currentTime;
+#warning TODO more statistics - fps, skipped video frames
       if ((res = codecEngineReportLoad(&codecEngine)) != 0)
         fprintf(stderr, "codecEngineReportLoad() failed: %d\n", res);
     }
