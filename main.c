@@ -131,9 +131,18 @@ int main(int _argc, char* const _argv[])
   if (!parse_args(_argc, _argv))
   {
     fprintf(stderr, "Usage:\n"
-                    "    %s <opts>\n",
+                    "    %s <opts>\n"
+                    " where opts are:\n"
+                    "   --ce-server    <dsp-server-name>\n"
+                    "   --ce-codec     <dsp-codec-name>\n"
+                    "   --v4l2-path    <input-device-path>\n"
+                    "   --v4l2-width   <input-width>\n"
+                    "   --v4l2-height  <input-height>\n"
+                    "   --v4l2-format  <input-pixel-format>\n"
+                    "   --fb-path      <output-device-path>\n"
+                    "   --verbose\n"
+                    "   --help\n",
             _argv[0]);
-#warning TODO usage
     exit_code = EX_USAGE;
     goto exit;
   }
