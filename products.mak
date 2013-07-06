@@ -37,26 +37,28 @@
 
 # Optional, but useful when many/all dependent components are in one folder
 #
-DEPOT?=/home/nyrl/trik/ti-ce3/
+DEPOT_DSP?=/opt/trik-dsp
+DEPOT_SDK?=/opt/trik-sdk
+DEPOT_TRIK?=$(PWD)/../../
 
-XDC_INSTALL_DIR?=$(DEPOT)/xdctools_3_25_00_48
-CE_INSTALL_DIR?=$(DEPOT)/codec_engine_3_23_00_07
-BIOS_INSTALL_DIR?=$(DEPOT)/bios_6_35_01_29
-FC_INSTALL_DIR?=$(DEPOT)/framework_components_3_23_03_17
-XDAIS_INSTALL_DIR?=$(DEPOT)/xdais_7_23_00_06
-IPC_INSTALL_DIR?=$(DEPOT)/ipc_1_25_02_12
-LINK_INSTALL_DIR?=$(DEPOT)/syslink_2_21_01_05
-OSAL_INSTALL_DIR?=$(DEPOT)/osal_1_23_00_04
-CMEM_INSTALL_DIR?=$(DEPOT)/linuxutils_3_23_00_01
-EDMA3_LLD_INSTALL_DIR?=$(DEPOT)/edma3_lld_02_11_07_04
-EXTRA_PACKAGES_DIR?=$(DEPOT)/trik-dsp
+XDC_INSTALL_DIR?=$(DEPOT_DSP)/xdctools_3_24_07_73
+CE_INSTALL_DIR?=$(DEPOT_DSP)/codec_engine_3_23_00_07
+BIOS_INSTALL_DIR?=$(DEPOT_DSP)/bios_6_35_01_29
+FC_INSTALL_DIR?=$(DEPOT_DSP)/framework_components_3_23_03_17
+XDAIS_INSTALL_DIR?=$(DEPOT_DSP)/xdais_7_23_00_06
+IPC_INSTALL_DIR?=$(DEPOT_DSP)/ipc_1_25_02_12
+LINK_INSTALL_DIR?=$(DEPOT_DSP)/syslink_2_21_01_05
+OSAL_INSTALL_DIR?=$(DEPOT_DSP)/osal_1_23_00_04
+CMEM_INSTALL_DIR?=$(DEPOT_DSP)/linuxutils_3_23_00_01
+EDMA3_LLD_INSTALL_DIR?=$(DEPOT_DSP)/edma3_lld_02_11_07_04
+EXTRA_PACKAGES_DIR?=$(DEPOT_TRIK)
 
 # Note that GCC targets are 'special' and require more than one var to be set.
 #
 # The CGTOOLS_* var points at the base of the toolchain.
 # The CC_* var points at the gcc binary (e.g. bin/arm-none-linux-gnueabi-gcc)
 #
-CGTOOLS_V5T = /opt/trik-sdk/sysroots/i686-oesdk-linux/usr/bin/armv5te-oe-linux-gnueabi/
+CGTOOLS_V5T = $(DEPOT_SDK)/sysroots/i686-oesdk-linux/usr/bin/armv5te-oe-linux-gnueabi/
 CC_V5T      = arm-oe-linux-gnueabi-gcc
 
 # The AR_* var points at the ar binary (e.g. bin/arm-none-linux-gnueabi-ar)
@@ -69,7 +71,6 @@ gnu.targets.arm.GCArmv5T = $(CGTOOLS_V5T);LONGNAME=$(CC_V5T);profiles.release.co
 
 # Use this goal to print your product variables.
 .show-products::
-#	@echo "DEPOT                       = $(DEPOT)"
 	@echo "LINK_INSTALL_DIR            = $(LINK_INSTALL_DIR)"
 	@echo "CMEM_INSTALL_DIR            = $(CMEM_INSTALL_DIR)"
 	@echo "XDAIS_INSTALL_DIR           = $(XDAIS_INSTALL_DIR)"
