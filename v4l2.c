@@ -386,17 +386,16 @@ static int do_v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
 
 int do_v4l2InputReportFPS(V4L2Input* _v4l2, unsigned long long _ms)
 {
-  unsigned long long fps = _v4l2->m_frameCounter;
+  unsigned long long frames = _v4l2->m_frameCounter;
   _v4l2->m_frameCounter = 0;
 
   if (_ms > 0)
   {
-    fps *= 1000;
-    fps /= _ms;
-    fprintf(stderr, "V4L2 processing %llu fps\n", fps);
+    float fps = ((float)frames * 1000.0) / (float)_ms;
+    fprintf(stderr, "V4L2 processing %.3f fps\n", fps);
   }
   else
-    fprintf(stderr, "V4L2 processed %llu frames\n", fps);
+    fprintf(stderr, "V4L2 processed %llu frames\n", frames);
 
   return 0;
 }
