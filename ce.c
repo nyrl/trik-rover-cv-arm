@@ -226,7 +226,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
 
   Memory_cacheWbInv(_ce->m_srcBuffer, _ce->m_srcBufferSize); // invalidate and flush *whole* cache, not only written portion, just in case
   Memory_cacheInv(_ce->m_dstBuffer, _ce->m_dstBufferSize); // invalidate *whole* cache, not only expected portion, just in case
-  Memory_cacheInv(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize); // invalidate *whole* cache, not only expected portion, just in case
+  Memory_cacheInv(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize);
 
   XDAS_Int32 processResult = VIDTRANSCODE_process(_ce->m_vidtranscodeHandle, &tcInBufDesc, &tcOutBufDesc, &tcInArgs, &tcOutArgs);
   if (processResult != IVIDTRANSCODE_EOK)
@@ -236,10 +236,12 @@ static int do_transcodeFrame(CodecEngine* _ce,
     return EILSEQ;
   }
 
+#if 0 // It seems to far that this call is not required at all
   if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[0].accessMask))
-    Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize); // dunno why, specification says it must be (likely, no-op) written-back
+    Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize);
   if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[1].accessMask))
-    Memory_cacheWb(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize); // dunno why, specification says it must be (likely, no-op) written-back
+    Memory_cacheWb(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize);
+#endif
 
   if (tcOutArgs.encodedBuf[0].bufSize > _dstFrameSize)
   {
@@ -260,7 +262,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
 
   const char* dspInfo = _ce->m_dstInfoBuffer;
   if (dspInfo && dspInfo[0] != '\0')
-    fprintf(stderr, "DSP info %s\n", dspInfo);
+    fprintf(stderr, "DSP info: %s\n", dspInfo);
 
   return 0;
 }
