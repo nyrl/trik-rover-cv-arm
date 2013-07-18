@@ -75,8 +75,8 @@ REPO_PATH = \
 	$(EXTRA_PACKAGES_DIR)
 
 
-#PROFILE = release
-PROFILE = debug
+PROFILE = release
+#PROFILE = debug
 
 #
 #  ======== common defines ========

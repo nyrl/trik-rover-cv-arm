@@ -26,8 +26,7 @@ static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBu
 {
   memset(&_ce->m_allocParams, 0, sizeof(_ce->m_allocParams));
   _ce->m_allocParams.type = Memory_CONTIGPOOL;
-#warning TODO check - maybe Memory_CACHED?
-  _ce->m_allocParams.flags = Memory_NONCACHED;
+  _ce->m_allocParams.flags = Memory_CACHED;
   _ce->m_allocParams.align = BUFALIGN;
   _ce->m_allocParams.seg = 0;
 
@@ -176,7 +175,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
   memset(&tcInArgs, 0, sizeof(tcInArgs));
   tcInArgs.size = sizeof(tcInArgs);
   tcInArgs.numBytes = _srcFrameSize;
-  tcInArgs.inputID = 0;
+  tcInArgs.inputID = 1; // must be non-zero, otherwise caching issues appear
 
   VIDTRANSCODE_OutArgs tcOutArgs;
   memset(&tcOutArgs,    0, sizeof(tcOutArgs));
@@ -200,7 +199,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
 
   memcpy(_ce->m_srcBuffer, _srcFramePtr, _srcFrameSize);
 
-  Memory_cacheWbInv(_ce->m_srcBuffer, _ce->m_srcBufferSize); // invalidate *whole* cache, not only written portion, just in case
+  Memory_cacheWbInv(_ce->m_srcBuffer, _ce->m_srcBufferSize); // invalidate and flush *whole* cache, not only written portion, just in case
   Memory_cacheInv(_ce->m_dstBuffer, _ce->m_dstBufferSize); // invalidate *whole* cache, not only expected portion, just in case
 
   XDAS_Int32 processResult = VIDTRANSCODE_process(_ce->m_vidtranscodeHandle, &tcInBufDesc, &tcOutBufDesc, &tcInArgs, &tcOutArgs);
@@ -212,7 +211,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
   }
 
   if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[0].accessMask))
-    Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize); // write-back *whole* cache, not only modified portion, just in case
+    Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize); // dunno why, specification says it must be (likely, no-op) written-back
 
   if (tcOutArgs.encodedBuf[0].bufSize > _dstFrameSize)
   {
