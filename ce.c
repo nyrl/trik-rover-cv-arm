@@ -43,6 +43,22 @@ static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBu
   {
     fprintf(stderr, "Memory_alloc(dst, %zu) failed\n", _ce->m_dstBufferSize);
     _ce->m_dstBufferSize = 0;
+
+    Memory_free(_ce->m_srcBuffer, _ce->m_srcBufferSize, &_ce->m_allocParams);
+    _ce->m_srcBuffer = NULL;
+    _ce->m_srcBufferSize = 0;
+    return ENOMEM;
+  }
+
+  _ce->m_dstInfoBufferSize = ALIGN_UP(1000, BUFALIGN);
+  if ((_ce->m_dstInfoBuffer = Memory_alloc(_ce->m_dstInfoBufferSize, &_ce->m_allocParams)) == NULL)
+  {
+    fprintf(stderr, "Memory_alloc(dst, %zu) failed\n", _ce->m_dstInfoBufferSize);
+    _ce->m_dstInfoBufferSize = 0;
+
+    Memory_free(_ce->m_dstBuffer, _ce->m_dstBufferSize, &_ce->m_allocParams);
+    _ce->m_dstBuffer = NULL;
+    _ce->m_dstBufferSize = 0;
     Memory_free(_ce->m_srcBuffer, _ce->m_srcBufferSize, &_ce->m_allocParams);
     _ce->m_srcBuffer = NULL;
     _ce->m_srcBufferSize = 0;
@@ -54,6 +70,13 @@ static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBu
 
 static int do_memoryFree(CodecEngine* _ce)
 {
+  if (_ce->m_dstInfoBuffer != NULL)
+  {
+    Memory_free(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize, &_ce->m_allocParams);
+    _ce->m_dstInfoBuffer = NULL;
+    _ce->m_dstInfoBufferSize = 0;
+  }
+
   if (_ce->m_dstBuffer != NULL)
   {
     Memory_free(_ce->m_dstBuffer, _ce->m_dstBufferSize, &_ce->m_allocParams);
@@ -163,7 +186,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
                              const void* _srcFramePtr, size_t _srcFrameSize,
                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed)
 {
-  if (_ce->m_srcBuffer == NULL || _ce->m_dstBuffer == NULL)
+  if (_ce->m_srcBuffer == NULL || _ce->m_dstBuffer == NULL || _ce->m_dstInfoBuffer == NULL)
     return ENOTCONN;
   if (_srcFramePtr == NULL || _dstFramePtr == NULL)
     return EINVAL;
@@ -189,18 +212,21 @@ static int do_transcodeFrame(CodecEngine* _ce,
 
   XDM_BufDesc tcOutBufDesc;
   memset(&tcOutBufDesc, 0, sizeof(tcOutBufDesc));
-  XDAS_Int8* tcOutBufDesc_bufs[1];
-  XDAS_Int32 tcOutBufDesc_bufSizes[1];
-  tcOutBufDesc.numBufs = 1;
+  XDAS_Int8* tcOutBufDesc_bufs[2];
+  XDAS_Int32 tcOutBufDesc_bufSizes[2];
+  tcOutBufDesc.numBufs = 2;
   tcOutBufDesc.bufs = tcOutBufDesc_bufs;
   tcOutBufDesc.bufs[0] = _ce->m_dstBuffer;
+  tcOutBufDesc.bufs[1] = _ce->m_dstInfoBuffer;
   tcOutBufDesc.bufSizes = tcOutBufDesc_bufSizes;
   tcOutBufDesc.bufSizes[0] = _dstFrameSize;
+  tcOutBufDesc.bufSizes[1] = _ce->m_dstInfoBufferSize;
 
   memcpy(_ce->m_srcBuffer, _srcFramePtr, _srcFrameSize);
 
   Memory_cacheWbInv(_ce->m_srcBuffer, _ce->m_srcBufferSize); // invalidate and flush *whole* cache, not only written portion, just in case
   Memory_cacheInv(_ce->m_dstBuffer, _ce->m_dstBufferSize); // invalidate *whole* cache, not only expected portion, just in case
+  Memory_cacheInv(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize); // invalidate *whole* cache, not only expected portion, just in case
 
   XDAS_Int32 processResult = VIDTRANSCODE_process(_ce->m_vidtranscodeHandle, &tcInBufDesc, &tcOutBufDesc, &tcInArgs, &tcOutArgs);
   if (processResult != IVIDTRANSCODE_EOK)
@@ -212,6 +238,8 @@ static int do_transcodeFrame(CodecEngine* _ce,
 
   if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[0].accessMask))
     Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize); // dunno why, specification says it must be (likely, no-op) written-back
+  if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[1].accessMask))
+    Memory_cacheWb(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize); // dunno why, specification says it must be (likely, no-op) written-back
 
   if (tcOutArgs.encodedBuf[0].bufSize > _dstFrameSize)
   {
@@ -229,6 +257,10 @@ static int do_transcodeFrame(CodecEngine* _ce,
     *_dstFrameUsed = tcOutArgs.encodedBuf[0].bufSize;
 
   memcpy(_dstFramePtr, _ce->m_dstBuffer, *_dstFrameUsed);
+
+  const char* dspInfo = _ce->m_dstInfoBuffer;
+  if (dspInfo && dspInfo[0] != '\0')
+    fprintf(stderr, "DSP info %s\n", dspInfo);
 
   return 0;
 }
