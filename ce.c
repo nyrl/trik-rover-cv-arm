@@ -210,8 +210,11 @@ static int do_transcodeFrame(CodecEngine* _ce,
     return EILSEQ;
   }
 
+#warning Remove me after a while if everything is fine
+#if 0 // does not seems to be needed according to notes in CE skeletons (Wb is done by DSP side, not ARM)
   if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[0].accessMask))
-    Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize); // dunno why, specification says it must be (likely, no-op) written-back
+    Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize);
+#endif
 
   if (tcOutArgs.encodedBuf[0].bufSize > _dstFrameSize)
   {
