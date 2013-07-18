@@ -130,7 +130,7 @@ static int do_setupCodec(CodecEngine* _ce, const char* _codecName,
   TRIK_VIDTRANSCODE_RESAMPLE_Params ceParams;
   memset(&ceParams, 0, sizeof(ceParams));
   ceParams.base.size = sizeof(ceParams);
-  ceParams.base.numOutputStreams = 1;
+  ceParams.base.numOutputStreams = 2;
   ceParams.base.formatInput = do_convertPixelFormat(_ce, _srcFormat);
   ceParams.base.formatOutput[0] = do_convertPixelFormat(_ce, _dstFormat);
   ceParams.base.maxHeightInput = _srcHeight;
