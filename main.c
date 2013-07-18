@@ -350,9 +350,13 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst)
     }
 
     size_t frameDstUsed = frameDstSize;
+    int targetX;
+    int targetY;
+    int targetMass;
     if ((res = codecEngineTranscodeFrame(_ce,
                                          frameSrcPtr, frameSrcSize,
-                                         frameDstPtr, frameDstSize, &frameDstUsed)) != 0)
+                                         frameDstPtr, frameDstSize, &frameDstUsed,
+                                         &targetX, &targetY, &targetMass)) != 0)
     {
       fprintf(stderr, "codecEngineTranscodeFrame(%p[%zu] -> %p[%zu]) failed: %d\n",
               frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, res);
@@ -360,8 +364,12 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst)
     }
 
     if (s_cfgVerbose)
+    {
       fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
               frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, frameDstUsed);
+      if (targetMass > 0)
+        fprintf(stderr, "Target detected at %d x %d @ %d\n", targetX, targetY, targetMass);
+    }
 
     if ((res = fbOutputPutFrame(_fbDst)) != 0)
     {

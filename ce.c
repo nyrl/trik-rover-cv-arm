@@ -184,7 +184,8 @@ static int do_releaseCodec(CodecEngine* _ce)
 
 static int do_transcodeFrame(CodecEngine* _ce,
                              const void* _srcFramePtr, size_t _srcFrameSize,
-                             void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed)
+                             void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
+                             int* _targetX, int* _targetY, int* _targetMass)
 {
   if (_ce->m_srcBuffer == NULL || _ce->m_dstBuffer == NULL || _ce->m_dstInfoBuffer == NULL)
     return ENOTCONN;
@@ -260,9 +261,16 @@ static int do_transcodeFrame(CodecEngine* _ce,
 
   memcpy(_dstFramePtr, _ce->m_dstBuffer, *_dstFrameUsed);
 
+
   const char* dspInfo = _ce->m_dstInfoBuffer;
   if (dspInfo && dspInfo[0] != '\0')
-    fprintf(stderr, "DSP info: %s\n", dspInfo);
+    sscanf(dspInfo, "%i x %i %i", _targetX, _targetY, _targetMass);
+  else
+  {
+    *_targetX = 0;
+    *_targetY = 0;
+    *_targetMass = -1;
+  }
 
   return 0;
 }
@@ -418,15 +426,16 @@ int codecEngineStop(CodecEngine* _ce)
 
 int codecEngineTranscodeFrame(CodecEngine* _ce,
                               const void* _srcFramePtr, size_t _srcFrameSize,
-                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed)
+                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
+                              int* _targetX, int* _targetY, int* _targetMass)
 {
-  if (_ce == NULL)
+  if (_ce == NULL || _targetX == NULL || _targetY == NULL || _targetMass == NULL)
     return EINVAL;
 
   if (_ce->m_handle == NULL)
     return ENOTCONN;
 
-  return do_transcodeFrame(_ce, _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, _dstFrameUsed);
+  return do_transcodeFrame(_ce, _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, _dstFrameUsed, _targetX, _targetY, _targetMass);
 }
 
 int codecEngineReportLoad(CodecEngine* _ce)

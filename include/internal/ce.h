@@ -56,7 +56,9 @@ int codecEngineStop(CodecEngine* _ce);
 
 int codecEngineTranscodeFrame(CodecEngine* _ce,
                               const void* _srcFramePtr, size_t _srcFrameSize,
-                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed);
+                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
+                              int* _targetX, int* _targetY, int* _targetMass);
+
 
 int codecEngineReportLoad(CodecEngine* _ce);
 
