@@ -2,6 +2,7 @@
 #define TRIK_V4L2_DSP_FB_INTERNAL_ROVER_H_
 
 #include <stdbool.h>
+#include <time.h>
 
 
 #ifdef __cplusplus
@@ -79,6 +80,17 @@ typedef struct RoverOutput
   RoverControlChasis m_ctrlChasis;
   RoverControlHand   m_ctrlHand;
   RoverControlArm    m_ctrlArm;
+
+  enum State
+  {
+    StatePreparing,
+    StateSearching,
+    StateTracking,
+    StateSqueezing,
+    StateReleasing
+  } m_state;
+  struct timespec m_stateEntryTime;
+
 } RoverOutput;
 
 

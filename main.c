@@ -44,8 +44,8 @@ static FBConfig s_cfgFBOutput = { "/dev/fb0" };
 static RoverConfig s_cfgRoverOutput = { { "/sys/class/pwm/ecap.1/duty_ns",     2300000, 1500000, 700000 }, //left
                                         { "/sys/class/pwm/ecap.2/duty_ns",     2300000, 1500000, 700000 }, //right
                                         { "/sys/class/pwm/ehrpwm.1:0/duty_ns", 2300000, 1500000, 700000 }, //up-down
-                                        { "/sys/class/pwm/ecap.0/duty_ns",     700000, 1500000, 2300000 }, //squeeze
-                                        0, 30, 1000 };
+                                        { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1500000, 700000 }, //squeeze
+                                        0, 50, 600 };
 
 static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RoverOutput* _rover);
 
