@@ -47,6 +47,7 @@ typedef struct RoverControlChasis
   int         m_lastSpeed; // -100..100
   int         m_lastYaw;   // -100..100
   int         m_zeroX;
+  int         m_zeroY;
   int         m_zeroMass;
 } RoverControlChasis;
 
@@ -61,6 +62,9 @@ typedef struct RoverControlHand
 typedef struct RoverControlArm
 {
   RoverMotor* m_motor;
+  int         m_zeroX;
+  int         m_zeroY;
+  int         m_zeroMass;
 } RoverControlArm;
 
 typedef struct RoverOutput

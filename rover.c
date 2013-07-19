@@ -116,7 +116,7 @@ static int do_roverMotorSetPower(RoverOutput* _rover,
 
   int pwm;
 
-  if (_power == 0)
+  if (_power >= -10 && _power <= -10)
     pwm = _motor->m_powerNeutral;
   else if (_power < 0)
   {
@@ -153,6 +153,7 @@ int do_roverCtrlChasisSetup(RoverOutput* _rover, const RoverConfig* _config)
   chasis->m_lastSpeed = 0;
   chasis->m_lastYaw = 0;
   chasis->m_zeroX = _config->m_zeroX;
+  chasis->m_zeroY = _config->m_zeroY;
   chasis->m_zeroMass = _config->m_zeroMass;
 
   return 0;
@@ -174,6 +175,9 @@ int do_roverCtrlArmSetup(RoverOutput* _rover, const RoverConfig* _config)
   RoverControlArm* arm = &_rover->m_ctrlArm;
 
   arm->m_motor      = &_rover->m_motor4;
+  arm->m_zeroX = _config->m_zeroX;
+  arm->m_zeroY = _config->m_zeroY;
+  arm->m_zeroMass = _config->m_zeroMass;
 
   return 0;
 }
@@ -201,9 +205,6 @@ int do_roverCtrlArmStart(RoverOutput* _rover)
 {
   RoverControlArm* arm = &_rover->m_ctrlArm;
 
-#warning TODO arm control
-  (void)arm;
-
   return 0;
 }
 
@@ -211,35 +212,46 @@ int do_roverCtrlArmStart(RoverOutput* _rover)
 int do_roverCtrlChasisTarget(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass)
 {
   RoverControlChasis* chasis = &_rover->m_ctrlChasis;
+  int yaw;
+  int speed;
+  int ydiv = 1;
 
-  int yaw = (_targetX - chasis->m_zeroX);
-  if (   (yaw < 0 && chasis->m_lastYaw < 0)
-      || (yaw > 0 && chasis->m_lastYaw > 0))
-    yaw += chasis->m_lastYaw/5;
-
-  int speed = (chasis->m_zeroMass - _targetMass);
-  if (speed < 0)
-    speed /= 100;
-  else
-    speed /= 50;
-
-  if (   (speed < 0 && chasis->m_lastSpeed < 0)
-      || (speed > 0 && chasis->m_lastSpeed > 0))
+  if (_targetMass > 0)
   {
-    int speedAdj = chasis->m_lastSpeed/10;
-    if (speedAdj < -10)
-      speed += -10;
-    else if (chasis->m_lastSpeed/10 > 10)
-      speed += 10;
+    yaw = _targetX - chasis->m_zeroX;
+    if (   (yaw < 0 && chasis->m_lastYaw < 0)
+        || (yaw > 0 && chasis->m_lastYaw > 0))
+      yaw += chasis->m_lastYaw/5;
+
+    if (_targetMass < chasis->m_zeroMass)
+    {
+      speed = (100 - (100*_targetMass) / chasis->m_zeroMass);
+      if (speed > 50)
+        speed = 50 + speed/2;
+    }
     else
-      speed += speedAdj;
+      speed = (100 - (100*_targetMass) / chasis->m_zeroMass)/2;
+
+    if (   (speed < 0 && chasis->m_lastSpeed < 0)
+        || (speed > 0 && chasis->m_lastSpeed > 0))
+      speed += chasis->m_lastSpeed/10;
+
+    ydiv = _targetY - chasis->m_zeroY;
+    if (ydiv < 0)
+      ydiv = -ydiv;
+    ydiv = 1 + ydiv/15;
+  }
+  else
+  {
+    yaw = 0;
+    speed = 0;
   }
 
   chasis->m_lastYaw = yaw;
   chasis->m_lastSpeed = speed;
 
-  do_roverMotorSetPower(_rover, chasis->m_motorLeft, speed+yaw);
-  do_roverMotorSetPower(_rover, chasis->m_motorRight, speed-yaw);
+  do_roverMotorSetPower(_rover, chasis->m_motorLeft, (speed+yaw)/ydiv);
+  do_roverMotorSetPower(_rover, chasis->m_motorRight, (speed-yaw)/ydiv);
 
   return 0;
 }
@@ -247,11 +259,17 @@ int do_roverCtrlChasisTarget(RoverOutput* _rover, int _targetX, int _targetY, in
 int do_roverCtrlHandTarget(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass)
 {
   RoverControlHand* hand = &_rover->m_ctrlHand;
+  int speed;
 
-  int speed = -(_targetY - hand->m_zeroY);
-  if (   (speed < 0 && hand->m_lastSpeed < 0)
-      || (speed > 0 && hand->m_lastSpeed > 0))
-    speed += hand->m_lastSpeed/5;
+  if (_targetMass > 0)
+  {
+    speed = -(_targetY - hand->m_zeroY);
+    if (   (speed < 0 && hand->m_lastSpeed < 0)
+        || (speed > 0 && hand->m_lastSpeed > 0))
+      speed += hand->m_lastSpeed/5;
+  }
+  else
+    speed = 0;
 
   hand->m_lastSpeed = speed;
 
