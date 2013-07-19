@@ -144,6 +144,134 @@ static int do_roverMotorSetPower(RoverOutput* _rover,
   return 0;
 }
 
+int do_roverCtrlChasisSetup(RoverOutput* _rover, const RoverConfig* _config)
+{
+  RoverControlChasis* chasis = &_rover->m_ctrlChasis;
+
+  chasis->m_motorLeft  = &_rover->m_motor1;
+  chasis->m_motorRight = &_rover->m_motor2;
+  chasis->m_lastSpeed = 0;
+  chasis->m_lastYaw = 0;
+  chasis->m_zeroX = _config->m_zeroX;
+  chasis->m_zeroMass = _config->m_zeroMass;
+
+  return 0;
+}
+
+int do_roverCtrlHandSetup(RoverOutput* _rover, const RoverConfig* _config)
+{
+  RoverControlHand* hand = &_rover->m_ctrlHand;
+
+  hand->m_motor      = &_rover->m_motor3;
+  hand->m_lastSpeed = 0;
+  hand->m_zeroY = _config->m_zeroY;
+
+  return 0;
+}
+
+int do_roverCtrlArmSetup(RoverOutput* _rover, const RoverConfig* _config)
+{
+  RoverControlArm* arm = &_rover->m_ctrlArm;
+
+  arm->m_motor      = &_rover->m_motor4;
+
+  return 0;
+}
+
+int do_roverCtrlChasisStart(RoverOutput* _rover)
+{
+  RoverControlChasis* chasis = &_rover->m_ctrlChasis;
+
+  chasis->m_lastSpeed = 0;
+  chasis->m_lastYaw = 0;
+
+  return 0;
+}
+
+int do_roverCtrlHandStart(RoverOutput* _rover)
+{
+  RoverControlHand* hand = &_rover->m_ctrlHand;
+
+  hand->m_lastSpeed = 0;
+
+  return 0;
+}
+
+int do_roverCtrlArmStart(RoverOutput* _rover)
+{
+  RoverControlArm* arm = &_rover->m_ctrlArm;
+
+#warning TODO arm control
+  (void)arm;
+
+  return 0;
+}
+
+
+int do_roverCtrlChasisTarget(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass)
+{
+  RoverControlChasis* chasis = &_rover->m_ctrlChasis;
+
+  int yaw = (_targetX - chasis->m_zeroX);
+  if (   (yaw < 0 && chasis->m_lastYaw < 0)
+      || (yaw > 0 && chasis->m_lastYaw > 0))
+    yaw += chasis->m_lastYaw/5;
+
+  int speed = (chasis->m_zeroMass - _targetMass);
+  if (speed < 0)
+    speed /= 100;
+  else
+    speed /= 50;
+
+  if (   (speed < 0 && chasis->m_lastSpeed < 0)
+      || (speed > 0 && chasis->m_lastSpeed > 0))
+  {
+    int speedAdj = chasis->m_lastSpeed/10;
+    if (speedAdj < -10)
+      speed += -10;
+    else if (chasis->m_lastSpeed/10 > 10)
+      speed += 10;
+    else
+      speed += speedAdj;
+  }
+
+  chasis->m_lastYaw = yaw;
+  chasis->m_lastSpeed = speed;
+
+  do_roverMotorSetPower(_rover, chasis->m_motorLeft, speed+yaw);
+  do_roverMotorSetPower(_rover, chasis->m_motorRight, speed-yaw);
+
+  return 0;
+}
+
+int do_roverCtrlHandTarget(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass)
+{
+  RoverControlHand* hand = &_rover->m_ctrlHand;
+
+  int speed = -(_targetY - hand->m_zeroY);
+  if (   (speed < 0 && hand->m_lastSpeed < 0)
+      || (speed > 0 && hand->m_lastSpeed > 0))
+    speed += hand->m_lastSpeed/5;
+
+  hand->m_lastSpeed = speed;
+
+  do_roverMotorSetPower(_rover, hand->m_motor, speed);
+
+  return 0;
+}
+
+int do_roverCtrlArmTarget(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass)
+{
+  RoverControlArm* arm = &_rover->m_ctrlArm;
+
+  do_roverMotorSetPower(_rover, arm->m_motor, 0);
+
+#warning TODO arm control
+
+  return 0;
+}
+
+
 
 
 
@@ -169,6 +297,10 @@ int roverOutputOpen(RoverOutput* _rover, const RoverConfig* _config)
 
   if ((res = do_roverOpen(_rover, _config)) != 0)
     return res;
+
+  do_roverCtrlChasisSetup(_rover, _config);
+  do_roverCtrlHandSetup(_rover, _config);
+  do_roverCtrlArmSetup(_rover, _config);
 
   _rover->m_opened = true;
 
@@ -201,6 +333,10 @@ int roverOutputStart(RoverOutput* _rover)
   do_roverMotorSetPower(_rover, &_rover->m_motor3, 0);
   do_roverMotorSetPower(_rover, &_rover->m_motor4, 0);
 
+  do_roverCtrlChasisStart(_rover);
+  do_roverCtrlHandStart(_rover);
+  do_roverCtrlArmStart(_rover);
+
   return 0;
 }
 
@@ -226,9 +362,12 @@ int roverOutputControl(RoverOutput* _rover, int _targetX, int _targetY, int _tar
   if (!_rover->m_opened)
     return ENOTCONN;
 
-#warning TEMPORARY!
-//  do_roverMotorSetPower(_rover, &_rover->m_motor4, _targetX);
-//  do_roverMotorSetPower(_rover, &_rover->m_motor3, _targetY);
+
+#warning TODO state machine: prepare (unsqueeze arm) and woof, run on target, throw out and woof
+  do_roverCtrlChasisTarget(_rover, _targetX, _targetY, _targetMass);
+  do_roverCtrlHandTarget(_rover, _targetX, _targetY, _targetMass);
+  do_roverCtrlArmTarget(_rover, _targetX, _targetY, _targetMass);
+
 
   return 0;
 }

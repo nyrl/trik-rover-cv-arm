@@ -39,6 +39,30 @@ typedef struct RoverMotor
   int m_powerForward;
 } RoverMotor;
 
+typedef struct RoverControlChasis
+{
+  RoverMotor* m_motorLeft;
+  RoverMotor* m_motorRight;
+
+  int         m_lastSpeed; // -100..100
+  int         m_lastYaw;   // -100..100
+  int         m_zeroX;
+  int         m_zeroMass;
+} RoverControlChasis;
+
+typedef struct RoverControlHand
+{
+  RoverMotor* m_motor;
+
+  int         m_lastSpeed; // -100..100
+  int         m_zeroY;
+} RoverControlHand;
+
+typedef struct RoverControlArm
+{
+  RoverMotor* m_motor;
+} RoverControlArm;
+
 typedef struct RoverOutput
 {
   bool       m_opened;
@@ -47,6 +71,10 @@ typedef struct RoverOutput
   RoverMotor m_motor2;
   RoverMotor m_motor3;
   RoverMotor m_motor4;
+
+  RoverControlChasis m_ctrlChasis;
+  RoverControlHand   m_ctrlHand;
+  RoverControlArm    m_ctrlArm;
 } RoverOutput;
 
 
