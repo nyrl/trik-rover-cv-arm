@@ -150,7 +150,8 @@ APP.srcs =                      \
 	main.c                  \
 	ce.c                    \
 	fb.c                    \
-	v4l2.c
+	v4l2.c                  \
+	rover.c
 
 APP.objs = $(addprefix bin/$(PROFILE)/, \
     $(patsubst %.c,%.o$(SUFFIX),$(APP.srcs)))

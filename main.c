@@ -11,6 +11,7 @@
 #include "internal/ce.h"
 #include "internal/fb.h"
 #include "internal/v4l2.h"
+#include "internal/rover.h"
 
 
 
@@ -40,8 +41,13 @@ static bool s_cfgVerbose = false;
 static CodecEngineConfig s_cfgCodecEngine = { "dsp_server.xe674", "vidtranscode_resample" };
 static V4L2Config s_cfgV4L2Input = { "/dev/video0", 640, 480, V4L2_PIX_FMT_YUYV };
 static FBConfig s_cfgFBOutput = { "/dev/fb0" };
+static RoverConfig s_cfgRoverOutput = { { "/sys/class/pwm/ecap.1/duty_ns",     700000, 1500000, 2300000 }, //left
+                                        { "/sys/class/pwm/ecap.2/duty_ns",     700000, 1500000, 2300000 }, //right
+                                        { "/sys/class/pwm/ehrpwm.1:0/duty_ns", 700000, 1500000, 2300000 }, //up-down
+                                        { "/sys/class/pwm/ecap.0/duty_ns",     700000, 1500000, 2300000 }, //squeeze
+                                        0, 0, 2000 };
 
-static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst);
+static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RoverOutput* _rover);
 
 
 static bool parse_args(int _argc, char* const _argv[])
@@ -52,13 +58,32 @@ static bool parse_args(int _argc, char* const _argv[])
   static const char* optstring = "vh";
   static const struct option longopts[] =
   {
-    { "ce-server",		1,	NULL,	0   },
+    { "ce-server",		1,	NULL,	0   }, // 0
     { "ce-codec",		1,	NULL,	0   },
-    { "v4l2-path",		1,	NULL,	0   },
+    { "v4l2-path",		1,	NULL,	0   }, // 2
     { "v4l2-width",		1,	NULL,	0   },
     { "v4l2-height",		1,	NULL,	0   },
     { "v4l2-format",		1,	NULL,	0   },
-    { "fb-path",		1,	NULL,	0   },
+    { "fb-path",		1,	NULL,	0   }, // 6
+    { "rover-m1-path",		1,	NULL,	0   }, // 7
+    { "rover-m1-back",		1,	NULL,	0   },
+    { "rover-m1-neutral",	1,	NULL,	0   },
+    { "rover-m1-forward",	1,	NULL,	0   },
+    { "rover-m2-path",		1,	NULL,	0   }, // 11
+    { "rover-m2-back",		1,	NULL,	0   },
+    { "rover-m2-neutral",	1,	NULL,	0   },
+    { "rover-m2-forward",	1,	NULL,	0   },
+    { "rover-m3-path",		1,	NULL,	0   }, // 15
+    { "rover-m3-back",		1,	NULL,	0   },
+    { "rover-m3-neutral",	1,	NULL,	0   },
+    { "rover-m3-forward",	1,	NULL,	0   },
+    { "rover-m4-path",		1,	NULL,	0   }, // 19
+    { "rover-m4-back",		1,	NULL,	0   },
+    { "rover-m4-neutral",	1,	NULL,	0   },
+    { "rover-m4-forward",	1,	NULL,	0   },
+    { "rover-zero-x",		1,	NULL,	0   }, // 23
+    { "rover-zero-y",		1,	NULL,	0   },
+    { "rover-zero-mass",	1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
   };
@@ -74,6 +99,7 @@ static bool parse_args(int _argc, char* const _argv[])
         {
           case 0: s_cfgCodecEngine.m_serverPath = optarg;	break;
           case 1: s_cfgCodecEngine.m_codecName = optarg;	break;
+
           case 2: s_cfgV4L2Input.m_path = optarg;		break;
           case 3: s_cfgV4L2Input.m_width = atoi(optarg);	break;
           case 4: s_cfgV4L2Input.m_height = atoi(optarg);	break;
@@ -91,7 +117,32 @@ static bool parse_args(int _argc, char* const _argv[])
               return false;
             }
             break;
+
           case 6: s_cfgFBOutput.m_path = optarg;		break;
+
+          case 7:  s_cfgRoverOutput.m_motor1.m_path = optarg;			break;
+          case 8:  s_cfgRoverOutput.m_motor1.m_powerBack = atoi(optarg);	break;
+          case 9:  s_cfgRoverOutput.m_motor1.m_powerNeutral = atoi(optarg);	break;
+          case 10: s_cfgRoverOutput.m_motor1.m_powerForward = atoi(optarg);	break;
+
+          case 11: s_cfgRoverOutput.m_motor2.m_path = optarg;			break;
+          case 12: s_cfgRoverOutput.m_motor2.m_powerBack = atoi(optarg);	break;
+          case 13: s_cfgRoverOutput.m_motor2.m_powerNeutral = atoi(optarg);	break;
+          case 14: s_cfgRoverOutput.m_motor2.m_powerForward = atoi(optarg);	break;
+
+          case 15: s_cfgRoverOutput.m_motor3.m_path = optarg;			break;
+          case 16: s_cfgRoverOutput.m_motor3.m_powerBack = atoi(optarg);	break;
+          case 17: s_cfgRoverOutput.m_motor3.m_powerNeutral = atoi(optarg);	break;
+          case 18: s_cfgRoverOutput.m_motor3.m_powerForward = atoi(optarg);	break;
+
+          case 19: s_cfgRoverOutput.m_motor3.m_path = optarg;			break;
+          case 20: s_cfgRoverOutput.m_motor3.m_powerBack = atoi(optarg);	break;
+          case 21: s_cfgRoverOutput.m_motor3.m_powerNeutral = atoi(optarg);	break;
+          case 22: s_cfgRoverOutput.m_motor3.m_powerForward = atoi(optarg);	break;
+
+          case 23: s_cfgRoverOutput.m_zeroX    = atoi(optarg);	break;
+          case 24: s_cfgRoverOutput.m_zeroY    = atoi(optarg);	break;
+          case 25: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
 
           default:
             return false;
@@ -129,6 +180,13 @@ int main(int _argc, char* const _argv[])
                     "   --v4l2-height  <input-height>\n"
                     "   --v4l2-format  <input-pixel-format>\n"
                     "   --fb-path      <output-device-path>\n"
+                    "   --rover-mN-path        <rover-motorN-path>\n"
+                    "   --rover-mN-back        <rover-motorN-full-back-power>\n"
+                    "   --rover-mN-neutral     <rover-motorN-neutral-power>\n"
+                    "   --rover-mN-forward     <rover-motorN-full-forward-power>\n"
+                    "   --rover-zero-x         <rover-center-X>\n"
+                    "   --rover-zero-y         <rover-center-Y>\n"
+                    "   --rover-zero-mass      <rover-center-mass>\n"
                     "   --verbose\n"
                     "   --help\n",
             _argv[0]);
@@ -158,6 +216,13 @@ int main(int _argc, char* const _argv[])
     goto exit_v4l2_fini;
   }
 
+  if ((res = roverOutputInit(s_cfgVerbose)) != 0)
+  {
+    fprintf(stderr, "roverOutputInit() failed: %d\n", res);
+    exit_code = EX_SOFTWARE;
+    goto exit_fb_fini;
+  }
+
 
   CodecEngine codecEngine;
   memset(&codecEngine, 0, sizeof(codecEngine));
@@ -165,7 +230,7 @@ int main(int _argc, char* const _argv[])
   {
     fprintf(stderr, "codecEngineOpen() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
-    goto exit_fb_fini;
+    goto exit_rover_fini;
   }
 
   V4L2Input v4l2Src;
@@ -188,6 +253,19 @@ int main(int _argc, char* const _argv[])
     goto exit_v4l2_close;
   }
 
+  RoverOutput rover;
+  memset(&rover, 0, sizeof(rover));
+  rover.m_motor1.m_fd = -1;
+  rover.m_motor2.m_fd = -1;
+  rover.m_motor3.m_fd = -1;
+  rover.m_motor4.m_fd = -1;
+  if ((res = roverOutputOpen(&rover, &s_cfgRoverOutput)) != 0)
+  {
+    fprintf(stderr, "roverOutputOpen() failed: %d\n", res);
+    exit_code = EX_IOERR;
+    goto exit_fb_close;
+  }
+
 
   size_t srcWidth, srcHeight, srcLineLength, srcImageSize;
   size_t dstWidth, dstHeight, dstLineLength, dstImageSize;
@@ -196,13 +274,13 @@ int main(int _argc, char* const _argv[])
   {
     fprintf(stderr, "v4l2InputGetFormat() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
-    goto exit_fb_close;
+    goto exit_rover_close;
   }
   if ((res = fbOutputGetFormat(&fbDst, &dstWidth, &dstHeight, &dstLineLength, &dstImageSize, &dstFormat)) != 0)
   {
     fprintf(stderr, "fbOutputGetFormat() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
-    goto exit_fb_close;
+    goto exit_rover_close;
   }
   if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine,
                               srcWidth, srcHeight, srcLineLength, srcImageSize, srcFormat,
@@ -210,7 +288,7 @@ int main(int _argc, char* const _argv[])
   {
     fprintf(stderr, "codecEngineStart() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
-    goto exit_fb_close;
+    goto exit_rover_close;
   }
 
   if ((res = v4l2InputStart(&v4l2Src)) != 0)
@@ -225,6 +303,13 @@ int main(int _argc, char* const _argv[])
     fprintf(stderr, "fbOutputStart() failed: %d\n", res);
     exit_code = EX_IOERR;
     goto exit_v4l2_stop;
+  }
+
+  if ((res = roverOutputStart(&rover)) != 0)
+  {
+    fprintf(stderr, "roverOutputStart() failed: %d\n", res);
+    exit_code = EX_IOERR;
+    goto exit_fb_stop;
   }
 
 
@@ -254,7 +339,7 @@ int main(int _argc, char* const _argv[])
     }
 
 
-    if ((res = mainLoop(&codecEngine, &v4l2Src, &fbDst)) != 0)
+    if ((res = mainLoop(&codecEngine, &v4l2Src, &fbDst, &rover)) != 0)
     {
       fprintf(stderr, "mainLoop() failed: %d\n", res);
       exit_code = EX_SOFTWARE;
@@ -264,7 +349,11 @@ int main(int _argc, char* const _argv[])
   printf("Left main loop\n");
 
 
-//exit_fb_stop:
+//exit_rover_stop:
+  if ((res = roverOutputStop(&rover)) != 0)
+    fprintf(stderr, "roverOutputStop() failed: %d\n", res);
+
+exit_fb_stop:
   if ((res = fbOutputStop(&fbDst)) != 0)
     fprintf(stderr, "fbOutputStop() failed: %d\n", res);
 
@@ -276,6 +365,10 @@ exit_ce_stop:
   if ((res = codecEngineStop(&codecEngine)) != 0)
     fprintf(stderr, "codecEngineStop() failed: %d\n", res);
 
+
+exit_rover_close:
+  if ((res = roverOutputClose(&rover)) != 0)
+    fprintf(stderr, "roverOutputClose() failed: %d\n", res);
 
 exit_fb_close:
   if ((res = fbOutputClose(&fbDst)) != 0)
@@ -289,6 +382,10 @@ exit_ce_close:
   if ((res = codecEngineClose(&codecEngine)) != 0)
     fprintf(stderr, "codecEngineClose() failed: %d\n", res);
 
+
+exit_rover_fini:
+  if ((res = roverOutputFini()) != 0)
+    fprintf(stderr, "roverOutputFini() failed: %d\n", res);
 
 exit_fb_fini:
   if ((res = fbOutputFini()) != 0)
@@ -310,7 +407,7 @@ exit:
 
 
 
-static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst)
+static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RoverOutput* _rover)
 {
   int res;
 
@@ -382,12 +479,15 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst)
       fprintf(stderr, "v4l2InputPutFrame() failed: %d\n", res);
       return res;
     }
+
+    if ((res = roverOutputControl(_rover, targetX, targetY, targetMass)) != 0)
+    {
+      fprintf(stderr, "roverOutputControl() failed: %d\n", res);
+      return res;
+    }
   }
 
   return 0;
 }
-
-
-
 
 
