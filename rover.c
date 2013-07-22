@@ -278,6 +278,13 @@ static int powerIntegral(int _power, int _lastPower, int _percent)
   if (sign(_power) == sign(_lastPower))
     _power += (_lastPower * _percent) / 100 + sign(_lastPower);
 
+  if (abs(_power) < 16)
+    _power += (rand()%8+rand()%8+rand()%8+rand()%8) * sign(_power);
+  else if (abs(_power) < 24)
+    _power += (rand()%8+rand()%8+rand()%8) * sign(_power);
+  else if (abs(_power) < 32)
+    _power += (rand()%8+rand()%8) * sign(_power);
+
   return _power;
 }
 
@@ -313,11 +320,14 @@ static int do_roverCtrlChasisTracking(RoverOutput* _rover, int _targetX, int _ta
   yaw = powerIntegral(yaw, chasis->m_lastYaw, 10);
 
   speed = powerProportional(_targetMass, 0, chasis->m_zeroMass, 10000); // back/forward based on ball size
+
   backSpeed = powerProportional(_targetY, -100, chasis->m_zeroY, 100); // move back/forward if ball leaves range
-  if (backSpeed < -50 || backSpeed > 50)
-    speed = speed/4 + abs(backSpeed);
-  else if (backSpeed < -25 || backSpeed > 25)
-    speed = speed + abs(backSpeed);
+  if (backSpeed < -80 || backSpeed > 50)
+    speed = speed/4 + 2*abs(backSpeed);
+  else if (backSpeed < -70 || backSpeed > 35)
+    speed = speed/2 + abs(backSpeed);
+  else if (backSpeed < -60 || backSpeed > 20)
+    speed = speed/2;
   speed = powerIntegral(speed, chasis->m_lastSpeed, 10);
 
   chasis->m_lastYaw = yaw;
@@ -353,16 +363,14 @@ static int do_roverCtrlArmTracking(RoverOutput* _rover, int _targetX, int _targe
   int diffX = powerProportional(_targetX, -100, arm->m_zeroX, 100);
   int diffY = powerProportional(_targetY, -100, arm->m_zeroY, 100);
   int diffMass = powerProportional(_targetMass, 0, arm->m_zeroMass, 10000);
+
   fprintf(stderr, "%d %d %d  (%d->%d %d->%d %d->%d)\n",
           diffX, diffY, diffMass, _targetX, arm->m_zeroX, _targetY, arm->m_zeroY, _targetMass, arm->m_zeroMass);
 
   if (   (diffX >= -10 && diffX <= 10)
       && (diffY >= -10 && diffY <= 10)
       && (diffMass >= -10 && diffMass <= 10))
-  {
-    fprintf(stderr, "#");
-    fflush(stderr);
-  }
+    fprintf(stderr, "###\n");
   else
     _rover->m_stateEntryTime.tv_sec = 0;
 
