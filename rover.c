@@ -633,7 +633,7 @@ int roverOutputControl(RoverOutput* _rover, int _targetX, int _targetY, int _tar
         _rover->m_state = StateSearching;
         _rover->m_stateEntryTime.tv_sec = 0;
       }
-      else if (msPassed > 5000)
+      else if (msPassed > 2000)
       {
         fprintf(stderr, "*** LOCKED TARGET ***\n");
         _rover->m_state = StateSqueezing;
