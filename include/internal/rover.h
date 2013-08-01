@@ -10,6 +10,10 @@ extern "C" {
 #endif // __cplusplus
 
 
+typedef struct RoverConfigMotorMsp
+{
+} RoverConfigMotorMsp;
+
 typedef struct RoverConfigMotor
 {
   const char* m_path;
@@ -21,16 +25,23 @@ typedef struct RoverConfigMotor
 
 typedef struct RoverConfig // what user wants to set
 {
+  RoverConfigMotorMsp m_motorMsp1;
+  RoverConfigMotorMsp m_motorMsp2;
   RoverConfigMotor m_motor1;
   RoverConfigMotor m_motor2;
   RoverConfigMotor m_motor3;
-  RoverConfigMotor m_motor4;
 
   int m_zeroX;
   int m_zeroY;
   int m_zeroMass;
 } RoverConfig;
 
+
+
+
+typedef struct RoverMotorMsp
+{
+} RoverMotorMsp;
 
 typedef struct RoverMotor
 {
@@ -42,8 +53,8 @@ typedef struct RoverMotor
 
 typedef struct RoverControlChasis
 {
-  RoverMotor* m_motorLeft;
-  RoverMotor* m_motorRight;
+  RoverMotorMsp* m_motorLeft;
+  RoverMotorMsp* m_motorRight;
 
   int         m_lastSpeed; // -100..100
   int         m_lastYaw;   // -100..100
@@ -54,7 +65,8 @@ typedef struct RoverControlChasis
 
 typedef struct RoverControlHand
 {
-  RoverMotor* m_motor;
+  RoverMotor* m_motor1;
+  RoverMotor* m_motor2;
 
   int         m_lastSpeed; // -100..100
   int         m_zeroY;
@@ -72,10 +84,11 @@ typedef struct RoverOutput
 {
   bool       m_opened;
 
+  RoverMotorMsp m_motorMsp1;
+  RoverMotorMsp m_motorMsp2;
   RoverMotor m_motor1;
   RoverMotor m_motor2;
   RoverMotor m_motor3;
-  RoverMotor m_motor4;
 
   RoverControlChasis m_ctrlChasis;
   RoverControlHand   m_ctrlHand;

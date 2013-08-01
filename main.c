@@ -39,12 +39,13 @@ static void sigactions_setup()
 
 static bool s_cfgVerbose = false;
 static CodecEngineConfig s_cfgCodecEngine = { "dsp_server.xe674", "vidtranscode_resample" };
-static V4L2Config s_cfgV4L2Input = { "/dev/video0", 640, 480, V4L2_PIX_FMT_YUYV };
+static V4L2Config s_cfgV4L2Input = { "/dev/video0", 352, 288, V4L2_PIX_FMT_YUYV };
 static FBConfig s_cfgFBOutput = { "/dev/fb0" };
-static RoverConfig s_cfgRoverOutput = { { "/sys/class/pwm/ecap.1/duty_ns",     2300000, 1500000, 700000 }, //left
-                                        { "/sys/class/pwm/ecap.2/duty_ns",     2300000, 1500000, 700000 }, //right
-                                        { "/sys/class/pwm/ehrpwm.1:0/duty_ns", 2300000, 1500000, 700000 }, //up-down
-                                        { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1500000, 700000 }, //squeeze
+static RoverConfig s_cfgRoverOutput = { {}, //msp left
+                                        {}, //msp right
+                                        { "/sys/class/pwm/ecap.1/duty_ns",     2300000, 1500000, 700000  }, //up-down m1
+                                        { "/sys/class/pwm/ecap.2/duty_ns",     700000,  1500000, 2300000 }, //up-down m2
+                                        { "/sys/class/pwm/ehrpwm.1:0/duty_ns", 2300000, 1500000, 700000 }, //squeeze
                                         0, 50, 600 };
 
 static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RoverOutput* _rover);
@@ -77,10 +78,6 @@ static bool parse_args(int _argc, char* const _argv[])
     { "rover-m3-back",		1,	NULL,	0   },
     { "rover-m3-neutral",	1,	NULL,	0   },
     { "rover-m3-forward",	1,	NULL,	0   },
-    { "rover-m4-path",		1,	NULL,	0   }, // 19
-    { "rover-m4-back",		1,	NULL,	0   },
-    { "rover-m4-neutral",	1,	NULL,	0   },
-    { "rover-m4-forward",	1,	NULL,	0   },
     { "rover-zero-x",		1,	NULL,	0   }, // 23
     { "rover-zero-y",		1,	NULL,	0   },
     { "rover-zero-mass",	1,	NULL,	0   },
@@ -135,14 +132,9 @@ static bool parse_args(int _argc, char* const _argv[])
           case 17: s_cfgRoverOutput.m_motor3.m_powerNeutral = atoi(optarg);	break;
           case 18: s_cfgRoverOutput.m_motor3.m_powerForward = atoi(optarg);	break;
 
-          case 19: s_cfgRoverOutput.m_motor3.m_path = optarg;			break;
-          case 20: s_cfgRoverOutput.m_motor3.m_powerBack = atoi(optarg);	break;
-          case 21: s_cfgRoverOutput.m_motor3.m_powerNeutral = atoi(optarg);	break;
-          case 22: s_cfgRoverOutput.m_motor3.m_powerForward = atoi(optarg);	break;
-
-          case 23: s_cfgRoverOutput.m_zeroX    = atoi(optarg);	break;
-          case 24: s_cfgRoverOutput.m_zeroY    = atoi(optarg);	break;
-          case 25: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
+          case 19: s_cfgRoverOutput.m_zeroX    = atoi(optarg);	break;
+          case 20: s_cfgRoverOutput.m_zeroY    = atoi(optarg);	break;
+          case 21: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
 
           default:
             return false;
@@ -258,7 +250,6 @@ int main(int _argc, char* const _argv[])
   rover.m_motor1.m_fd = -1;
   rover.m_motor2.m_fd = -1;
   rover.m_motor3.m_fd = -1;
-  rover.m_motor4.m_fd = -1;
   if ((res = roverOutputOpen(&rover, &s_cfgRoverOutput)) != 0)
   {
     fprintf(stderr, "roverOutputOpen() failed: %d\n", res);
