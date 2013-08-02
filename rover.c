@@ -47,9 +47,11 @@ static int do_roverOpenMotor(RoverOutput* _rover,
     return res;
   }
 
-  _motor->m_powerBack    = _config->m_powerBack;
-  _motor->m_powerNeutral = _config->m_powerNeutral;
-  _motor->m_powerForward = _config->m_powerForward;
+  _motor->m_powerBackFull    = _config->m_powerBackFull;
+  _motor->m_powerBackZero    = _config->m_powerBackZero;
+  _motor->m_powerNeutral     = _config->m_powerNeutral;
+  _motor->m_powerForwardZero = _config->m_powerForwardZero;
+  _motor->m_powerForwardFull = _config->m_powerForwardFull;
 
   return 0;
 }
@@ -149,16 +151,16 @@ static int do_roverMotorSetPower(RoverOutput* _rover,
   else if (_power < 0)
   {
     if (_power < -100)
-      pwm = _motor->m_powerBack;
+      pwm = _motor->m_powerBackFull;
     else
-      pwm = _motor->m_powerNeutral + ((_motor->m_powerBack-_motor->m_powerNeutral)*(-_power))/100;
+      pwm = _motor->m_powerBackZero + ((_motor->m_powerBackFull-_motor->m_powerBackZero)*(-_power))/100;
   }
   else
   {
     if (_power > 100)
-      pwm = _motor->m_powerForward;
+      pwm = _motor->m_powerForwardFull;
     else
-      pwm = _motor->m_powerNeutral + ((_motor->m_powerForward-_motor->m_powerNeutral)*_power)/100;
+      pwm = _motor->m_powerForwardZero + ((_motor->m_powerForwardFull-_motor->m_powerForwardZero)*_power)/100;
   }
 
   if (dprintf(_motor->m_fd, "%d\n", pwm) < 0)

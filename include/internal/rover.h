@@ -17,9 +17,11 @@ typedef struct RoverConfigMotorMsp
 typedef struct RoverConfigMotor
 {
   const char* m_path;
-  int m_powerBack;
+  int m_powerBackFull;
+  int m_powerBackZero;
   int m_powerNeutral;
-  int m_powerForward;
+  int m_powerForwardZero;
+  int m_powerForwardFull;
 } RoverConfigMotor;
 
 
@@ -46,9 +48,11 @@ typedef struct RoverMotorMsp
 typedef struct RoverMotor
 {
   int m_fd;
-  int m_powerBack;
+  int m_powerBackFull;
+  int m_powerBackZero;
   int m_powerNeutral;
-  int m_powerForward;
+  int m_powerForwardZero;
+  int m_powerForwardFull;
 } RoverMotor;
 
 typedef struct RoverControlChasis
