@@ -315,7 +315,7 @@ static int do_readConnection(RCInput* _rc)
         int arm;
         if (sscanf(parseAt, "%d %d", &arm, &hand) == 2)
         {
-          _rc->m_manualCtrlHand = hand;
+          _rc->m_manualCtrlHand = -hand; // inv
           _rc->m_manualCtrlArm  = arm;
         }
         else
