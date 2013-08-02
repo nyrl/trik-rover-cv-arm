@@ -32,6 +32,10 @@ static int do_openServerFd(RCInput* _rc, int _port)
     return res;
   }
 
+  int reuseAddr = 1;
+  if (setsockopt(_rc->m_serverFd, SOL_SOCKET, SO_REUSEADDR, &reuseAddr, sizeof(reuseAddr)) != 0)
+    fprintf(stderr, "setsockopt(%d, SO_REUSEADDR) failed:\n", errno);
+
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
   addr.sin_port = htons(_port);
@@ -271,11 +275,82 @@ static int do_readConnection(RCInput* _rc)
   _rc->m_readBufferUsed += rd;
   _rc->m_readBuffer[_rc->m_readBufferUsed] = '\0';
 
+  char* parseAt = _rc->m_readBuffer;
+  char* parseTill;
+  while ((parseTill = strchr(parseAt, '\n')) != NULL)
+  {
+    *parseTill = '\0';
+    if (strncmp(parseAt, "pad 1 ", strlen("pad 1 ")) == 0)
+    {
+      parseAt += strlen("pad 1 ");
+      if (strncmp(parseAt, "up", strlen("up")) == 0)
+      {
+        _rc->m_manualCtrlChasisLR = 0;
+        _rc->m_manualCtrlChasisFB = 0;
+      }
+      else
+      {
+        int lr;
+        int fb;
+        if (sscanf(parseAt, "%d %d", &lr, &fb) == 2)
+        {
+          _rc->m_manualCtrlChasisLR = lr;
+          _rc->m_manualCtrlChasisFB = fb;
+        }
+        else
+          fprintf(stderr, "Failed to parse pad 1 arguments '%s'\n", parseAt);
+      }
+    }
+    else if (strncmp(parseAt, "pad 2 ", strlen("pad 2 ")) == 0)
+    {
+      parseAt += strlen("pad 2 ");
+      if (strncmp(parseAt, "up", strlen("up")) == 0)
+      {
+        _rc->m_manualCtrlHand = 0;
+        _rc->m_manualCtrlArm = 0;
+      }
+      else
+      {
+        int hand;
+        int arm;
+        if (sscanf(parseAt, "%d %d", &hand, &arm) == 2)
+        {
+          _rc->m_manualCtrlHand = hand;
+          _rc->m_manualCtrlArm  = arm;
+        }
+        else
+          fprintf(stderr, "Failed to parse pad 2 arguments '%s'\n", parseAt);
+      }
+    }
+    else if (strncmp(parseAt, "btn ", strlen("btn ")) == 0)
+    {
+      parseAt += strlen("btn ");
+      int btn;
+      if (sscanf(parseAt, "%d down", &btn) == 1)
+      {
+        if (btn == 1)
+          _rc->m_manualMode = true;
+        else if (btn == 2)
+          _rc->m_manualMode = false;
+      }
+      else
+        fprintf(stderr, "Failed to parse btn arguments '%s'\n", parseAt);
+    }
+    else
+      fprintf(stderr, "Unable to parse remote control command '%s'\n", parseAt);
 
-#warning TODO parse input
-  fprintf(stderr, "RC: '%s'\n", _rc->m_readBuffer);
-  _rc->m_readBufferUsed = 0;
+    parseAt = parseTill+1;
+  }
 
+  _rc->m_readBufferUsed -= (parseAt-_rc->m_readBuffer);
+  memmove(_rc->m_readBuffer, parseAt, _rc->m_readBufferUsed);
+
+  fprintf(stderr, "Manual control: %s chasis %d %d, hand %d, arm %d\n",
+          _rc->m_manualMode?"manual":"auto",
+          _rc->m_manualCtrlChasisLR,
+          _rc->m_manualCtrlChasisFB,
+          _rc->m_manualCtrlHand,
+          _rc->m_manualCtrlArm);
 
   return 0;
 }
