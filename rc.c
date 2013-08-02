@@ -163,11 +163,11 @@ static int do_readStdio(RCInput* _rc)
     case 'z': _rc->m_manualCtrlArm += 10; break;
     case 'Z': _rc->m_manualCtrlArm = 0; break;
     case 'x': _rc->m_manualCtrlArm -= 10; break;
-    case 'X': _rc->m_manualCtrlArm = 00; break;
+    case 'X': _rc->m_manualCtrlArm = 0; break;
     case 'r': _rc->m_manualCtrlHand += 10; break;
     case 'R': _rc->m_manualCtrlHand = 0; break;
     case 'f': _rc->m_manualCtrlHand -= 10; break;
-    case 'F': _rc->m_manualCtrlHand = 00; break;
+    case 'F': _rc->m_manualCtrlHand = 0; break;
     case 'm': _rc->m_manualMode = !_rc->m_manualMode; break;
   };
 
