@@ -537,6 +537,25 @@ static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbD
     fprintf(stderr, "rcInputGetStdin() failed: %d\n", res);
     return res;
   }
+
+  if (rcInputIsManualMode(_rc))
+  {
+    int ctrlChasisLR;
+    int ctrlChasisFB;
+    int ctrlHand;
+    int ctrlArm;
+    if ((res = rcInputGetManualCommand(_rc, &ctrlChasisLR, &ctrlChasisFB, &ctrlHand, &ctrlArm)) != 0)
+    {
+      fprintf(stderr, "rcInputGetManualCommand() failed: %d\n", res);
+      return res;
+    }
+    if ((res = roverOutputControlManual(_rover, ctrlChasisLR, ctrlChasisFB, ctrlHand, ctrlArm)) != 0)
+    {
+      fprintf(stderr, "roverOutputControlManual() failed: %d\n", res);
+      return res;
+    }
+  }
+
   return 0;
 }
 
@@ -554,7 +573,27 @@ static int mainLoopRCServer(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fb
 
 static int mainLoopRCConnection(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
 {
+  int res;
 #warning TODO
+
+  if (rcInputIsManualMode(_rc))
+  {
+    int ctrlChasisLR;
+    int ctrlChasisFB;
+    int ctrlHand;
+    int ctrlArm;
+    if ((res = rcInputGetManualCommand(_rc, &ctrlChasisLR, &ctrlChasisFB, &ctrlHand, &ctrlArm)) != 0)
+    {
+      fprintf(stderr, "rcInputGetManualCommand() failed: %d\n", res);
+      return res;
+    }
+    if ((res = roverOutputControlManual(_rover, ctrlChasisLR, ctrlChasisFB, ctrlHand, ctrlArm)) != 0)
+    {
+      fprintf(stderr, "roverOutputControlManual() failed: %d\n", res);
+      return res;
+    }
+  }
+
   return 0;
 }
 
@@ -601,6 +640,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
       fprintf(stderr, "mainLoopRCStdin() failed: %d\n", res);
       return res;
     }
+    return 0;
   }
 
   if (FD_ISSET(_rc->m_serverFd, &fdsIn))
@@ -610,6 +650,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
       fprintf(stderr, "mainLoopRCServer() failed: %d\n", res);
       return res;
     }
+    return 0;
   }
 
   if (_rc->m_connectionFd != -1 && FD_ISSET(_rc->m_connectionFd, &fdsIn))
@@ -619,6 +660,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
       fprintf(stderr, "mainLoopRCConnection() failed: %d\n", res);
       return res;
     }
+    return 0;
   }
 
   if (FD_ISSET(_v4l2Src->m_fd, &fdsIn))

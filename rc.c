@@ -92,6 +92,97 @@ static int do_closeStdio(RCInput* _rc)
 }
 
 
+static int do_listenServerFd(RCInput* _rc)
+{
+  int res;
+
+  if (_rc == NULL)
+    return EINVAL;
+
+  if (listen(_rc->m_serverFd, 1) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "listen() failed: %d\n", res);
+    return res;
+  }
+
+  return 0;
+}
+
+static int do_unlistenServerFd(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+#warning Seems to be impossible without closing socket?..
+
+  return 0;
+}
+
+
+static int do_readStdio(RCInput* _rc)
+{
+  int res;
+
+  if (_rc == NULL)
+    return EINVAL;
+
+  char key;
+  if ((res = read(0, &key, 1)) != 1)
+  {
+    if (res >= 0)
+      res = E2BIG;
+    else
+      res = errno;
+    fprintf(stderr, "read(stdin) failed: %d\n", res);
+    return res;
+  }
+
+  switch (key)
+  {
+    case '1': _rc->m_autoTargetDetectHue += 1.0f; break;
+    case '2': _rc->m_autoTargetDetectHue -= 1.0f; break;
+    case '!': _rc->m_autoTargetDetectHueTolerance += 1.0f; break;
+    case '@': _rc->m_autoTargetDetectHueTolerance -= 1.0f; break;
+    case '3': _rc->m_autoTargetDetectSat += 0.05f; break;
+    case '4': _rc->m_autoTargetDetectSat -= 0.05f; break;
+    case '#': _rc->m_autoTargetDetectSatTolerance += 0.05f; break;
+    case '$': _rc->m_autoTargetDetectSatTolerance -= 0.05f; break;
+    case '5': _rc->m_autoTargetDetectVal += 0.05f; break;
+    case '6': _rc->m_autoTargetDetectVal -= 0.05f; break;
+    case '%': _rc->m_autoTargetDetectValTolerance += 0.05f; break;
+    case '^': _rc->m_autoTargetDetectValTolerance -= 0.05f; break;
+    case 'w': _rc->m_manualCtrlChasisFB += 10; break;
+    case 'W': _rc->m_manualCtrlChasisFB = 0; break;
+    case 's': _rc->m_manualCtrlChasisFB -= 10; break;
+    case 'S': _rc->m_manualCtrlChasisFB = 0; break;
+    case 'a': _rc->m_manualCtrlChasisLR -= 10; break;
+    case 'A': _rc->m_manualCtrlChasisLR = 0; break;
+    case 'd': _rc->m_manualCtrlChasisLR += 10; break;
+    case 'D': _rc->m_manualCtrlChasisLR = 0; break;
+    case 'z': _rc->m_manualCtrlArm += 10; break;
+    case 'Z': _rc->m_manualCtrlArm = 0; break;
+    case 'x': _rc->m_manualCtrlArm -= 10; break;
+    case 'X': _rc->m_manualCtrlArm = 00; break;
+    case 'r': _rc->m_manualCtrlHand += 10; break;
+    case 'R': _rc->m_manualCtrlHand = 0; break;
+    case 'f': _rc->m_manualCtrlHand -= 10; break;
+    case 'F': _rc->m_manualCtrlHand = 00; break;
+    case 'm': _rc->m_manualMode = !_rc->m_manualMode; break;
+  };
+
+  fprintf(stderr, "Target detection: hue %f [%f], sat %f [%f], val %f [%f]\n",
+          _rc->m_autoTargetDetectHue, _rc->m_autoTargetDetectHueTolerance,
+          _rc->m_autoTargetDetectSat, _rc->m_autoTargetDetectSatTolerance,
+          _rc->m_autoTargetDetectVal, _rc->m_autoTargetDetectValTolerance);
+  fprintf(stderr, "Manual control: %s chasis %d %d, hand %d, arm %d\n",
+          _rc->m_manualMode?"manual":"auto",
+          _rc->m_manualCtrlChasisLR,
+          _rc->m_manualCtrlChasisFB,
+          _rc->m_manualCtrlHand,
+          _rc->m_manualCtrlArm);
+  return 0;
+}
 
 
 int rcInputInit(bool _verbose)
@@ -150,12 +241,15 @@ int rcInputClose(RCInput* _rc)
 
 int rcInputStart(RCInput* _rc)
 {
+  int res;
+
   if (_rc == NULL)
     return EINVAL;
   if (_rc->m_serverFd == -1)
     return ENOTCONN;
 
-#warning TODO
+  if ((res = do_listenServerFd(_rc)) != 0)
+    return res;
 
   _rc->m_manualCtrlChasisLR = 0;
   _rc->m_manualCtrlChasisFB = 0;
@@ -167,30 +261,28 @@ int rcInputStart(RCInput* _rc)
 
 int rcInputStop(RCInput* _rc)
 {
+  int res;
+
   if (_rc == NULL)
     return EINVAL;
   if (_rc->m_serverFd == -1)
     return ENOTCONN;
 
-#warning TODO
+  if ((res = do_unlistenServerFd(_rc)) != 0)
+    return res;
 
   return 0;
 }
 
 int rcInputGetStdin(RCInput* _rc)
 {
+  int res;
+
   if (_rc == NULL)
     return EINVAL;
 
-#warning Temporary: print key
-  char key;
-  if ((read(0, &key, 1)) != 1)
-  {
-    fprintf(stderr, "cannot read from stdin, errno %d\n", errno);
-    return EFAULT;
-  }
-
-  printf("Key: %02x '%c'\n", key, key);
+  if ((res = do_readStdio(_rc)) != 0)
+    return res;
 
   return 0;
 }
