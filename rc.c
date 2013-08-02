@@ -64,15 +64,23 @@ static int do_closeServerFd(RCInput* _rc)
   return 0;
 }
 
-static int do_openStdio(RCInput* _rc)
+static int do_openStdio(RCInput* _rc, bool m_stdin)
 {
   int res;
   struct termios ts;
 
-  if ((res = tcgetattr(0, &ts)) != 0)
+  if (!m_stdin)
+  {
+    _rc->m_stdinFd = -1;
+    return 0;
+  }
+
+  _rc->m_stdinFd = 0;
+  if ((res = tcgetattr(_rc->m_stdinFd, &ts)) != 0)
   {
     res = errno;
     fprintf(stderr, "tcgetattr() failed: %d\n", res);
+    _rc->m_stdinFd = -1;
     return res;
   }
 
@@ -80,10 +88,11 @@ static int do_openStdio(RCInput* _rc)
   ts.c_cc[VMIN] = 0;
   ts.c_cc[VTIME] = 0;
 
-  if ((res = tcsetattr(0, TCSANOW, &ts)) != 0)
+  if ((res = tcsetattr(_rc->m_stdinFd, TCSANOW, &ts)) != 0)
   {
     res = errno;
     fprintf(stderr, "tcsetattr() failed: %d\n", res);
+    _rc->m_stdinFd = -1;
     return res;
   }
 
@@ -131,8 +140,11 @@ static int do_readStdio(RCInput* _rc)
   if (_rc == NULL)
     return EINVAL;
 
+  if (_rc->m_stdinFd == -1)
+    return ENOTCONN;
+
   char key;
-  if ((res = read(0, &key, 1)) != 1)
+  if ((res = read(_rc->m_stdinFd, &key, 1)) != 1)
   {
     if (res >= 0)
       res = E2BIG;
@@ -379,7 +391,7 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config)
   if ((res = do_openServerFd(_rc, _config->m_port)) != 0)
     return res;
 
-  if ((res = do_openStdio(_rc)) != 0)
+  if ((res = do_openStdio(_rc, _config->m_stdin)) != 0)
   {
     do_closeServerFd(_rc);
     return res;

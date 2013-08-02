@@ -12,6 +12,7 @@ extern "C" {
 typedef struct RCConfig // what user wants to set
 {
   int m_port;
+  bool m_stdin;
   bool m_manualMode;
 
   float m_autoTargetDetectHue;
@@ -24,6 +25,7 @@ typedef struct RCConfig // what user wants to set
 
 typedef struct RCInput
 {
+  int                      m_stdinFd;
   int                      m_serverFd;
   int                      m_connectionFd;
   char*                    m_readBuffer;

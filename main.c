@@ -49,7 +49,7 @@ static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 1, 0x28, 0x58 }, //msp left
                                         { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 }, //up-down m2
                                         { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 }, //squeeze
                                         0, 50, 600 };
-static RCConfig s_cfgRCInput = { 4444, false, 7.0f, 13.0f, 0.85f, 0.15f, 0.8f, 0.2f };
+static RCConfig s_cfgRCInput = { 4444, false, false, 7.0f, 13.0f, 0.85f, 0.15f, 0.8f, 0.2f };
 
 
 static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover);
@@ -92,12 +92,13 @@ static bool parse_args(int _argc, char* const _argv[])
     { "rover-zero-y",		1,	NULL,	0   },
     { "rover-zero-mass",	1,	NULL,	0   },
     { "rc-port",		1,	NULL,	0   }, // 28
+    { "rc-stdin",		1,	NULL,	0   },
     { "rc-manual",		1,	NULL,	0   },
-    { "target-hue",		1,	NULL,	0   }, // 30
+    { "target-hue",		1,	NULL,	0   }, // 31
     { "target-hue-tolerance",	1,	NULL,	0   },
-    { "target-sat",		1,	NULL,	0   }, // 32
+    { "target-sat",		1,	NULL,	0   }, // 33
     { "target-sat-tolerance",	1,	NULL,	0   },
-    { "target-val",		1,	NULL,	0   }, // 34
+    { "target-val",		1,	NULL,	0   }, // 35
     { "target-val-tolerance",	1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
@@ -163,14 +164,15 @@ static bool parse_args(int _argc, char* const _argv[])
           case 27: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
 
           case 28: s_cfgRCInput.m_port = atoi(optarg);				break;
-          case 29: s_cfgRCInput.m_manualMode = atoi(optarg);			break;
+          case 29: s_cfgRCInput.m_stdin = atoi(optarg);				break;
+          case 30: s_cfgRCInput.m_manualMode = atoi(optarg);			break;
 
-          case 30: s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);		break;
-          case 31: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
-          case 32: s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);		break;
-          case 33: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
-          case 34: s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);		break;
-          case 35: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
+          case 31: s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);		break;
+          case 32: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
+          case 33: s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);		break;
+          case 34: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
+          case 35: s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);		break;
+          case 36: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
 
           default:
             return false;
@@ -218,6 +220,7 @@ int main(int _argc, char* const _argv[])
                     "   --rover-zero-y          <rover-center-Y>\n"
                     "   --rover-zero-mass       <rover-center-mass>\n"
                     "   --rc-port               <remote-control-port>\n"
+                    "   --rc-stdin              <remote-control-via-stdin 0/1>\n"
                     "   --rc-manual             <remote-control-manual-mode 0/1>\n"
                     "   --target-hue            <target-hue>\n"
                     "   --target-hue-tolerance  <target-hue-tolerance>\n"
@@ -300,6 +303,7 @@ int main(int _argc, char* const _argv[])
 
   RCInput rc;
   memset(&rc, 0, sizeof(rc));
+  rc.m_stdinFd = -1;
   rc.m_serverFd = -1;
   rc.m_connectionFd = -1;
   if ((res = rcInputOpen(&rc, &s_cfgRCInput)) != 0)
@@ -639,7 +643,6 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
   int maxFd = 0;
   fd_set fdsIn;
   FD_ZERO(&fdsIn);
-  FD_SET(0, &fdsIn); // stdin
 
   FD_SET(_v4l2Src->m_fd, &fdsIn);
   if (maxFd < _v4l2Src->m_fd)
@@ -648,6 +651,13 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
   FD_SET(_rc->m_serverFd, &fdsIn);
   if (maxFd < _rc->m_serverFd)
     maxFd = _rc->m_serverFd;
+
+  if (_rc->m_stdinFd != -1)
+  {
+    FD_SET(_rc->m_stdinFd, &fdsIn);
+    if (maxFd < _rc->m_stdinFd)
+      maxFd = _rc->m_stdinFd;
+  }
 
   if (_rc->m_connectionFd != -1)
   {
@@ -668,21 +678,21 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
   }
 
   bool hasAnything = false;;
-  if (FD_ISSET(0, &fdsIn)) // stdin
-  {
-    if ((res = mainLoopRCStdin(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
-    {
-      fprintf(stderr, "mainLoopRCStdin() failed: %d\n", res);
-      return res;
-    }
-    hasAnything = true;
-  }
-
   if (FD_ISSET(_rc->m_serverFd, &fdsIn))
   {
     if ((res = mainLoopRCServer(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
     {
       fprintf(stderr, "mainLoopRCServer() failed: %d\n", res);
+      return res;
+    }
+    hasAnything = true;
+  }
+
+  if (_rc->m_stdinFd != -1 && FD_ISSET(_rc->m_stdinFd, &fdsIn))
+  {
+    if ((res = mainLoopRCStdin(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    {
+      fprintf(stderr, "mainLoopRCStdin() failed: %d\n", res);
       return res;
     }
     hasAnything = true;
