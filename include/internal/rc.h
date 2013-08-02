@@ -11,7 +11,7 @@ extern "C" {
 
 typedef struct RCConfig // what user wants to set
 {
-  int  m_port;
+  int m_port;
   bool m_manualMode;
 
   float m_autoTargetDetectHue;
@@ -53,6 +53,9 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config);
 int rcInputClose(RCInput* _rc);
 int rcInputStart(RCInput* _rc);
 int rcInputStop(RCInput* _rc);
+
+int rcInputGetStdin(RCInput* _rc);
+int rcInputAcceptConnection(RCInput* _rc);
 
 bool rcInputIsManualMode(RCInput* _rc);
 int rcInputGetManualCommand(RCInput* _rc, int* _ctrlChasisLR, int* _ctrlChasisFB, int* _ctrlHand, int* _ctrlArm);

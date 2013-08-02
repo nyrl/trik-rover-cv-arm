@@ -6,11 +6,91 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <fcntl.h>
+#include <sys/socket.h>
 #include <errno.h>
+#include <termios.h>
+#include <netdb.h>
 
 #include "internal/rc.h"
+
+
+
+
+static int do_openServerFd(RCInput* _rc, int _port)
+{
+  int res;
+
+  if (_rc == NULL)
+    return EINVAL;
+
+  _rc->m_serverFd = socket(AF_INET, SOCK_STREAM, 0);
+  if (_rc->m_serverFd < 0)
+  {
+    res = errno;
+    _rc->m_serverFd = -1;
+    fprintf(stderr, "socket(AF_INET, SOCK_STREAM) failed: %d\n", res);
+    return res;
+  }
+
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = _port;
+  addr.sin_addr.s_addr = INADDR_ANY;
+
+  if (bind(_rc->m_serverFd, (struct sockaddr*)&addr, sizeof(addr)) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "bind(%d) failed: %d\n", _port, res);
+    close(_rc->m_serverFd);
+    _rc->m_serverFd = -1;
+    return res;
+  }
+
+  return 0;
+}
+
+static int do_closeServerFd(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+  close(_rc->m_serverFd);
+  _rc->m_serverFd = -1;
+
+  return 0;
+}
+
+static int do_openStdio(RCInput* _rc)
+{
+  int res;
+  struct termios ts;
+
+  if ((res = tcgetattr(0, &ts)) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "tcgetattr() failed: %d\n", res);
+    return res;
+  }
+
+  ts.c_lflag &= ~ICANON;
+  ts.c_cc[VMIN] = 0;
+  ts.c_cc[VTIME] = 0;
+
+  if ((res = tcsetattr(0, TCSANOW, &ts)) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "tcsetattr() failed: %d\n", res);
+    return res;
+  }
+
+  return 0;
+}
+
+static int do_closeStdio(RCInput* _rc)
+{
+  return 0;
+}
+
 
 
 
@@ -34,8 +114,16 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config)
   if (_rc->m_serverFd != -1)
     return EALREADY;
 
-#warning TODO open
+  if ((res = do_openServerFd(_rc, _config->m_port)) != 0)
+    return res;
 
+  if ((res = do_openStdio(_rc)) != 0)
+  {
+    do_closeServerFd(_rc);
+    return res;
+  }
+
+  _rc->m_connectionFd = -1;
   _rc->m_manualMode = _config->m_manualMode;
   _rc->m_autoTargetDetectHue          = _config->m_autoTargetDetectHue;
   _rc->m_autoTargetDetectHueTolerance = _config->m_autoTargetDetectHueTolerance;
@@ -54,7 +142,8 @@ int rcInputClose(RCInput* _rc)
   if (_rc->m_serverFd == -1)
     return EALREADY;
 
-#warning TODO
+  do_closeStdio(_rc);
+  do_closeServerFd(_rc);
 
   return 0;
 }
@@ -87,6 +176,38 @@ int rcInputStop(RCInput* _rc)
 
   return 0;
 }
+
+int rcInputGetStdin(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+#warning Temporary: print key
+  char key;
+  if ((read(0, &key, 1)) != 1)
+  {
+    fprintf(stderr, "cannot read from stdin, errno %d\n", errno);
+    return EFAULT;
+  }
+
+  printf("Key: %02x '%c'\n", key, key);
+
+  return 0;
+}
+
+int rcInputAcceptConnection(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+#warning Temporary
+  fprintf(stderr, "incoming connection!\n");
+  close(accept(_rc->m_serverFd, NULL, NULL));
+
+
+  return 0;
+}
+
 
 bool rcInputIsManualMode(RCInput* _rc)
 {

@@ -527,6 +527,36 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
   return 0;
 }
 
+static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+{
+  int res;
+
+  if ((res = rcInputGetStdin(_rc)) != 0)
+  {
+    fprintf(stderr, "rcInputGetStdin() failed: %d\n", res);
+    return res;
+  }
+  return 0;
+}
+
+static int mainLoopRCServer(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+{
+  int res;
+
+  if ((res = rcInputAcceptConnection(_rc)) != 0)
+  {
+    fprintf(stderr, "rcInputAcceptConnection() failed: %d\n", res);
+    return res;
+  }
+  return 0;
+}
+
+static int mainLoopRCConnection(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+{
+#warning TODO
+  return 0;
+}
+
 
 static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
 {
@@ -541,12 +571,9 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
   if (maxFd < _v4l2Src->m_fd)
     maxFd = _v4l2Src->m_fd;
 
-  if (_rc->m_serverFd != -1)
-  {
-    FD_SET(_rc->m_serverFd, &fdsIn);
-    if (maxFd < _rc->m_serverFd)
-      maxFd = _rc->m_serverFd;
-  }
+  FD_SET(_rc->m_serverFd, &fdsIn);
+  if (maxFd < _rc->m_serverFd)
+    maxFd = _rc->m_serverFd;
 
   if (_rc->m_connectionFd != -1)
   {
@@ -566,17 +593,32 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
     return res;
   }
 
-#warning TODO stdin
-#if 0
   if (FD_ISSET(0, &fdsIn)) // stdin
   {
     if ((res = mainLoopRCStdin(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
     {
-      fprintf(stderr, "mainLoopV4L2Stdin() failed: %d\n", res);
+      fprintf(stderr, "mainLoopRCStdin() failed: %d\n", res);
       return res;
     }
   }
-#endif
+
+  if (FD_ISSET(_rc->m_serverFd, &fdsIn))
+  {
+    if ((res = mainLoopRCServer(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    {
+      fprintf(stderr, "mainLoopRCServer() failed: %d\n", res);
+      return res;
+    }
+  }
+
+  if (_rc->m_connectionFd != -1 && FD_ISSET(_rc->m_connectionFd, &fdsIn))
+  {
+    if ((res = mainLoopRCConnection(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    {
+      fprintf(stderr, "mainLoopRCConnection() failed: %d\n", res);
+      return res;
+    }
+  }
 
   if (FD_ISSET(_v4l2Src->m_fd, &fdsIn))
   {
@@ -586,8 +628,6 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
       return res;
     }
   }
-
-#warning TODO m_serverFd and m_connectionFd
 
   return 0;
 }
