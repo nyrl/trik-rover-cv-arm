@@ -49,7 +49,7 @@ static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 1, 0x30, 0x58 }, //msp left
                                         { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1300000, 0, 1700000, 2300000 }, //up-down m2
                                         { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1300000, 0, 1700000, 2300000 }, //squeeze
                                         0, 50, 600 };
-static RCConfig s_cfgRCInput = { 4444, false, 0.0f, 20.0f, 0.7f, 0.3f, 0.7f, 0.3f };
+static RCConfig s_cfgRCInput = { 4444, false, 7.0f, 13.0f, 0.7f, 0.3f, 0.7f, 0.3f };
 
 
 static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover);
