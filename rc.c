@@ -313,7 +313,7 @@ static int do_readConnection(RCInput* _rc)
       {
         int hand;
         int arm;
-        if (sscanf(parseAt, "%d %d", &hand, &arm) == 2)
+        if (sscanf(parseAt, "%d %d", &arm, &hand) == 2)
         {
           _rc->m_manualCtrlHand = hand;
           _rc->m_manualCtrlArm  = arm;
