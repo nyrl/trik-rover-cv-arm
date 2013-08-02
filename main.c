@@ -49,7 +49,7 @@ static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 1, 0x30, 0x58 }, //msp left
                                         { "/sys/class/pwm/ecap.1/duty_ns",     2300000, 1700000, 0, 1300000, 700000  }, //up-down m2
                                         { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1300000, 0, 1700000, 2300000 }, //squeeze
                                         0, 50, 600 };
-static RCConfig s_cfgRCInput = { 4000, false, 0.0f, 20.0f, 0.7f, 0.3f, 0.7f, 0.3f };
+static RCConfig s_cfgRCInput = { 4444, false, 0.0f, 20.0f, 0.7f, 0.3f, 0.7f, 0.3f };
 
 
 static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover);
@@ -92,11 +92,12 @@ static bool parse_args(int _argc, char* const _argv[])
     { "rover-zero-y",		1,	NULL,	0   },
     { "rover-zero-mass",	1,	NULL,	0   },
     { "rc-port",		1,	NULL,	0   }, // 28
-    { "target-hue",		1,	NULL,	0   }, // 29
+    { "rc-manual",		1,	NULL,	0   },
+    { "target-hue",		1,	NULL,	0   }, // 30
     { "target-hue-tolerance",	1,	NULL,	0   },
-    { "target-sat",		1,	NULL,	0   }, // 31
+    { "target-sat",		1,	NULL,	0   }, // 32
     { "target-sat-tolerance",	1,	NULL,	0   },
-    { "target-val",		1,	NULL,	0   }, // 33
+    { "target-val",		1,	NULL,	0   }, // 34
     { "target-val-tolerance",	1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
@@ -162,13 +163,14 @@ static bool parse_args(int _argc, char* const _argv[])
           case 27: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
 
           case 28: s_cfgRCInput.m_port = atoi(optarg);				break;
+          case 29: s_cfgRCInput.m_manualMode = atoi(optarg);			break;
 
-          case 29: s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);		break;
-          case 30: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
-          case 31: s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);		break;
-          case 32: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
-          case 33: s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);		break;
-          case 34: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
+          case 30: s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);		break;
+          case 31: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
+          case 32: s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);		break;
+          case 33: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
+          case 34: s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);		break;
+          case 35: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
 
           default:
             return false;
@@ -216,6 +218,7 @@ int main(int _argc, char* const _argv[])
                     "   --rover-zero-y          <rover-center-Y>\n"
                     "   --rover-zero-mass       <rover-center-mass>\n"
                     "   --rc-port               <remote-control-port>\n"
+                    "   --rc-manual             <remote-control-manual-mode 0/1>\n"
                     "   --target-hue            <target-hue>\n"
                     "   --target-hue-tolerance  <target-hue-tolerance>\n"
                     "   --target-sat            <target-saturation>\n"
