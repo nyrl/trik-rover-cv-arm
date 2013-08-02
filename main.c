@@ -515,11 +515,12 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
     return res;
   }
 
+
   if (!rcInputIsManualMode(_rc))
   {
     if ((res = roverOutputControlAuto(_rover, targetX, targetY, targetMass)) != 0)
     {
-      fprintf(stderr, "roverOutputControl() failed: %d\n", res);
+      fprintf(stderr, "roverOutputControlAuto() failed: %d\n", res);
       return res;
     }
   }
