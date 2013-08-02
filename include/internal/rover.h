@@ -96,6 +96,7 @@ typedef struct RoverOutput
 
   enum State
   {
+    StateManual,
     StatePreparing,
     StateSearching,
     StateTracking,
@@ -114,7 +115,8 @@ int roverOutputOpen(RoverOutput* _rover, const RoverConfig* _config);
 int roverOutputClose(RoverOutput* _rover);
 int roverOutputStart(RoverOutput* _rover);
 int roverOutputStop(RoverOutput* _rover);
-int roverOutputControl(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass);
+int roverOutputControlAuto(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass);
+int roverOutputControlManual(RoverOutput* _rover, int _ctrlChasisLR, int _ctrlChasisFB, int _ctrlHand, int _ctrlArm);
 
 
 #ifdef __cplusplus

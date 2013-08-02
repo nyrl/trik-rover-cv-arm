@@ -251,6 +251,36 @@ static int do_roverCtrlArmStart(RoverOutput* _rover)
 }
 
 
+static int do_roverCtrlChasisManual(RoverOutput* _rover, int _ctrlChasisLR, int _ctrlChasisFB)
+{
+  RoverControlChasis* chasis = &_rover->m_ctrlChasis;
+
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, _ctrlChasisFB+_ctrlChasisLR);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight, _ctrlChasisFB-_ctrlChasisLR);
+
+  return 0;
+}
+
+static int do_roverCtrlHandManual(RoverOutput* _rover, int _ctrlHand)
+{
+  RoverControlHand* hand = &_rover->m_ctrlHand;
+
+  do_roverMotorSetPower(_rover, hand->m_motor1, _ctrlHand);
+  do_roverMotorSetPower(_rover, hand->m_motor2, _ctrlHand);
+
+  return 0;
+}
+
+static int do_roverCtrlArmManual(RoverOutput* _rover, int _ctrlArm)
+{
+  RoverControlArm* arm = &_rover->m_ctrlArm;
+
+  do_roverMotorSetPower(_rover, arm->m_motor, _ctrlArm);
+
+  return 0;
+}
+
+
 static int do_roverCtrlChasisPreparing(RoverOutput* _rover)
 {
   RoverControlChasis* chasis = &_rover->m_ctrlChasis;
@@ -395,15 +425,15 @@ static int do_roverCtrlArmTracking(RoverOutput* _rover, int _targetX, int _targe
   int diffY = powerProportional(_targetY, -100, arm->m_zeroY, 100);
   int diffMass = powerProportional(_targetMass, 0, arm->m_zeroMass, 10000);
 
-  fprintf(stderr, "%d %d %d  (%d->%d %d->%d %d->%d)\n",
-          diffX, diffY, diffMass, _targetX, arm->m_zeroX, _targetY, arm->m_zeroY, _targetMass, arm->m_zeroMass);
-
-  if (   abs(diffX) <= 10
-      && abs(diffY) <= 10
-      && abs(diffMass) <= 10)
-    fprintf(stderr, "###\n");
-  else
+  bool hasLock = (   abs(diffX) <= 10
+                  && abs(diffY) <= 10
+                  && abs(diffMass) <= 10);
+  if (!hasLock)
     _rover->m_stateEntryTime.tv_sec = 0;
+
+#warning DEBUG
+  fprintf(stderr, "%d %d %d %s (%d->%d %d->%d %d->%d)\n",
+          diffX, diffY, diffMass, hasLock?" ### LOCK ### ":"", _targetX, arm->m_zeroX, _targetY, arm->m_zeroY, _targetMass, arm->m_zeroMass);
 
   return 0;
 }
@@ -433,7 +463,7 @@ static int do_roverCtrlArmSqueezing(RoverOutput* _rover)
 {
   RoverControlArm* arm = &_rover->m_ctrlArm;
 
-#warning Check lock
+#warning Check lock is stable?
   do_roverMotorSetPower(_rover, arm->m_motor, 100);
 
   return 0;
@@ -582,7 +612,28 @@ int roverOutputStop(RoverOutput* _rover)
   return 0;
 }
 
-int roverOutputControl(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass)
+int roverOutputControlManual(RoverOutput* _rover, int _ctrlChasisLR, int _ctrlChasisFB, int _ctrlHand, int _ctrlArm)
+{
+  if (_rover == NULL)
+    return EINVAL;
+  if (!_rover->m_opened)
+    return ENOTCONN;
+
+  if (_rover->m_state != StateManual)
+  {
+    fprintf(stderr, "*** MANUAL MODE ***\n");
+    _rover->m_state = StateManual;
+    _rover->m_stateEntryTime.tv_sec = 0;
+  }
+
+  do_roverCtrlChasisManual(_rover, _ctrlChasisLR, _ctrlChasisFB);
+  do_roverCtrlHandManual(_rover, _ctrlHand);
+  do_roverCtrlArmManual(_rover, _ctrlArm);
+
+  return 0;
+}
+
+int roverOutputControlAuto(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass)
 {
   if (_rover == NULL)
     return EINVAL;
@@ -599,6 +650,15 @@ int roverOutputControl(RoverOutput* _rover, int _targetX, int _targetY, int _tar
 
   switch (_rover->m_state)
   {
+    case StateManual:
+      do_roverCtrlChasisManual(_rover, 0, 0);
+      do_roverCtrlHandManual(_rover, 0);
+      do_roverCtrlArmManual(_rover, 0);
+      fprintf(stderr, "*** LEFT MANUAL MODE, PREPARING ***\n");
+      _rover->m_state = StatePreparing;
+      _rover->m_stateEntryTime.tv_sec = 0;
+      break;
+
     case StatePreparing:
       do_roverCtrlChasisPreparing(_rover);
       do_roverCtrlHandPreparing(_rover);
@@ -669,7 +729,6 @@ int roverOutputControl(RoverOutput* _rover, int _targetX, int _targetY, int _tar
         _rover->m_state = StatePreparing;
         _rover->m_stateEntryTime.tv_sec = 0;
       }
-      break;
       break;
   }
 

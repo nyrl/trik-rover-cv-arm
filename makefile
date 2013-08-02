@@ -151,6 +151,7 @@ APP.srcs =                      \
 	ce.c                    \
 	fb.c                    \
 	v4l2.c                  \
+	rc.c                    \
 	rover.c
 
 APP.objs = $(addprefix bin/$(PROFILE)/, \

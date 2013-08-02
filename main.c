@@ -11,16 +11,9 @@
 #include "internal/ce.h"
 #include "internal/fb.h"
 #include "internal/v4l2.h"
+#include "internal/rc.h"
 #include "internal/rover.h"
 
-
-#warning TEMPORARY solution for color control
-static float s_TMP_detectHueFrom = 330.0f;
-static float s_TMP_detectHueTo = 30.0f;
-static float s_TMP_detectSatFrom = 0.2f;
-static float s_TMP_detectSatTo = 2.0f;
-static float s_TMP_detectValFrom = 0.5f;
-static float s_TMP_detectValTo = 2.0f;
 
 
 
@@ -56,8 +49,10 @@ static RoverConfig s_cfgRoverOutput = { {}, //msp left
                                         { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1500000, 2300000 }, //up-down m2
                                         { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 2300000, 1500000, 700000 }, //squeeze
                                         0, 50, 600 };
+static RCConfig s_cfgRCInput = { 4000, false, 0.0f, 20.0f, 0.7f, 0.3f, 0.7f, 0.3f };
 
-static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RoverOutput* _rover);
+
+static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover);
 
 
 static bool parse_args(int _argc, char* const _argv[])
@@ -87,13 +82,15 @@ static bool parse_args(int _argc, char* const _argv[])
     { "rover-m3-back",		1,	NULL,	0   },
     { "rover-m3-neutral",	1,	NULL,	0   },
     { "rover-m3-forward",	1,	NULL,	0   },
-    { "rover-zero-x",		1,	NULL,	0   }, // 23
+    { "rover-zero-x",		1,	NULL,	0   }, // 19
     { "rover-zero-y",		1,	NULL,	0   },
     { "rover-zero-mass",	1,	NULL,	0   },
+    { "rc-port",		1,	NULL,	0   }, // 22
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
   };
 
+#warning TODO rc color detection configuration
   while ((opt = getopt_long(_argc, _argv, optstring, longopts, &longopt)) != -1)
   {
     switch (opt)
@@ -145,6 +142,8 @@ static bool parse_args(int _argc, char* const _argv[])
           case 20: s_cfgRoverOutput.m_zeroY    = atoi(optarg);	break;
           case 21: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
 
+          case 22: s_cfgRCInput.m_port = atoi(optarg);		break;
+
           default:
             return false;
         }
@@ -188,6 +187,7 @@ int main(int _argc, char* const _argv[])
                     "   --rover-zero-x         <rover-center-X>\n"
                     "   --rover-zero-y         <rover-center-Y>\n"
                     "   --rover-zero-mass      <rover-center-mass>\n"
+                    "   --rc-port              <remote-control-port>\n"
                     "   --verbose\n"
                     "   --help\n",
             _argv[0]);
@@ -217,11 +217,18 @@ int main(int _argc, char* const _argv[])
     goto exit_v4l2_fini;
   }
 
+  if ((res = rcInputInit(s_cfgVerbose)) != 0)
+  {
+    fprintf(stderr, "rcInputInit() failed: %d\n", res);
+    exit_code = EX_SOFTWARE;
+    goto exit_fb_fini;
+  }
+
   if ((res = roverOutputInit(s_cfgVerbose)) != 0)
   {
     fprintf(stderr, "roverOutputInit() failed: %d\n", res);
     exit_code = EX_SOFTWARE;
-    goto exit_fb_fini;
+    goto exit_rc_fini;
   }
 
 
@@ -254,6 +261,17 @@ int main(int _argc, char* const _argv[])
     goto exit_v4l2_close;
   }
 
+  RCInput rc;
+  memset(&rc, 0, sizeof(rc));
+  rc.m_serverFd = -1;
+  rc.m_connectionFd = -1;
+  if ((res = rcInputOpen(&rc, &s_cfgRCInput)) != 0)
+  {
+    fprintf(stderr, "rcInputOpen() failed: %d\n", res);
+    exit_code = EX_IOERR;
+    goto exit_fb_close;
+  }
+
   RoverOutput rover;
   memset(&rover, 0, sizeof(rover));
   rover.m_motor1.m_fd = -1;
@@ -263,7 +281,7 @@ int main(int _argc, char* const _argv[])
   {
     fprintf(stderr, "roverOutputOpen() failed: %d\n", res);
     exit_code = EX_IOERR;
-    goto exit_fb_close;
+    goto exit_rc_close;
   }
 
 
@@ -305,11 +323,18 @@ int main(int _argc, char* const _argv[])
     goto exit_v4l2_stop;
   }
 
+  if ((res = rcInputStart(&rc)) != 0)
+  {
+    fprintf(stderr, "rcInputStart() failed: %d\n", res);
+    exit_code = EX_IOERR;
+    goto exit_fb_stop;
+  }
+
   if ((res = roverOutputStart(&rover)) != 0)
   {
     fprintf(stderr, "roverOutputStart() failed: %d\n", res);
     exit_code = EX_IOERR;
-    goto exit_fb_stop;
+    goto exit_rc_stop;
   }
 
 
@@ -339,7 +364,7 @@ int main(int _argc, char* const _argv[])
     }
 
 
-    if ((res = mainLoop(&codecEngine, &v4l2Src, &fbDst, &rover)) != 0)
+    if ((res = mainLoop(&codecEngine, &v4l2Src, &fbDst, &rc, &rover)) != 0)
     {
       fprintf(stderr, "mainLoop() failed: %d\n", res);
       exit_code = EX_SOFTWARE;
@@ -352,6 +377,10 @@ int main(int _argc, char* const _argv[])
 //exit_rover_stop:
   if ((res = roverOutputStop(&rover)) != 0)
     fprintf(stderr, "roverOutputStop() failed: %d\n", res);
+
+exit_rc_stop:
+  if ((res = rcInputStop(&rc)) != 0)
+    fprintf(stderr, "rcInputStop() failed: %d\n", res);
 
 exit_fb_stop:
   if ((res = fbOutputStop(&fbDst)) != 0)
@@ -370,6 +399,10 @@ exit_rover_close:
   if ((res = roverOutputClose(&rover)) != 0)
     fprintf(stderr, "roverOutputClose() failed: %d\n", res);
 
+exit_rc_close:
+  if ((res = rcInputClose(&rc)) != 0)
+    fprintf(stderr, "rcInputClose() failed: %d\n", res);
+
 exit_fb_close:
   if ((res = fbOutputClose(&fbDst)) != 0)
     fprintf(stderr, "fbOutputClose() failed: %d\n", res);
@@ -386,6 +419,10 @@ exit_ce_close:
 exit_rover_fini:
   if ((res = roverOutputFini()) != 0)
     fprintf(stderr, "roverOutputFini() failed: %d\n", res);
+
+exit_rc_fini:
+  if ((res = rcInputFini()) != 0)
+    fprintf(stderr, "rcInputFini() failed: %d\n", res);
 
 exit_fb_fini:
   if ((res = fbOutputFini()) != 0)
@@ -407,88 +444,150 @@ exit:
 
 
 
-static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RoverOutput* _rover)
+static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
 {
   int res;
 
+  const void* frameSrcPtr;
+  size_t frameSrcSize;
+  size_t frameSrcIndex;
+  if ((res = v4l2InputGetFrame(_v4l2Src, &frameSrcPtr, &frameSrcSize, &frameSrcIndex)) != 0)
+  {
+    fprintf(stderr, "v4l2InputGetFrame() failed: %d\n", res);
+    return res;
+  }
+
+  void* frameDstPtr;
+  size_t frameDstSize;
+  if ((res = fbOutputGetFrame(_fbDst, &frameDstPtr, &frameDstSize)) != 0)
+  {
+    fprintf(stderr, "fbOutputGetFrame() failed: %d\n", res);
+    return res;
+  }
+
+  float detectHueFrom;
+  float detectHueTo;
+  float detectSatFrom;
+  float detectSatTo;
+  float detectValFrom;
+  float detectValTo;
+  if ((res = rcInputGetAutoTargetDetect(_rc, &detectHueFrom, &detectHueTo, &detectSatFrom, &detectSatTo, &detectValFrom, &detectValTo)) != 0)
+  {
+    fprintf(stderr, "rcInputGetAutoTargetDetect() failed: %d\n", res);
+    return res;
+  }
+
+  size_t frameDstUsed = frameDstSize;
+  int targetX;
+  int targetY;
+  int targetMass;
+
+  if ((res = codecEngineTranscodeFrame(_ce,
+                                       frameSrcPtr, frameSrcSize,
+                                       frameDstPtr, frameDstSize, &frameDstUsed,
+                                       detectHueFrom, detectHueTo,
+                                       detectSatFrom, detectSatTo,
+                                       detectValFrom, detectValTo,
+                                       &targetX, &targetY, &targetMass)) != 0)
+  {
+    fprintf(stderr, "codecEngineTranscodeFrame(%p[%zu] -> %p[%zu]) failed: %d\n",
+            frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, res);
+    return res;
+  }
+
+  if (s_cfgVerbose)
+  {
+    fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
+            frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, frameDstUsed);
+    if (targetMass > 0)
+      fprintf(stderr, "Target detected at %d x %d @ %d\n", targetX, targetY, targetMass);
+  }
+
+  if ((res = fbOutputPutFrame(_fbDst)) != 0)
+  {
+    fprintf(stderr, "fbOutputPutFrame() failed: %d\n", res);
+    return res;
+  }
+
+  if ((res = v4l2InputPutFrame(_v4l2Src, frameSrcIndex)) != 0)
+  {
+    fprintf(stderr, "v4l2InputPutFrame() failed: %d\n", res);
+    return res;
+  }
+
+  if (!rcInputIsManualMode(_rc))
+  {
+    if ((res = roverOutputControlAuto(_rover, targetX, targetY, targetMass)) != 0)
+    {
+      fprintf(stderr, "roverOutputControl() failed: %d\n", res);
+      return res;
+    }
+  }
+
+  return 0;
+}
+
+
+static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+{
+  int res;
+
+  int maxFd = 0;
   fd_set fdsIn;
   FD_ZERO(&fdsIn);
+  FD_SET(0, &fdsIn); // stdin
+
   FD_SET(_v4l2Src->m_fd, &fdsIn);
-  int maxFd = _v4l2Src->m_fd+1;
+  if (maxFd < _v4l2Src->m_fd)
+    maxFd = _v4l2Src->m_fd;
+
+  if (_rc->m_serverFd != -1)
+  {
+    FD_SET(_rc->m_serverFd, &fdsIn);
+    if (maxFd < _rc->m_serverFd)
+      maxFd = _rc->m_serverFd;
+  }
+
+  if (_rc->m_connectionFd != -1)
+  {
+    FD_SET(_rc->m_connectionFd, &fdsIn);
+    if (maxFd < _rc->m_connectionFd)
+      maxFd = _rc->m_connectionFd;
+  }
 
   struct timeval timeout;
   timeout.tv_sec = 1;
   timeout.tv_usec = 0;
 
-  if ((res = select(maxFd, &fdsIn, NULL, NULL, &timeout)) < 0)
+  if ((res = select(maxFd+1, &fdsIn, NULL, NULL, &timeout)) < 0)
   {
     res = errno;
     fprintf(stderr, "select() failed: %d\n", res);
     return res;
   }
 
-  if (FD_ISSET(_v4l2Src->m_fd, &fdsIn))
+#warning TODO stdin
+#if 0
+  if (FD_ISSET(0, &fdsIn)) // stdin
   {
-    const void* frameSrcPtr;
-    size_t frameSrcSize;
-    size_t frameSrcIndex;
-    if ((res = v4l2InputGetFrame(_v4l2Src, &frameSrcPtr, &frameSrcSize, &frameSrcIndex)) != 0)
+    if ((res = mainLoopRCStdin(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
     {
-      fprintf(stderr, "v4l2InputGetFrame() failed: %d\n", res);
-      return res;
-    }
-
-    void* frameDstPtr;
-    size_t frameDstSize;
-    if ((res = fbOutputGetFrame(_fbDst, &frameDstPtr, &frameDstSize)) != 0)
-    {
-      fprintf(stderr, "fbOutputGetFrame() failed: %d\n", res);
-      return res;
-    }
-
-    size_t frameDstUsed = frameDstSize;
-    int targetX;
-    int targetY;
-    int targetMass;
-    if ((res = codecEngineTranscodeFrame(_ce,
-                                         frameSrcPtr, frameSrcSize,
-                                         frameDstPtr, frameDstSize, &frameDstUsed,
-                                         s_TMP_detectHueFrom, s_TMP_detectHueTo,
-                                         s_TMP_detectSatFrom, s_TMP_detectSatTo,
-                                         s_TMP_detectValFrom, s_TMP_detectValTo,
-                                         &targetX, &targetY, &targetMass)) != 0)
-    {
-      fprintf(stderr, "codecEngineTranscodeFrame(%p[%zu] -> %p[%zu]) failed: %d\n",
-              frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, res);
-      return res;
-    }
-
-    if (s_cfgVerbose)
-    {
-      fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
-              frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, frameDstUsed);
-      if (targetMass > 0)
-        fprintf(stderr, "Target detected at %d x %d @ %d\n", targetX, targetY, targetMass);
-    }
-
-    if ((res = fbOutputPutFrame(_fbDst)) != 0)
-    {
-      fprintf(stderr, "fbOutputPutFrame() failed: %d\n", res);
-      return res;
-    }
-
-    if ((res = v4l2InputPutFrame(_v4l2Src, frameSrcIndex)) != 0)
-    {
-      fprintf(stderr, "v4l2InputPutFrame() failed: %d\n", res);
-      return res;
-    }
-
-    if ((res = roverOutputControl(_rover, targetX, targetY, targetMass)) != 0)
-    {
-      fprintf(stderr, "roverOutputControl() failed: %d\n", res);
+      fprintf(stderr, "mainLoopV4L2Stdin() failed: %d\n", res);
       return res;
     }
   }
+#endif
+
+  if (FD_ISSET(_v4l2Src->m_fd, &fdsIn))
+  {
+    if ((res = mainLoopV4L2Frame(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    {
+      fprintf(stderr, "mainLoopV4L2Frame() failed: %d\n", res);
+      return res;
+    }
+  }
+
+#warning TODO m_serverFd and m_connectionFd
 
   return 0;
 }
