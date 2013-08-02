@@ -54,8 +54,9 @@ int rcInputClose(RCInput* _rc);
 int rcInputStart(RCInput* _rc);
 int rcInputStop(RCInput* _rc);
 
-int rcInputGetStdin(RCInput* _rc);
+int rcInputReadStdin(RCInput* _rc);
 int rcInputAcceptConnection(RCInput* _rc);
+int rcInputReadConnection(RCInput* _rc);
 
 bool rcInputIsManualMode(RCInput* _rc);
 int rcInputGetManualCommand(RCInput* _rc, int* _ctrlChasisLR, int* _ctrlChasisFB, int* _ctrlHand, int* _ctrlArm);

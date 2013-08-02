@@ -564,15 +564,9 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
   return 0;
 }
 
-static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+static int mainLoopRCManualModeUpdate(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
 {
   int res;
-
-  if ((res = rcInputGetStdin(_rc)) != 0)
-  {
-    fprintf(stderr, "rcInputGetStdin() failed: %d\n", res);
-    return res;
-  }
 
   if (rcInputIsManualMode(_rc))
   {
@@ -580,6 +574,7 @@ static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbD
     int ctrlChasisFB;
     int ctrlHand;
     int ctrlArm;
+
     if ((res = rcInputGetManualCommand(_rc, &ctrlChasisLR, &ctrlChasisFB, &ctrlHand, &ctrlArm)) != 0)
     {
       fprintf(stderr, "rcInputGetManualCommand() failed: %d\n", res);
@@ -593,6 +588,19 @@ static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbD
   }
 
   return 0;
+}
+
+static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+{
+  int res;
+
+  if ((res = rcInputReadStdin(_rc)) != 0)
+  {
+    fprintf(stderr, "rcInputReadStdin() failed: %d\n", res);
+    return res;
+  }
+
+  return mainLoopRCManualModeUpdate(_ce, _v4l2Src, _fbDst, _rc, _rover);
 }
 
 static int mainLoopRCServer(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
@@ -610,27 +618,14 @@ static int mainLoopRCServer(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fb
 static int mainLoopRCConnection(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
 {
   int res;
-#warning TODO
 
-  if (rcInputIsManualMode(_rc))
+  if ((res = rcInputReadConnection(_rc)) != 0)
   {
-    int ctrlChasisLR;
-    int ctrlChasisFB;
-    int ctrlHand;
-    int ctrlArm;
-    if ((res = rcInputGetManualCommand(_rc, &ctrlChasisLR, &ctrlChasisFB, &ctrlHand, &ctrlArm)) != 0)
-    {
-      fprintf(stderr, "rcInputGetManualCommand() failed: %d\n", res);
-      return res;
-    }
-    if ((res = roverOutputControlManual(_rover, ctrlChasisLR, ctrlChasisFB, ctrlHand, ctrlArm)) != 0)
-    {
-      fprintf(stderr, "roverOutputControlManual() failed: %d\n", res);
-      return res;
-    }
+    fprintf(stderr, "rcInputReadConnection() failed: %d\n", res);
+    return res;
   }
 
-  return 0;
+  return mainLoopRCManualModeUpdate(_ce, _v4l2Src, _fbDst, _rc, _rover);
 }
 
 
@@ -669,6 +664,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
     return res;
   }
 
+  bool hasAnything = false;;
   if (FD_ISSET(0, &fdsIn)) // stdin
   {
     if ((res = mainLoopRCStdin(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
@@ -676,7 +672,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
       fprintf(stderr, "mainLoopRCStdin() failed: %d\n", res);
       return res;
     }
-    return 0;
+    hasAnything = true;
   }
 
   if (FD_ISSET(_rc->m_serverFd, &fdsIn))
@@ -686,7 +682,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
       fprintf(stderr, "mainLoopRCServer() failed: %d\n", res);
       return res;
     }
-    return 0;
+    hasAnything = true;
   }
 
   if (_rc->m_connectionFd != -1 && FD_ISSET(_rc->m_connectionFd, &fdsIn))
@@ -696,16 +692,18 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
       fprintf(stderr, "mainLoopRCConnection() failed: %d\n", res);
       return res;
     }
-    return 0;
+    hasAnything = true;
   }
 
-  if (FD_ISSET(_v4l2Src->m_fd, &fdsIn))
+  // don't go for video frame if did any other action
+  if (!hasAnything && FD_ISSET(_v4l2Src->m_fd, &fdsIn))
   {
     if ((res = mainLoopV4L2Frame(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
     {
       fprintf(stderr, "mainLoopV4L2Frame() failed: %d\n", res);
       return res;
     }
+    hasAnything = true;
   }
 
   return 0;

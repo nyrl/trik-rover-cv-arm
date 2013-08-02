@@ -34,7 +34,7 @@ static int do_openServerFd(RCInput* _rc, int _port)
 
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
-  addr.sin_port = _port;
+  addr.sin_port = htons(_port);
   addr.sin_addr.s_addr = INADDR_ANY;
 
   if (bind(_rc->m_serverFd, (struct sockaddr*)&addr, sizeof(addr)) != 0)
@@ -114,7 +114,7 @@ static int do_unlistenServerFd(RCInput* _rc)
   if (_rc == NULL)
     return EINVAL;
 
-#warning Seems to be impossible without closing socket?..
+#warning not possible without closing socket?
 
   return 0;
 }
@@ -184,6 +184,102 @@ static int do_readStdio(RCInput* _rc)
   return 0;
 }
 
+static int do_acceptConnection(RCInput* _rc)
+{
+  int res;
+
+  if (_rc == NULL)
+    return EINVAL;
+
+  if (_rc->m_connectionFd != -1)
+  {
+    fprintf(stderr, "Replacing existing remote control connection\n");
+    close(_rc->m_connectionFd);
+  }
+
+  _rc->m_connectionFd = accept(_rc->m_serverFd, NULL, NULL);
+  if (_rc->m_connectionFd < 0)
+  {
+    res = errno;
+    _rc->m_connectionFd = -1;
+    fprintf(stderr, "accept() failed: %d\n", res);
+    return res;
+  }
+
+  _rc->m_readBufferUsed = 0;
+  _rc->m_manualCtrlChasisLR = 0;
+  _rc->m_manualCtrlChasisFB = 0;
+  _rc->m_manualCtrlHand     = 0;
+  _rc->m_manualCtrlArm      = 0;
+
+  return 0;
+}
+
+static int do_dropConnection(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+  if (_rc->m_connectionFd != -1)
+  {
+    fprintf(stderr, "Dropping existing remote control connection\n");
+    close(_rc->m_connectionFd);
+  }
+
+  _rc->m_connectionFd = -1;
+
+  _rc->m_readBufferUsed = 0;
+  _rc->m_manualCtrlChasisLR = 0;
+  _rc->m_manualCtrlChasisFB = 0;
+  _rc->m_manualCtrlHand     = 0;
+  _rc->m_manualCtrlArm      = 0;
+
+  return 0;
+}
+
+static int do_readConnection(RCInput* _rc)
+{
+  int res;
+
+  if (_rc == NULL)
+    return EINVAL;
+
+  if (_rc->m_connectionFd == -1)
+    return ENOTCONN;
+
+  if (_rc->m_readBuffer == NULL || _rc->m_readBufferSize == 0)
+    return EBUSY;
+
+  if (_rc->m_readBufferUsed >= _rc->m_readBufferSize-1)
+  {
+    fprintf(stderr, "Control buffer overflow\n");
+    _rc->m_readBufferUsed = 0;
+  }
+
+  size_t available = _rc->m_readBufferSize-_rc->m_readBufferUsed-1;
+  ssize_t rd = read(_rc->m_connectionFd, _rc->m_readBuffer+_rc->m_readBufferUsed, available);
+  if (rd < 0)
+  {
+    res = errno;
+    fprintf(stderr, "read(%d, %d) failed: %d\n", _rc->m_connectionFd, available, res);
+    do_dropConnection(_rc);
+    return res;
+  }
+  else if (rd == 0)
+    return do_dropConnection(_rc);
+
+  _rc->m_readBufferUsed += rd;
+  _rc->m_readBuffer[_rc->m_readBufferUsed] = '\0';
+
+
+#warning TODO parse input
+  fprintf(stderr, "RC: '%s'\n", _rc->m_readBuffer);
+  _rc->m_readBufferUsed = 0;
+
+
+  return 0;
+}
+
 
 int rcInputInit(bool _verbose)
 {
@@ -214,6 +310,9 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config)
     return res;
   }
 
+  _rc->m_readBufferSize = 1000;
+  _rc->m_readBuffer = malloc(_rc->m_readBufferSize);
+
   _rc->m_connectionFd = -1;
   _rc->m_manualMode = _config->m_manualMode;
   _rc->m_autoTargetDetectHue          = _config->m_autoTargetDetectHue;
@@ -232,6 +331,10 @@ int rcInputClose(RCInput* _rc)
     return EINVAL;
   if (_rc->m_serverFd == -1)
     return EALREADY;
+
+  free(_rc->m_readBuffer);
+  _rc->m_readBuffer = NULL;
+  _rc->m_readBufferSize = 0;
 
   do_closeStdio(_rc);
   do_closeServerFd(_rc);
@@ -271,10 +374,15 @@ int rcInputStop(RCInput* _rc)
   if ((res = do_unlistenServerFd(_rc)) != 0)
     return res;
 
+  _rc->m_manualCtrlChasisLR = 0;
+  _rc->m_manualCtrlChasisFB = 0;
+  _rc->m_manualCtrlHand = 0;
+  _rc->m_manualCtrlArm = 0;
+
   return 0;
 }
 
-int rcInputGetStdin(RCInput* _rc)
+int rcInputReadStdin(RCInput* _rc)
 {
   int res;
 
@@ -289,13 +397,26 @@ int rcInputGetStdin(RCInput* _rc)
 
 int rcInputAcceptConnection(RCInput* _rc)
 {
+  int res;
+
   if (_rc == NULL)
     return EINVAL;
 
-#warning Temporary
-  fprintf(stderr, "incoming connection!\n");
-  close(accept(_rc->m_serverFd, NULL, NULL));
+  if ((res = do_acceptConnection(_rc)) != 0)
+    return res;
 
+  return 0;
+}
+
+int rcInputReadConnection(RCInput* _rc)
+{
+  int res;
+
+  if (_rc == NULL)
+    return EINVAL;
+
+  if ((res = do_readConnection(_rc)) != 0)
+    return res;
 
   return 0;
 }
