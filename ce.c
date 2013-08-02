@@ -185,6 +185,9 @@ static int do_releaseCodec(CodecEngine* _ce)
 static int do_transcodeFrame(CodecEngine* _ce,
                              const void* _srcFramePtr, size_t _srcFrameSize,
                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
+                             float _detectHueFrom, float _detectHueTo,
+                             float _detectSatFrom, float _detectSatTo,
+                             float _detectValFrom, float _detectValTo,
                              int* _targetX, int* _targetY, int* _targetMass)
 {
   if (_ce->m_srcBuffer == NULL || _ce->m_dstBuffer == NULL || _ce->m_dstInfoBuffer == NULL)
@@ -195,11 +198,17 @@ static int do_transcodeFrame(CodecEngine* _ce,
     return ENOSPC;
 
 
-  VIDTRANSCODE_InArgs tcInArgs;
+  TRIK_VIDTRANSCODE_RESAMPLE_InArgs tcInArgs;
   memset(&tcInArgs, 0, sizeof(tcInArgs));
-  tcInArgs.size = sizeof(tcInArgs);
-  tcInArgs.numBytes = _srcFrameSize;
-  tcInArgs.inputID = 1; // must be non-zero, otherwise caching issues appear
+  tcInArgs.base.size = sizeof(tcInArgs);
+  tcInArgs.base.numBytes = _srcFrameSize;
+  tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
+  tcInArgs.detectHueFrom = _detectHueFrom;
+  tcInArgs.detectHueTo   = _detectHueTo;
+  tcInArgs.detectSatFrom = _detectSatFrom;
+  tcInArgs.detectSatTo   = _detectSatTo;
+  tcInArgs.detectValFrom = _detectValFrom;
+  tcInArgs.detectValTo   = _detectValTo;
 
   VIDTRANSCODE_OutArgs tcOutArgs;
   memset(&tcOutArgs,    0, sizeof(tcOutArgs));
@@ -229,7 +238,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
   Memory_cacheInv(_ce->m_dstBuffer, _ce->m_dstBufferSize); // invalidate *whole* cache, not only expected portion, just in case
   Memory_cacheInv(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize);
 
-  XDAS_Int32 processResult = VIDTRANSCODE_process(_ce->m_vidtranscodeHandle, &tcInBufDesc, &tcOutBufDesc, &tcInArgs, &tcOutArgs);
+  XDAS_Int32 processResult = VIDTRANSCODE_process(_ce->m_vidtranscodeHandle, &tcInBufDesc, &tcOutBufDesc, &tcInArgs.base, &tcOutArgs);
   if (processResult != IVIDTRANSCODE_EOK)
   {
     fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) failed: %"PRIi32"/%"PRIi32"\n",
@@ -427,6 +436,9 @@ int codecEngineStop(CodecEngine* _ce)
 int codecEngineTranscodeFrame(CodecEngine* _ce,
                               const void* _srcFramePtr, size_t _srcFrameSize,
                               void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
+                              float _detectHueFrom, float _detectHueTo,
+                              float _detectSatFrom, float _detectSatTo,
+                              float _detectValFrom, float _detectValTo,
                               int* _targetX, int* _targetY, int* _targetMass)
 {
   if (_ce == NULL || _targetX == NULL || _targetY == NULL || _targetMass == NULL)
@@ -435,7 +447,13 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
   if (_ce->m_handle == NULL)
     return ENOTCONN;
 
-  return do_transcodeFrame(_ce, _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, _dstFrameUsed, _targetX, _targetY, _targetMass);
+  return do_transcodeFrame(_ce,
+                           _srcFramePtr, _srcFrameSize,
+                           _dstFramePtr, _dstFrameSize, _dstFrameUsed,
+                           _detectHueFrom, _detectHueTo,
+                           _detectSatFrom, _detectSatTo,
+                           _detectValFrom, _detectValTo,
+                           _targetX, _targetY, _targetMass);
 }
 
 int codecEngineReportLoad(CodecEngine* _ce)

@@ -57,6 +57,9 @@ int codecEngineStop(CodecEngine* _ce);
 int codecEngineTranscodeFrame(CodecEngine* _ce,
                               const void* _srcFramePtr, size_t _srcFrameSize,
                               void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
+                              float _detectHueFrom, float _detectHueTo,
+                              float _detectSatFrom, float _detectSatTo,
+                              float _detectValFrom, float _detectValTo,
                               int* _targetX, int* _targetY, int* _targetMass);
 
 

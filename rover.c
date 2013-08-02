@@ -164,7 +164,7 @@ static int do_roverMotorSetPower(RoverOutput* _rover,
   if (dprintf(_motor->m_fd, "%d\n", pwm) < 0)
   {
     res = errno;
-    fprintf(stderr, "dprintf(%d) failed: %d\n", pwm, res);
+    fprintf(stderr, "dprintf(%d, %d) failed: %d\n", _motor->m_fd, pwm, res);
     return res;
   }
   fsync(_motor->m_fd);

@@ -14,6 +14,15 @@
 #include "internal/rover.h"
 
 
+#warning TEMPORARY solution for color control
+static float s_TMP_detectHueFrom = 330.0f;
+static float s_TMP_detectHueTo = 30.0f;
+static float s_TMP_detectSatFrom = 0.2f;
+static float s_TMP_detectSatTo = 2.0f;
+static float s_TMP_detectValFrom = 0.5f;
+static float s_TMP_detectValTo = 2.0f;
+
+
 
 static sig_atomic_t s_terminate = false;
 static void sigterm_action(int _signal, siginfo_t* _siginfo, void* _context)
@@ -444,6 +453,9 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, Rov
     if ((res = codecEngineTranscodeFrame(_ce,
                                          frameSrcPtr, frameSrcSize,
                                          frameDstPtr, frameDstSize, &frameDstUsed,
+                                         s_TMP_detectHueFrom, s_TMP_detectHueTo,
+                                         s_TMP_detectSatFrom, s_TMP_detectSatTo,
+                                         s_TMP_detectValFrom, s_TMP_detectValTo,
                                          &targetX, &targetY, &targetMass)) != 0)
     {
       fprintf(stderr, "codecEngineTranscodeFrame(%p[%zu] -> %p[%zu]) failed: %d\n",
