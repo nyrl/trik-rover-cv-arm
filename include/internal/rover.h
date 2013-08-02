@@ -12,6 +12,11 @@ extern "C" {
 
 typedef struct RoverConfigMotorMsp
 {
+  int m_mspI2CBusId;
+  int m_mspI2CDeviceId;
+  int m_mspMotorId;
+  int m_powerMin;
+  int m_powerMax;
 } RoverConfigMotorMsp;
 
 typedef struct RoverConfigMotor
@@ -43,6 +48,11 @@ typedef struct RoverConfig // what user wants to set
 
 typedef struct RoverMotorMsp
 {
+  int m_i2cBusFd;
+  int m_mspI2CDeviceId;
+  int m_mspMotorId;
+  int m_powerMin;
+  int m_powerMax;
 } RoverMotorMsp;
 
 typedef struct RoverMotor

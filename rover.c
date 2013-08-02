@@ -8,6 +8,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <linux/i2c-dev.h>
 
 #include "internal/rover.h"
 
@@ -18,14 +19,46 @@ static int do_roverOpenMotorMsp(RoverOutput* _rover,
                                 RoverMotorMsp* _motor,
                                 const RoverConfigMotorMsp* _config)
 {
-#warning TODO open msp motor
+  int res;
+
+  if (_rover == NULL || _motor == NULL || _config == NULL)
+    return EINVAL;
+
+  char busPath[100];
+  snprintf(busPath, sizeof(busPath), "/dev/i2c-%d", _config->m_mspI2CBusId);
+  _motor->m_i2cBusFd = open(busPath, O_RDWR);
+  if (_motor->m_i2cBusFd < 0)
+  {
+    res = errno;
+    fprintf(stderr, "open(%s) failed: %d\n", busPath, res);
+    _motor->m_i2cBusFd = -1;
+    return res;
+  }
+
+  _motor->m_mspI2CDeviceId = _config->m_mspI2CDeviceId;
+  _motor->m_mspMotorId     = _config->m_mspMotorId;
+  _motor->m_powerMin       = _config->m_powerMin;
+  _motor->m_powerMax       = _config->m_powerMax;
+
   return 0;
 }
 
 static int do_roverCloseMotorMsp(RoverOutput* _rover,
                                  RoverMotorMsp* _motor)
 {
-#warning TODO close msp motor
+  int res;
+
+  if (_rover == NULL || _motor == NULL)
+    return EINVAL;
+
+  if (close(_motor->m_i2cBusFd) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "close() failed: %d\n", res);
+    return res;
+  }
+  _motor->m_i2cBusFd = -1;
+
   return 0;
 }
 
@@ -178,10 +211,56 @@ static int do_roverMotorMspSetPower(RoverOutput* _rover,
                                     RoverMotorMsp* _motor,
                                     int _power)
 {
+  int res;
+
   if (_rover == NULL || _motor == NULL)
     return EINVAL;
 
-#warning TODO control msp motor
+  int pwm = 0x0;
+  int dir = 0x0;
+
+  if (_power == 0)
+    dir = 0x0; // neutral
+  else if (_power < 0)
+  {
+    dir = 0x2; // back
+    if (_power < -100)
+      pwm = _motor->m_powerMax;
+    else
+      pwm = _motor->m_powerMin + ((_motor->m_powerMax-_motor->m_powerMin)*(-_power))/100;
+  }
+  else
+  {
+    dir = 0x1; // forward
+    if (_power > 100)
+      pwm = _motor->m_powerMax;
+    else
+      pwm = _motor->m_powerMin + ((_motor->m_powerMax-_motor->m_powerMin)*_power)/100;
+  }
+
+  int devId = _motor->m_mspI2CDeviceId;
+  if (ioctl(_motor->m_i2cBusFd, I2C_SLAVE, devId) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "ioctl(%d, I2C_SLAVE, %d) failed: %d\n", _motor->m_i2cBusFd, devId, res);
+    return res;
+  }
+
+  unsigned char cmd[2];
+  cmd[0] = ((dir)                    &0x03)
+         | ((_motor->m_mspMotorId<<2)&0x1c);
+  cmd[1] = ((pwm)                    &0xff);
+
+  if ((res = write(_motor->m_i2cBusFd, &cmd, sizeof(cmd))) != sizeof(cmd))
+  {
+    if (res >= 0)
+      res = E2BIG;
+    else
+      res = errno;
+    fprintf(stderr, "write(%d) failed: %d\n", _motor->m_i2cBusFd, res);
+    return res;
+  }
+
   return 0;
 }
 

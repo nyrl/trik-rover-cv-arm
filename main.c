@@ -43,11 +43,11 @@ static bool s_cfgVerbose = false;
 static CodecEngineConfig s_cfgCodecEngine = { "dsp_server.xe674", "vidtranscode_resample" };
 static V4L2Config s_cfgV4L2Input = { "/dev/video0", 352, 288, V4L2_PIX_FMT_YUYV };
 static FBConfig s_cfgFBOutput = { "/dev/fb0" };
-static RoverConfig s_cfgRoverOutput = { {}, //msp left
-                                        {}, //msp right
+static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 1, 0x30, 0x58 }, //msp left
+                                        { 2, 0x48, 2, 0x30, 0x58 }, //msp right
                                         { "/sys/class/pwm/ecap.0/duty_ns",     700000,  1300000, 0, 1700000, 2300000 }, //up-down m1
                                         { "/sys/class/pwm/ecap.1/duty_ns",     2300000, 1700000, 0, 1300000, 700000  }, //up-down m2
-                                        { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 2300000, 1700000, 0, 1300000, 700000  }, //squeeze
+                                        { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1300000, 0, 1700000, 2300000 }, //squeeze
                                         0, 50, 600 };
 static RCConfig s_cfgRCInput = { 4000, false, 0.0f, 20.0f, 0.7f, 0.3f, 0.7f, 0.3f };
 
@@ -102,7 +102,8 @@ static bool parse_args(int _argc, char* const _argv[])
     { "help",			0,	NULL,	'h' },
   };
 
-#warning TODO rc color detection configuration
+#warning TODO MSP motors configuration
+
   while ((opt = getopt_long(_argc, _argv, optstring, longopts, &longopt)) != -1)
   {
     switch (opt)
@@ -307,6 +308,8 @@ int main(int _argc, char* const _argv[])
 
   RoverOutput rover;
   memset(&rover, 0, sizeof(rover));
+  rover.m_motorMsp1.m_i2cBusFd = -1;
+  rover.m_motorMsp2.m_i2cBusFd = -1;
   rover.m_motor1.m_fd = -1;
   rover.m_motor2.m_fd = -1;
   rover.m_motor3.m_fd = -1;
