@@ -88,23 +88,27 @@ static bool parse_args(int _argc, char* const _argv[])
     { "rover-m3-neutral",	1,	NULL,	0   },
     { "rover-m3-forward-zero",	1,	NULL,	0   },
     { "rover-m3-forward-full",	1,	NULL,	0   },
-    { "rover-zero-x",		1,	NULL,	0   }, // 25
+    { "rover-msp-m1-min",	1,	NULL,	0   }, // 25
+    { "rover-msp-m1-max",	1,	NULL,	0   },
+    { "rover-msp-m2-min",	1,	NULL,	0   }, // 27
+    { "rover-msp-m2-max",	1,	NULL,	0   },
+    { "rover-zero-x",		1,	NULL,	0   }, // 29
     { "rover-zero-y",		1,	NULL,	0   },
     { "rover-zero-mass",	1,	NULL,	0   },
-    { "rc-port",		1,	NULL,	0   }, // 28
+    { "rc-port",		1,	NULL,	0   }, // 32
     { "rc-stdin",		1,	NULL,	0   },
     { "rc-manual",		1,	NULL,	0   },
-    { "target-hue",		1,	NULL,	0   }, // 31
+    { "target-hue",		1,	NULL,	0   }, // 35
     { "target-hue-tolerance",	1,	NULL,	0   },
-    { "target-sat",		1,	NULL,	0   }, // 33
+    { "target-sat",		1,	NULL,	0   }, // 37
     { "target-sat-tolerance",	1,	NULL,	0   },
-    { "target-val",		1,	NULL,	0   }, // 35
+    { "target-val",		1,	NULL,	0   }, // 39
     { "target-val-tolerance",	1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
   };
 
-#warning TODO MSP motors configuration
+#warning TODO Detailed MSP motors configuration
 
   while ((opt = getopt_long(_argc, _argv, optstring, longopts, &longopt)) != -1)
   {
@@ -159,20 +163,25 @@ static bool parse_args(int _argc, char* const _argv[])
           case 23: s_cfgRoverOutput.m_motor3.m_powerForwardZero = atoi(optarg);	break;
           case 24: s_cfgRoverOutput.m_motor3.m_powerForwardFull = atoi(optarg);	break;
 
-          case 25: s_cfgRoverOutput.m_zeroX    = atoi(optarg);	break;
-          case 26: s_cfgRoverOutput.m_zeroY    = atoi(optarg);	break;
-          case 27: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
+          case 25: s_cfgRoverOutput.m_motorMsp1.m_powerMin = atoi(optarg);	break;
+          case 26: s_cfgRoverOutput.m_motorMsp1.m_powerMax = atoi(optarg);	break;
+          case 27: s_cfgRoverOutput.m_motorMsp2.m_powerMin = atoi(optarg);	break;
+          case 28: s_cfgRoverOutput.m_motorMsp2.m_powerMax = atoi(optarg);	break;
 
-          case 28: s_cfgRCInput.m_port = atoi(optarg);				break;
-          case 29: s_cfgRCInput.m_stdin = atoi(optarg);				break;
-          case 30: s_cfgRCInput.m_manualMode = atoi(optarg);			break;
+          case 29: s_cfgRoverOutput.m_zeroX    = atoi(optarg);	break;
+          case 30: s_cfgRoverOutput.m_zeroY    = atoi(optarg);	break;
+          case 31: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
 
-          case 31: s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);		break;
-          case 32: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
-          case 33: s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);		break;
-          case 34: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
-          case 35: s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);		break;
-          case 36: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
+          case 32: s_cfgRCInput.m_port = atoi(optarg);				break;
+          case 33: s_cfgRCInput.m_stdin = atoi(optarg);				break;
+          case 34: s_cfgRCInput.m_manualMode = atoi(optarg);			break;
+
+          case 35: s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);		break;
+          case 36: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
+          case 37: s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);		break;
+          case 38: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
+          case 39: s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);		break;
+          case 40: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
 
           default:
             return false;
@@ -216,6 +225,8 @@ int main(int _argc, char* const _argv[])
                     "   --rover-mN-neutral      <rover-motorN-neutral-power>\n"
                     "   --rover-mN-forward-zero <rover-motorN-slow-forward-power>\n"
                     "   --rover-mN-forward-full <rover-motorN-full-forward-power>\n"
+                    "   --rover-msp-mN-min      <rover-msp-motorN-min-power>\n"
+                    "   --rover-msp-mN-max      <rover-msp-motorN-max-power>\n"
                     "   --rover-zero-x          <rover-center-X>\n"
                     "   --rover-zero-y          <rover-center-Y>\n"
                     "   --rover-zero-mass       <rover-center-mass>\n"
