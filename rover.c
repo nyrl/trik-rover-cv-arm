@@ -466,16 +466,28 @@ static int do_roverCtrlChasisTracking(RoverOutput* _rover, int _targetX, int _ta
   yaw = powerIntegral(yaw, chasis->m_lastYaw, 10);
 
   speed = powerProportional(_targetMass, 0, chasis->m_zeroMass, 10000); // back/forward based on ball size
-  backSpeed = abs(powerProportional(_targetY, -100, chasis->m_zeroY, 100)); // move back/forward if ball leaves range
-  if (backSpeed >= 40 && speed < 0)
-    speed += (backSpeed-40)*4;
+  backSpeed = powerProportional(_targetY, -100, chasis->m_zeroY, 100); // move back/forward if ball leaves range
+  if (backSpeed >= 20)
+    speed += (backSpeed-20)*3;
   speed = powerIntegral(speed, chasis->m_lastSpeed, 10);
 
   chasis->m_lastYaw = yaw;
   chasis->m_lastSpeed = speed;
 
-  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, -speed+yaw);
-  do_roverMotorMspSetPower(_rover, chasis->m_motorRight, -speed-yaw);
+  int speedL = (-speed+yaw);
+  if (speedL >= 30)
+    speedL = 30+(speedL-30)/2;
+  else if (speedL <= -30)
+    speedL = -30+(speedL+30)/2;
+
+  int speedR = (-speed-yaw);
+  if (speedR >= 30)
+    speedR = 30+(speedR-30)/2;
+  else if (speedR <= -30)
+    speedR = -30+(speedR+30)/2;
+
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, speedL);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight, speedR);
 
   return 0;
 }
