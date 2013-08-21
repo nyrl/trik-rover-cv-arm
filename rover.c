@@ -36,7 +36,7 @@ static int do_roverOpenMotorMsp(RoverOutput* _rover,
   }
 
   _motor->m_mspI2CDeviceId = _config->m_mspI2CDeviceId;
-  _motor->m_mspMotorId     = _config->m_mspMotorId;
+  _motor->m_mspI2CMotorCmd = _config->m_mspI2CMotorCmd;
   _motor->m_powerMin       = _config->m_powerMin;
   _motor->m_powerMax       = _config->m_powerMax;
 
@@ -127,8 +127,25 @@ static int do_roverOpen(RoverOutput* _rover,
     return res;
   }
 
+  if ((res = do_roverOpenMotorMsp(_rover, &_rover->m_motorMsp3, &_config->m_motorMsp3)) != 0)
+  {
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp2);
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp1);
+    return res;
+  }
+
+  if ((res = do_roverOpenMotorMsp(_rover, &_rover->m_motorMsp4, &_config->m_motorMsp4)) != 0)
+  {
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp3);
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp2);
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp1);
+    return res;
+  }
+
   if ((res = do_roverOpenMotor(_rover, &_rover->m_motor1, &_config->m_motor1)) != 0)
   {
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp4);
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp3);
     do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp2);
     do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp1);
     return res;
@@ -137,6 +154,8 @@ static int do_roverOpen(RoverOutput* _rover,
   if ((res = do_roverOpenMotor(_rover, &_rover->m_motor2, &_config->m_motor2)) != 0)
   {
     do_roverCloseMotor(_rover, &_rover->m_motor1);
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp4);
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp3);
     do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp2);
     do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp1);
     return res;
@@ -146,6 +165,8 @@ static int do_roverOpen(RoverOutput* _rover,
   {
     do_roverCloseMotor(_rover, &_rover->m_motor2);
     do_roverCloseMotor(_rover, &_rover->m_motor1);
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp4);
+    do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp3);
     do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp2);
     do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp1);
     return res;
@@ -162,6 +183,8 @@ static int do_roverClose(RoverOutput* _rover)
   do_roverCloseMotor(_rover, &_rover->m_motor3);
   do_roverCloseMotor(_rover, &_rover->m_motor2);
   do_roverCloseMotor(_rover, &_rover->m_motor1);
+  do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp4);
+  do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp3);
   do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp2);
   do_roverCloseMotorMsp(_rover, &_rover->m_motorMsp1);
 
@@ -217,21 +240,18 @@ static int do_roverMotorMspSetPower(RoverOutput* _rover,
     return EINVAL;
 
   int pwm = 0x0;
-  int dir = 0x0;
 
-  if (_power == 0)
-    dir = 0x0; // neutral
-  else if (_power < 0)
+  if (_power == 0) // neutral
+    pwm = 0x0;
+  else if (_power < 0) // back
   {
-    dir = 0x2; // back
     if (_power < -100)
       pwm = _motor->m_powerMax;
     else
       pwm = _motor->m_powerMin + ((_motor->m_powerMax-_motor->m_powerMin)*(-_power))/100;
   }
-  else
+  else // forward
   {
-    dir = 0x1; // forward
     if (_power > 100)
       pwm = _motor->m_powerMax;
     else
@@ -247,9 +267,8 @@ static int do_roverMotorMspSetPower(RoverOutput* _rover,
   }
 
   unsigned char cmd[2];
-  cmd[0] = ((dir)                    &0x03)
-         | ((_motor->m_mspMotorId<<2)&0x1c);
-  cmd[1] = ((pwm)                    &0xff);
+  cmd[0] = (_motor->m_mspI2CMotorCmd)&0xff;
+  cmd[1] =  pwm&0xff;
 
   if ((res = write(_motor->m_i2cBusFd, &cmd, sizeof(cmd))) != sizeof(cmd))
   {
@@ -268,8 +287,10 @@ static int do_roverCtrlChasisSetup(RoverOutput* _rover, const RoverConfig* _conf
 {
   RoverControlChasis* chasis = &_rover->m_ctrlChasis;
 
-  chasis->m_motorLeft  = &_rover->m_motorMsp1;
-  chasis->m_motorRight = &_rover->m_motorMsp2;
+  chasis->m_motorLeft1  = &_rover->m_motorMsp1;
+  chasis->m_motorLeft2  = &_rover->m_motorMsp2;
+  chasis->m_motorRight1 = &_rover->m_motorMsp3;
+  chasis->m_motorRight2 = &_rover->m_motorMsp4;
   chasis->m_lastSpeed = 0;
   chasis->m_lastYaw = 0;
   chasis->m_zeroX = _config->m_zeroX;
@@ -336,8 +357,10 @@ static int do_roverCtrlChasisManual(RoverOutput* _rover, int _ctrlChasisLR, int 
 {
   RoverControlChasis* chasis = &_rover->m_ctrlChasis;
 
-  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, _ctrlChasisFB+_ctrlChasisLR);
-  do_roverMotorMspSetPower(_rover, chasis->m_motorRight, _ctrlChasisFB-_ctrlChasisLR);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft1, _ctrlChasisFB+_ctrlChasisLR);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft2, _ctrlChasisFB+_ctrlChasisLR);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight1, _ctrlChasisFB-_ctrlChasisLR);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight2, _ctrlChasisFB-_ctrlChasisLR);
 
   return 0;
 }
@@ -366,8 +389,10 @@ static int do_roverCtrlChasisPreparing(RoverOutput* _rover)
 {
   RoverControlChasis* chasis = &_rover->m_ctrlChasis;
 
-  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, 0);
-  do_roverMotorMspSetPower(_rover, chasis->m_motorRight, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft1, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft2, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight1, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight2, 0);
 
   return 0;
 }
@@ -396,8 +421,10 @@ static int do_roverCtrlChasisSearching(RoverOutput* _rover)
 {
   RoverControlChasis* chasis = &_rover->m_ctrlChasis;
 
-  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, 0);
-  do_roverMotorMspSetPower(_rover, chasis->m_motorRight, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft1, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft2, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight1, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight2, 0);
 
   return 0;
 }
@@ -486,8 +513,10 @@ static int do_roverCtrlChasisTracking(RoverOutput* _rover, int _targetX, int _ta
   else if (speedR <= -30)
     speedR = -30+(speedR+30)/2;
 
-  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, speedL);
-  do_roverMotorMspSetPower(_rover, chasis->m_motorRight, speedR);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft1, speedL);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft2, speedL);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight1, speedR);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight2, speedR);
 
   return 0;
 }
@@ -536,8 +565,10 @@ static int do_roverCtrlChasisSqueezing(RoverOutput* _rover)
 {
   RoverControlChasis* chasis = &_rover->m_ctrlChasis;
 
-  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, 0);
-  do_roverMotorMspSetPower(_rover, chasis->m_motorRight, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft1, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorLeft2, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight1, 0);
+  do_roverMotorMspSetPower(_rover, chasis->m_motorRight2, 0);
 
   return 0;
 }
@@ -569,18 +600,24 @@ static int do_roverCtrlChasisReleasing(RoverOutput* _rover, int _ms)
 
   if (_ms < 2000)
   {
-    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, 0);
-    do_roverMotorMspSetPower(_rover, chasis->m_motorRight, 0);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft1, 0);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft2, 0);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorRight1, 0);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorRight2, 0);
   }
   else if (_ms < 4000)
   {
-    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, 100);
-    do_roverMotorMspSetPower(_rover, chasis->m_motorRight, -100);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft1, 50);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft2, 50);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorRight1, -50);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorRight2, -50);
   }
   else
   {
-    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft, -100);
-    do_roverMotorMspSetPower(_rover, chasis->m_motorRight, 100);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft1, -50);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorLeft2, -50);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorRight1, 50);
+    do_roverMotorMspSetPower(_rover, chasis->m_motorRight2, 50);
   }
 
   return 0;
@@ -678,6 +715,8 @@ int roverOutputStart(RoverOutput* _rover)
 
   do_roverMotorMspSetPower(_rover, &_rover->m_motorMsp1, 0);
   do_roverMotorMspSetPower(_rover, &_rover->m_motorMsp2, 0);
+  do_roverMotorMspSetPower(_rover, &_rover->m_motorMsp3, 0);
+  do_roverMotorMspSetPower(_rover, &_rover->m_motorMsp4, 0);
   do_roverMotorSetPower(_rover, &_rover->m_motor1, 0);
   do_roverMotorSetPower(_rover, &_rover->m_motor2, 0);
   do_roverMotorSetPower(_rover, &_rover->m_motor3, 0);
@@ -698,6 +737,8 @@ int roverOutputStop(RoverOutput* _rover)
 
   do_roverMotorMspSetPower(_rover, &_rover->m_motorMsp1, 0);
   do_roverMotorMspSetPower(_rover, &_rover->m_motorMsp2, 0);
+  do_roverMotorMspSetPower(_rover, &_rover->m_motorMsp3, 0);
+  do_roverMotorMspSetPower(_rover, &_rover->m_motorMsp4, 0);
   do_roverMotorSetPower(_rover, &_rover->m_motor1, 0);
   do_roverMotorSetPower(_rover, &_rover->m_motor2, 0);
   do_roverMotorSetPower(_rover, &_rover->m_motor3, 0);

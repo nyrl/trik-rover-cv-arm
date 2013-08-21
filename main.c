@@ -43,8 +43,10 @@ static bool s_cfgVerbose = false;
 static CodecEngineConfig s_cfgCodecEngine = { "dsp_server.xe674", "vidtranscode_resample" };
 static V4L2Config s_cfgV4L2Input = { "/dev/video0", 352, 288, V4L2_PIX_FMT_YUYV };
 static FBConfig s_cfgFBOutput = { "/dev/fb0" };
-static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 1, 0x28, 0x58 }, //msp left
-                                        { 2, 0x48, 2, 0x28, 0x58 }, //msp right
+static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 0x10, 0x00, 0x64 }, //msp left1
+                                        { 2, 0x48, 0x13, 0x00, 0x64 }, //msp left2
+                                        { 2, 0x48, 0x11, 0x00, 0x64 }, //msp right1
+                                        { 2, 0x48, 0x12, 0x00, 0x64 }, //msp right2
                                         { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  }, //up-down m1
                                         { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 }, //up-down m2
                                         { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 }, //squeeze
@@ -88,21 +90,37 @@ static bool parse_args(int _argc, char* const _argv[])
     { "rover-m3-neutral",	1,	NULL,	0   },
     { "rover-m3-forward-zero",	1,	NULL,	0   },
     { "rover-m3-forward-full",	1,	NULL,	0   },
-    { "rover-msp-m1-min",	1,	NULL,	0   }, // 25
+    { "rover-msp-m1-i2c-bus",	1,	NULL,	0   }, // 25
+    { "rover-msp-m1-i2c-dev",	1,	NULL,	0   },
+    { "rover-msp-m1-i2c-cmd",	1,	NULL,	0   },
+    { "rover-msp-m1-min",	1,	NULL,	0   },
     { "rover-msp-m1-max",	1,	NULL,	0   },
-    { "rover-msp-m2-min",	1,	NULL,	0   }, // 27
+    { "rover-msp-m2-i2c-bus",	1,	NULL,	0   }, // 30
+    { "rover-msp-m2-i2c-dev",	1,	NULL,	0   },
+    { "rover-msp-m2-i2c-cmd",	1,	NULL,	0   },
+    { "rover-msp-m2-min",	1,	NULL,	0   },
     { "rover-msp-m2-max",	1,	NULL,	0   },
-    { "rover-zero-x",		1,	NULL,	0   }, // 29
+    { "rover-msp-m3-i2c-bus",	1,	NULL,	0   }, // 35
+    { "rover-msp-m3-i2c-dev",	1,	NULL,	0   },
+    { "rover-msp-m3-i2c-cmd",	1,	NULL,	0   },
+    { "rover-msp-m3-min",	1,	NULL,	0   },
+    { "rover-msp-m3-max",	1,	NULL,	0   },
+    { "rover-msp-m4-i2c-bus",	1,	NULL,	0   }, // 40
+    { "rover-msp-m4-i2c-dev",	1,	NULL,	0   },
+    { "rover-msp-m4-i2c-cmd",	1,	NULL,	0   },
+    { "rover-msp-m4-min",	1,	NULL,	0   },
+    { "rover-msp-m4-max",	1,	NULL,	0   },
+    { "rover-zero-x",		1,	NULL,	0   }, // 45
     { "rover-zero-y",		1,	NULL,	0   },
     { "rover-zero-mass",	1,	NULL,	0   },
-    { "rc-port",		1,	NULL,	0   }, // 32
+    { "rc-port",		1,	NULL,	0   }, // 48
     { "rc-stdin",		1,	NULL,	0   },
     { "rc-manual",		1,	NULL,	0   },
-    { "target-hue",		1,	NULL,	0   }, // 35
+    { "target-hue",		1,	NULL,	0   }, // 51
     { "target-hue-tolerance",	1,	NULL,	0   },
-    { "target-sat",		1,	NULL,	0   }, // 37
+    { "target-sat",		1,	NULL,	0   }, // 53
     { "target-sat-tolerance",	1,	NULL,	0   },
-    { "target-val",		1,	NULL,	0   }, // 39
+    { "target-val",		1,	NULL,	0   }, // 55
     { "target-val-tolerance",	1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
@@ -126,7 +144,7 @@ static bool parse_args(int _argc, char* const _argv[])
           case 3: s_cfgV4L2Input.m_width = atoi(optarg);	break;
           case 4: s_cfgV4L2Input.m_height = atoi(optarg);	break;
           case 5:
-            if	    (!strcasecmp(optarg, "rgb888"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB24;
+            if      (!strcasecmp(optarg, "rgb888"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB24;
             else if (!strcasecmp(optarg, "rgb565"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB565;
             else if (!strcasecmp(optarg, "rgb565x"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_RGB565X;
             else if (!strcasecmp(optarg, "yuv444"))	s_cfgV4L2Input.m_format = V4L2_PIX_FMT_YUV32;
@@ -163,25 +181,44 @@ static bool parse_args(int _argc, char* const _argv[])
           case 23: s_cfgRoverOutput.m_motor3.m_powerForwardZero = atoi(optarg);	break;
           case 24: s_cfgRoverOutput.m_motor3.m_powerForwardFull = atoi(optarg);	break;
 
-          case 25: s_cfgRoverOutput.m_motorMsp1.m_powerMin = atoi(optarg);	break;
-          case 26: s_cfgRoverOutput.m_motorMsp1.m_powerMax = atoi(optarg);	break;
-          case 27: s_cfgRoverOutput.m_motorMsp2.m_powerMin = atoi(optarg);	break;
-          case 28: s_cfgRoverOutput.m_motorMsp2.m_powerMax = atoi(optarg);	break;
+          case 25: s_cfgRoverOutput.m_motorMsp1.m_mspI2CBusId    = atoi(optarg);	break;
+          case 26: s_cfgRoverOutput.m_motorMsp1.m_mspI2CDeviceId = atoi(optarg);	break;
+          case 27: s_cfgRoverOutput.m_motorMsp1.m_mspI2CMotorCmd = atoi(optarg);	break;
+          case 28: s_cfgRoverOutput.m_motorMsp1.m_powerMin       = atoi(optarg);	break;
+          case 29: s_cfgRoverOutput.m_motorMsp1.m_powerMax       = atoi(optarg);	break;
 
-          case 29: s_cfgRoverOutput.m_zeroX    = atoi(optarg);	break;
-          case 30: s_cfgRoverOutput.m_zeroY    = atoi(optarg);	break;
-          case 31: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
+          case 30: s_cfgRoverOutput.m_motorMsp2.m_mspI2CBusId    = atoi(optarg);	break;
+          case 31: s_cfgRoverOutput.m_motorMsp2.m_mspI2CDeviceId = atoi(optarg);	break;
+          case 32: s_cfgRoverOutput.m_motorMsp2.m_mspI2CMotorCmd = atoi(optarg);	break;
+          case 33: s_cfgRoverOutput.m_motorMsp2.m_powerMin       = atoi(optarg);	break;
+          case 34: s_cfgRoverOutput.m_motorMsp2.m_powerMax       = atoi(optarg);	break;
 
-          case 32: s_cfgRCInput.m_port = atoi(optarg);				break;
-          case 33: s_cfgRCInput.m_stdin = atoi(optarg);				break;
-          case 34: s_cfgRCInput.m_manualMode = atoi(optarg);			break;
+          case 35: s_cfgRoverOutput.m_motorMsp3.m_mspI2CBusId    = atoi(optarg);	break;
+          case 36: s_cfgRoverOutput.m_motorMsp3.m_mspI2CDeviceId = atoi(optarg);	break;
+          case 37: s_cfgRoverOutput.m_motorMsp3.m_mspI2CMotorCmd = atoi(optarg);	break;
+          case 38: s_cfgRoverOutput.m_motorMsp3.m_powerMin       = atoi(optarg);	break;
+          case 39: s_cfgRoverOutput.m_motorMsp3.m_powerMax       = atoi(optarg);	break;
 
-          case 35: s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);		break;
-          case 36: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
-          case 37: s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);		break;
-          case 38: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
-          case 39: s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);		break;
-          case 40: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
+          case 40: s_cfgRoverOutput.m_motorMsp4.m_mspI2CBusId    = atoi(optarg);	break;
+          case 41: s_cfgRoverOutput.m_motorMsp4.m_mspI2CDeviceId = atoi(optarg);	break;
+          case 42: s_cfgRoverOutput.m_motorMsp4.m_mspI2CMotorCmd = atoi(optarg);	break;
+          case 43: s_cfgRoverOutput.m_motorMsp4.m_powerMin       = atoi(optarg);	break;
+          case 44: s_cfgRoverOutput.m_motorMsp4.m_powerMax       = atoi(optarg);	break;
+
+          case 45: s_cfgRoverOutput.m_zeroX    = atoi(optarg);	break;
+          case 46: s_cfgRoverOutput.m_zeroY    = atoi(optarg);	break;
+          case 47: s_cfgRoverOutput.m_zeroMass = atoi(optarg);	break;
+
+          case 48: s_cfgRCInput.m_port = atoi(optarg);				break;
+          case 49: s_cfgRCInput.m_stdin = atoi(optarg);				break;
+          case 50: s_cfgRCInput.m_manualMode = atoi(optarg);			break;
+
+          case 51: s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);		break;
+          case 52: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
+          case 53: s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);		break;
+          case 54: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
+          case 55: s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);		break;
+          case 56: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
 
           default:
             return false;
@@ -225,6 +262,9 @@ int main(int _argc, char* const _argv[])
                     "   --rover-mN-neutral      <rover-motorN-neutral-power>\n"
                     "   --rover-mN-forward-zero <rover-motorN-slow-forward-power>\n"
                     "   --rover-mN-forward-full <rover-motorN-full-forward-power>\n"
+                    "   --rover-msp-mN-i2c-bus  <rover-msp-motorN-i2c-bus-id>\n"
+                    "   --rover-msp-mN-i2c-dev  <rover-msp-motorN-i2c-device-id>\n"
+                    "   --rover-msp-mN-i2c-cmd  <rover-msp-motorN-i2c-command>\n"
                     "   --rover-msp-mN-min      <rover-msp-motorN-min-power>\n"
                     "   --rover-msp-mN-max      <rover-msp-motorN-max-power>\n"
                     "   --rover-zero-x          <rover-center-X>\n"
@@ -328,6 +368,8 @@ int main(int _argc, char* const _argv[])
   memset(&rover, 0, sizeof(rover));
   rover.m_motorMsp1.m_i2cBusFd = -1;
   rover.m_motorMsp2.m_i2cBusFd = -1;
+  rover.m_motorMsp3.m_i2cBusFd = -1;
+  rover.m_motorMsp4.m_i2cBusFd = -1;
   rover.m_motor1.m_fd = -1;
   rover.m_motor2.m_fd = -1;
   rover.m_motor3.m_fd = -1;

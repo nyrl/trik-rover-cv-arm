@@ -14,7 +14,7 @@ typedef struct RoverConfigMotorMsp
 {
   int m_mspI2CBusId;
   int m_mspI2CDeviceId;
-  int m_mspMotorId;
+  int m_mspI2CMotorCmd;
   int m_powerMin;
   int m_powerMax;
 } RoverConfigMotorMsp;
@@ -34,6 +34,8 @@ typedef struct RoverConfig // what user wants to set
 {
   RoverConfigMotorMsp m_motorMsp1;
   RoverConfigMotorMsp m_motorMsp2;
+  RoverConfigMotorMsp m_motorMsp3;
+  RoverConfigMotorMsp m_motorMsp4;
   RoverConfigMotor m_motor1;
   RoverConfigMotor m_motor2;
   RoverConfigMotor m_motor3;
@@ -50,7 +52,7 @@ typedef struct RoverMotorMsp
 {
   int m_i2cBusFd;
   int m_mspI2CDeviceId;
-  int m_mspMotorId;
+  int m_mspI2CMotorCmd;
   int m_powerMin;
   int m_powerMax;
 } RoverMotorMsp;
@@ -67,8 +69,10 @@ typedef struct RoverMotor
 
 typedef struct RoverControlChasis
 {
-  RoverMotorMsp* m_motorLeft;
-  RoverMotorMsp* m_motorRight;
+  RoverMotorMsp* m_motorLeft1;
+  RoverMotorMsp* m_motorLeft2;
+  RoverMotorMsp* m_motorRight1;
+  RoverMotorMsp* m_motorRight2;
 
   int         m_lastSpeed; // -100..100
   int         m_lastYaw;   // -100..100
@@ -100,6 +104,8 @@ typedef struct RoverOutput
 
   RoverMotorMsp m_motorMsp1;
   RoverMotorMsp m_motorMsp2;
+  RoverMotorMsp m_motorMsp3;
+  RoverMotorMsp m_motorMsp4;
   RoverMotor m_motor1;
   RoverMotor m_motor2;
   RoverMotor m_motor3;
