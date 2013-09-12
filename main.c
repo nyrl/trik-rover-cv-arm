@@ -43,15 +43,15 @@ static bool s_cfgVerbose = false;
 static CodecEngineConfig s_cfgCodecEngine = { "dsp_server.xe674", "vidtranscode_resample" };
 static V4L2Config s_cfgV4L2Input = { "/dev/video0", 352, 288, V4L2_PIX_FMT_YUYV };
 static FBConfig s_cfgFBOutput = { "/dev/fb0" };
-static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 0x10, 0x00, 0x64 }, //msp left1
-                                        { 2, 0x48, 0x13, 0x00, 0x64 }, //msp left2
-                                        { 2, 0x48, 0x11, 0x00, 0x64 }, //msp right1
-                                        { 2, 0x48, 0x12, 0x00, 0x64 }, //msp right2
+static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 0x15, 0x6, 0x64 }, //msp left1
+                                        { 2, 0x48, 0x15, 0x6, 0x64 }, //msp left2
+                                        { 2, 0x48, 0x14, 0x6, 0x64 }, //msp right1
+                                        { 2, 0x48, 0x14, 0x6, 0x64 }, //msp right2
                                         { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  }, //up-down m1
                                         { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 }, //up-down m2
                                         { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 }, //squeeze
-                                        0, 50, 600 };
-static RCConfig s_cfgRCInput = { 4444, false, false, 7.0f, 13.0f, 0.85f, 0.15f, 0.8f, 0.2f };
+                                        0, 50, 500 };
+static RCConfig s_cfgRCInput = { 4444, false, false, 7.0f, 13.0f, 0.85f, 0.25f, 0.8f, 0.4f };
 
 
 static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover);
@@ -774,5 +774,4 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
 
   return 0;
 }
-
 
