@@ -121,7 +121,8 @@ typedef struct RoverOutput
     StateSearching,
     StateTracking,
     StateSqueezing,
-    StateReleasing
+    StateReleasing,
+    StatePaused
   } m_state;
   struct timespec m_stateEntryTime;
 
