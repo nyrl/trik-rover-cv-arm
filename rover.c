@@ -20,7 +20,7 @@
 struct pollfd fds;
 
 const char* m_path = "/dev/input/by-path/platform-gpio-keys-event";
-bool m_chw=true;
+bool m_chw = true;
 
 static int do_roverOpenMotorMsp(RoverOutput* _rover,
                                 RoverMotorMsp* _motor,
