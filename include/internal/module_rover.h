@@ -1,5 +1,5 @@
-#ifndef TRIK_V4L2_DSP_FB_INTERNAL_ROVER_H_
-#define TRIK_V4L2_DSP_FB_INTERNAL_ROVER_H_
+#ifndef TRIK_V4L2_DSP_FB_INTERNAL_MODULE_ROVER_H_
+#define TRIK_V4L2_DSP_FB_INTERNAL_MODULE_ROVER_H_
 
 #include <stdbool.h>
 #include <time.h>
@@ -149,4 +149,4 @@ int roverOutputControlManual(RoverOutput* _rover, int _ctrlChasisLR, int _ctrlCh
 } // extern "C"
 #endif // __cplusplus
 
-#endif // !TRIK_V4L2_DSP_FB_INTERNAL_ROVER_H_
+#endif // !TRIK_V4L2_DSP_FB_INTERNAL_MODULE_ROVER_H_

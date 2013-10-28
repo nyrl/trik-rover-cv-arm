@@ -11,7 +11,7 @@
 
 #include <trik/vidtranscode_resample/trik_vidtranscode_resample.h>
 
-#include "internal/ce.h"
+#include "internal/module_ce.h"
 
 
 #warning Check BUFALIGN usage!
@@ -286,8 +286,10 @@ static int do_transcodeFrame(CodecEngine* _ce,
   return 0;
 }
 
-static int do_reportLoad(CodecEngine* _ce)
+static int do_reportLoad(const CodecEngine* _ce, long long _ms)
 {
+  (void)_ms; // warn prevention
+
   Server_Handle ceServerHandle = Engine_getServer(_ce->m_handle);
   if (ceServerHandle == NULL)
   {
@@ -471,7 +473,7 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
   return res;
 }
 
-int codecEngineReportLoad(CodecEngine* _ce)
+int codecEngineReportLoad(const CodecEngine* _ce, long long _ms)
 {
   if (_ce == NULL)
     return EINVAL;
@@ -479,7 +481,7 @@ int codecEngineReportLoad(CodecEngine* _ce)
   if (_ce->m_handle == NULL)
     return ENOTCONN;
 
-  return do_reportLoad(_ce);
+  return do_reportLoad(_ce, _ms);
 }
 
 

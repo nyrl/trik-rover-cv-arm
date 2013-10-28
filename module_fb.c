@@ -12,7 +12,7 @@
 
 #include <linux/videodev2.h> // pixel formats
 
-#include "internal/fb.h"
+#include "internal/module_fb.h"
 
 
 

@@ -148,11 +148,14 @@ APP.srcs =                      \
 	rtcfg_fcinit.c          \
 	rtcfg_remote_config.c   \
 	main.c                  \
-	ce.c                    \
-	fb.c                    \
-	v4l2.c                  \
-	rc.c                    \
-	rover.c
+	runtime.c               \
+	module_ce.c             \
+	module_fb.c             \
+	module_v4l2.c           \
+	module_rc.c             \
+	module_rover.c          \
+	thread_input.c          \
+	thread_video.c
 
 APP.objs = $(addprefix bin/$(PROFILE)/, \
     $(patsubst %.c,%.o$(SUFFIX),$(APP.srcs)))

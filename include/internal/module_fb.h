@@ -1,5 +1,5 @@
-#ifndef TRIK_V4L2_DSP_FB_INTERNAL_FB_H_
-#define TRIK_V4L2_DSP_FB_INTERNAL_FB_H_
+#ifndef TRIK_V4L2_DSP_FB_INTERNAL_MODULE_FB_H_
+#define TRIK_V4L2_DSP_FB_INTERNAL_MODULE_FB_H_
 
 #include <stdbool.h>
 #include <inttypes.h>
@@ -44,4 +44,4 @@ int fbOutputGetFormat(FBOutput* _fb,
 } // extern "C"
 #endif // __cplusplus
 
-#endif // !TRIK_V4L2_DSP_FB_INTERNAL_FB_H_
+#endif // !TRIK_V4L2_DSP_FB_INTERNAL_MODULE_FB_H_

@@ -1,5 +1,5 @@
-#ifndef TRIK_V4L2_DSP_FB_INTERNAL_RC_H_
-#define TRIK_V4L2_DSP_FB_INTERNAL_RC_H_
+#ifndef TRIK_V4L2_DSP_FB_INTERNAL_MODULE_RC_H_
+#define TRIK_V4L2_DSP_FB_INTERNAL_MODULE_RC_H_
 
 #include <stdbool.h>
 #include <inttypes.h>
@@ -63,15 +63,16 @@ int rcInputReadEventInput(RCInput* _rc);
 int rcInputAcceptConnection(RCInput* _rc);
 int rcInputReadConnection(RCInput* _rc);
 
-bool rcInputIsManualMode(RCInput* _rc);
-int rcInputGetManualCommand(RCInput* _rc, int* _ctrlChasisLR, int* _ctrlChasisFB, int* _ctrlHand, int* _ctrlArm);
-int rcInputGetAutoTargetDetect(RCInput* _rc,
-                               float* _detectHueFrom, float* _detectHueTo,
-                               float* _detectSatFrom, float* _detectSatTo,
-                               float* _detectValFrom, float* _detectValTo);
+int rcInputGetManualControl(RCInput* _rc, bool* _manualMode,
+                            int* _ctrlChasisLR, int* _ctrlChasisFB,
+                            int* _ctrlHand,     int* _ctrlArm);
+int rcInputGetAutoTargetDetectParams(RCInput* _rc,
+                                     float* _detectHueFrom, float* _detectHueTo,
+                                     float* _detectSatFrom, float* _detectSatTo,
+                                     float* _detectValFrom, float* _detectValTo);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus
 
-#endif // !TRIK_V4L2_DSP_FB_INTERNAL_RC_H_
+#endif // !TRIK_V4L2_DSP_FB_INTERNAL_MODULE_RC_H_

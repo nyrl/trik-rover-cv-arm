@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <linux/i2c-dev.h>
 
-#include "internal/rover.h"
+#include "internal/module_rover.h"
 
 
 

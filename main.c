@@ -8,11 +8,11 @@
 #include <signal.h>
 #include <time.h>
 
-#include "internal/ce.h"
-#include "internal/fb.h"
-#include "internal/v4l2.h"
-#include "internal/rc.h"
-#include "internal/rover.h"
+#include "internal/module_ce.h"
+#include "internal/module_fb.h"
+#include "internal/module_v4l2.h"
+#include "internal/module_rc.h"
+#include "internal/module_rover.h"
 
 
 
@@ -476,13 +476,13 @@ int main(int _argc, char* const _argv[])
       fprintf(stderr, "clock_gettime(CLOCK_MONOTONIC) failed: %d\n", errno);
     else if (currentTime.tv_sec > lastReportTime.tv_sec+5) // approx check that ~5sec elapsed
     {
-      unsigned long long elapsedMs = currentTime.tv_sec - lastReportTime.tv_sec;
+      long long elapsedMs = currentTime.tv_sec - lastReportTime.tv_sec;
       elapsedMs *= 1000;
       elapsedMs += currentTime.tv_nsec/1000000;
       elapsedMs -= lastReportTime.tv_nsec/1000000;
 
       lastReportTime = currentTime;
-      if ((res = codecEngineReportLoad(&codecEngine)) != 0)
+      if ((res = codecEngineReportLoad(&codecEngine, elapsedMs)) != 0)
         fprintf(stderr, "codecEngineReportLoad() failed: %d\n", res);
 
       if ((res = v4l2InputReportFPS(&v4l2Src, elapsedMs)) != 0)
@@ -597,9 +597,12 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
   float detectSatTo;
   float detectValFrom;
   float detectValTo;
-  if ((res = rcInputGetAutoTargetDetect(_rc, &detectHueFrom, &detectHueTo, &detectSatFrom, &detectSatTo, &detectValFrom, &detectValTo)) != 0)
+  if ((res = rcInputGetAutoTargetDetectParams(_rc,
+                                              &detectHueFrom, &detectHueTo,
+                                              &detectSatFrom, &detectSatTo,
+                                              &detectValFrom, &detectValTo)) != 0)
   {
-    fprintf(stderr, "rcInputGetAutoTargetDetect() failed: %d\n", res);
+    fprintf(stderr, "rcInputGetAutoTargetDetectParams() failed: %d\n", res);
     return res;
   }
 
@@ -633,8 +636,14 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
     return res;
   }
 
+  bool ctrlManualMode;
+  if ((res = rcInputGetManualControl(_rc, &ctrlManualMode, NULL, NULL, NULL, NULL)) != 0)
+  {
+    fprintf(stderr, "rcInputGetManualControl() failed: %d\n", res);
+    return res;
+  }
 
-  if (!rcInputIsManualMode(_rc))
+  if (!ctrlManualMode)
   {
     if ((res = roverOutputControlAuto(_rover, targetX, targetY, targetMass)) != 0)
     {
@@ -650,18 +659,20 @@ static int mainLoopRCManualModeUpdate(CodecEngine* _ce, V4L2Input* _v4l2Src, FBO
 {
   int res;
 
-  if (rcInputIsManualMode(_rc))
-  {
-    int ctrlChasisLR;
-    int ctrlChasisFB;
-    int ctrlHand;
-    int ctrlArm;
+  bool ctrlManualMode;
+  int ctrlChasisLR;
+  int ctrlChasisFB;
+  int ctrlHand;
+  int ctrlArm;
 
-    if ((res = rcInputGetManualCommand(_rc, &ctrlChasisLR, &ctrlChasisFB, &ctrlHand, &ctrlArm)) != 0)
-    {
-      fprintf(stderr, "rcInputGetManualCommand() failed: %d\n", res);
-      return res;
-    }
+  if ((res = rcInputGetManualControl(_rc, &ctrlManualMode, &ctrlChasisLR, &ctrlChasisFB, &ctrlHand, &ctrlArm)) != 0)
+  {
+    fprintf(stderr, "rcInputGetManualControl() failed: %d\n", res);
+    return res;
+  }
+
+  if (ctrlManualMode)
+  {
     if ((res = roverOutputControlManual(_rover, ctrlChasisLR, ctrlChasisFB, ctrlHand, ctrlArm)) != 0)
     {
       fprintf(stderr, "roverOutputControlManual() failed: %d\n", res);

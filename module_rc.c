@@ -13,7 +13,7 @@
 #include <netdb.h>
 #include <linux/input.h>
 
-#include "internal/rc.h"
+#include "internal/module_rc.h"
 
 
 
@@ -66,7 +66,7 @@ static int do_closeServerFd(RCInput* _rc)
   return 0;
 }
 
-static int do_openStdio(RCInput* _rc, bool m_stdin)
+static int do_openStdin(RCInput* _rc, bool m_stdin)
 {
   int res;
   struct termios ts;
@@ -101,7 +101,7 @@ static int do_openStdio(RCInput* _rc, bool m_stdin)
   return 0;
 }
 
-static int do_closeStdio(RCInput* _rc)
+static int do_closeStdin(RCInput* _rc)
 {
   return 0;
 }
@@ -179,7 +179,7 @@ static int do_unlistenServerFd(RCInput* _rc)
 }
 
 
-static int do_readStdio(RCInput* _rc)
+static int do_readStdin(RCInput* _rc)
 {
   int res;
 
@@ -469,7 +469,7 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config)
   if ((res = do_openServerFd(_rc, _config->m_port)) != 0)
     return res;
 
-  if ((res = do_openStdio(_rc, _config->m_stdin)) != 0)
+  if ((res = do_openStdin(_rc, _config->m_stdin)) != 0)
   {
     do_closeServerFd(_rc);
     return res;
@@ -477,7 +477,7 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config)
 
   if ((res = do_openEventInput(_rc, _config->m_eventInput)) != 0)
   {
-    do_closeStdio(_rc);
+    do_closeStdin(_rc);
     do_closeServerFd(_rc);
     return res;
   }
@@ -509,7 +509,7 @@ int rcInputClose(RCInput* _rc)
   _rc->m_readBufferSize = 0;
 
   do_closeEventInput(_rc);
-  do_closeStdio(_rc);
+  do_closeStdin(_rc);
   do_closeServerFd(_rc);
 
   return 0;
@@ -562,7 +562,7 @@ int rcInputReadStdin(RCInput* _rc)
   if (_rc == NULL)
     return EINVAL;
 
-  if ((res = do_readStdio(_rc)) != 0)
+  if ((res = do_readStdin(_rc)) != 0)
     return res;
 
   return 0;
@@ -608,38 +608,32 @@ int rcInputReadConnection(RCInput* _rc)
 }
 
 
-bool rcInputIsManualMode(RCInput* _rc)
-{
-  if (_rc == NULL)
-    return false;
-
-  return _rc->m_manualMode;
-}
-
-int rcInputGetManualCommand(RCInput* _rc, int* _ctrlChasisLR, int* _ctrlChasisFB, int* _ctrlHand, int* _ctrlArm)
+int rcInputGetManualControl(RCInput* _rc, bool* _manualMode,
+                            int* _ctrlChasisLR, int* _ctrlChasisFB,
+                            int* _ctrlHand,     int* _ctrlArm)
 {
   if (_rc == NULL)
     return EINVAL;
 
-  if (!_rc->m_manualMode)
-    return EADDRINUSE;
+  if (_manualMode)
+    *_manualMode = _rc->m_manualMode;
 
   if (_ctrlChasisLR)
-    *_ctrlChasisLR = _rc->m_manualCtrlChasisLR;
+    *_ctrlChasisLR = _rc->m_manualMode ? _rc->m_manualCtrlChasisLR : 0;
   if (_ctrlChasisFB)
-    *_ctrlChasisFB = _rc->m_manualCtrlChasisFB;
+    *_ctrlChasisFB = _rc->m_manualMode ? _rc->m_manualCtrlChasisFB : 0;
   if (_ctrlHand)
-    *_ctrlHand = _rc->m_manualCtrlHand;
+    *_ctrlHand = _rc->m_manualMode ? _rc->m_manualCtrlHand : 0;
   if (_ctrlArm)
-    *_ctrlArm = _rc->m_manualCtrlArm;
+    *_ctrlArm = _rc->m_manualMode ? _rc->m_manualCtrlArm : 0;
 
   return 0;
 }
 
-int rcInputGetAutoTargetDetect(RCInput* _rc,
-                               float* _detectHueFrom, float* _detectHueTo,
-                               float* _detectSatFrom, float* _detectSatTo,
-                               float* _detectValFrom, float* _detectValTo)
+int rcInputGetAutoTargetDetectParams(RCInput* _rc,
+                                     float* _detectHueFrom, float* _detectHueTo,
+                                     float* _detectSatFrom, float* _detectSatTo,
+                                     float* _detectValFrom, float* _detectValTo)
 {
   if (_rc == NULL)
     return EINVAL;

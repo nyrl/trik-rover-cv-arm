@@ -1,5 +1,5 @@
-#ifndef TRIK_V4L2_DSP_FB_INTERNAL_V4L2_H_
-#define TRIK_V4L2_DSP_FB_INTERNAL_V4L2_H_
+#ifndef TRIK_V4L2_DSP_FB_INTERNAL_MODULE_V4L2_H_
+#define TRIK_V4L2_DSP_FB_INTERNAL_MODULE_V4L2_H_
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -45,11 +45,11 @@ int v4l2InputGetFormat(V4L2Input* _v4l2,
                        size_t* _width, size_t* _height,
                        size_t* _lineLength, size_t* _imageSize, uint32_t* _format);
 
-int v4l2InputReportFPS(V4L2Input* _v4l2, unsigned long long _ms);
+int v4l2InputReportFPS(V4L2Input* _v4l2, long long _ms);
 
 
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus
 
-#endif // !TRIK_V4L2_DSP_FB_INTERNAL_V4L2_H_
+#endif // !TRIK_V4L2_DSP_FB_INTERNAL_MODULE_V4L2_H_

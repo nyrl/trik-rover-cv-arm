@@ -2,28 +2,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sysexits.h>
-#include <getopt.h>
 #include <stdbool.h>
 #include <errno.h>
-#include <signal.h>
 #include <time.h>
 #include <assert.h>
 #include <sys/select.h>
 
-#include "internal/ce.h"
-#include "internal/fb.h"
-#include "internal/v4l2.h"
-#include "internal/rc.h"
-#include "internal/rover.h"
+#include "internal/thread_video.h"
 #include "internal/runtime.h"
+#include "internal/module_ce.h"
+#include "internal/module_fb.h"
+#include "internal/module_v4l2.h"
 
 
 
 
-static int video_loop(Runtime* _runtime,
-                      CodecEngine* _ce,
-                      V4L2Input* _v4l2Src,
-                      FBOutput* _fbDst)
+static int video_loop(Runtime* _runtime, CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst)
 {
   int res;
   int maxFd = 0;
@@ -75,12 +69,12 @@ static int video_loop(Runtime* _runtime,
   float detectSatTo;
   float detectValFrom;
   float detectValTo;
-  if ((res = runtimeGetDetectedObjectParams(_runtime,
-                                            &detectHueFrom, &detectHueTo,
-                                            &detectSatFrom, &detectSatTo,
-                                            &detectValFrom, &detectValTo)) != 0)
+  if ((res = runtimeGetAutoTargetDetectParams(_runtime,
+                                              &detectHueFrom, &detectHueTo,
+                                              &detectSatFrom, &detectSatTo,
+                                              &detectValFrom, &detectValTo)) != 0)
   {
-    fprintf(stderr, "runtimeGetDetectParams() failed: %d\n", res);
+    fprintf(stderr, "runtimeGetAutoTargetDetectParams() failed: %d\n", res);
     return res;
   }
 
@@ -116,9 +110,9 @@ static int video_loop(Runtime* _runtime,
   }
 
 
-  if ((res = runtimeSetDetectedObjectLocation(_runtime, targetX, targetY, targetMass)) != 0)
+  if ((res = runtimeSetAutoTargetDetectedLocation(_runtime, targetX, targetY, targetMass)) != 0)
   {
-    fprintf(stderr, "runtimeSetDetectedObjectLocation() failed: %d\n", res);
+    fprintf(stderr, "runtimeSetAutoTargetDetectedLocation() failed: %d\n", res);
     return res;
   }
 
@@ -128,7 +122,7 @@ static int video_loop(Runtime* _runtime,
 
 
 
-static int video_thread(void* _arg)
+int video_thread(void* _arg)
 {
   int res = 0;
   int exit_code = EX_OK;

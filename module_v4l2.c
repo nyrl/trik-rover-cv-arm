@@ -12,7 +12,7 @@
 #include <linux/videodev2.h>
 #include <libv4l2.h>
 
-#include "internal/v4l2.h"
+#include "internal/module_v4l2.h"
 
 
 
@@ -384,9 +384,9 @@ static int do_v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
   return 0;
 }
 
-int do_v4l2InputReportFPS(V4L2Input* _v4l2, unsigned long long _ms)
+int do_v4l2InputReportFPS(V4L2Input* _v4l2, long long _ms)
 {
-  unsigned long long frames = _v4l2->m_frameCounter;
+  long long frames = _v4l2->m_frameCounter;
   _v4l2->m_frameCounter = 0;
 
   if (_ms > 0)
@@ -512,7 +512,7 @@ int v4l2InputGetFormat(V4L2Input* _v4l2,
   return do_v4l2InputGetFormat(_v4l2, _width, _height, _lineLength, _imageSize, _format);
 }
 
-int v4l2InputReportFPS(V4L2Input* _v4l2, unsigned long long _ms)
+int v4l2InputReportFPS(V4L2Input* _v4l2, long long _ms)
 {
   if (_v4l2 == NULL)
     return EINVAL;

@@ -1,5 +1,5 @@
-#ifndef TRIK_V4L2_DSP_FB_INTERNAL_CE_H_
-#define TRIK_V4L2_DSP_FB_INTERNAL_CE_H_
+#ifndef TRIK_V4L2_DSP_FB_INTERNAL_MODULE_CE_H_
+#define TRIK_V4L2_DSP_FB_INTERNAL_MODULE_CE_H_
 
 #include <stdbool.h>
 #include <inttypes.h>
@@ -63,11 +63,11 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
                               int* _targetX, int* _targetY, int* _targetMass);
 
 
-int codecEngineReportLoad(CodecEngine* _ce);
+int codecEngineReportLoad(const CodecEngine* _ce, long long _ms);
 
 
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus
 
-#endif // !TRIK_V4L2_DSP_FB_INTERNAL_CE_H_
+#endif // !TRIK_V4L2_DSP_FB_INTERNAL_MODULE_CE_H_
