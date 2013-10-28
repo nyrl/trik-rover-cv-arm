@@ -470,7 +470,7 @@ static int powerProportional(int _val, int _min, int _zero, int _max)
   if (adj > 0)
   {
     if (_val >= _max)
-      return 100;
+      return +100;
     else
       return (+100*(_val-_zero)) / (_max-_zero); // _max!=_zero, otherwise (_val>=_max) matches
   }
@@ -557,8 +557,10 @@ static int do_roverCtrlArmTracking(RoverOutput* _rover, int _targetX, int _targe
     _rover->m_stateEntryTime.tv_sec = 0;
 
 #warning DEBUG
+#if 1
   fprintf(stderr, "%d %d %d %s (%d->%d %d->%d %d->%d)\n",
           diffX, diffY, diffMass, hasLock?" ### LOCK ### ":"", _targetX, arm->m_zeroX, _targetY, arm->m_zeroY, _targetMass, arm->m_zeroMass);
+#endif
 
   return 0;
 }
