@@ -715,6 +715,7 @@ static int mainLoopRCServer(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fb
     fprintf(stderr, "rcInputAcceptConnection() failed: %d\n", res);
     return res;
   }
+
   return 0;
 }
 
