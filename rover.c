@@ -35,10 +35,13 @@ static int do_roverOpenMotorMsp(RoverOutput* _rover,
     return res;
   }
 
-  _motor->m_mspI2CDeviceId = _config->m_mspI2CDeviceId;
-  _motor->m_mspI2CMotorCmd = _config->m_mspI2CMotorCmd;
-  _motor->m_powerMin       = _config->m_powerMin;
-  _motor->m_powerMax       = _config->m_powerMax;
+  _motor->m_mspI2CDeviceId   = _config->m_mspI2CDeviceId;
+  _motor->m_mspI2CMotorCmd   = _config->m_mspI2CMotorCmd;
+  _motor->m_powerBackFull    = _config->m_powerBackFull;
+  _motor->m_powerBackZero    = _config->m_powerBackZero;
+  _motor->m_powerNeutral     = _config->m_powerNeutral;
+  _motor->m_powerForwardZero = _config->m_powerForwardZero;
+  _motor->m_powerForwardFull = _config->m_powerForwardFull;
 
   return 0;
 }
@@ -239,23 +242,23 @@ static int do_roverMotorMspSetPower(RoverOutput* _rover,
   if (_rover == NULL || _motor == NULL)
     return EINVAL;
 
-  int pwm = 0x0;
+  int pwm;
 
   if (_power == 0) // neutral
-    pwm = 0x0;
+    pwm = _motor->m_powerNeutral;
   else if (_power < 0) // back
   {
     if (_power < -100)
-      pwm = -(_motor->m_powerMax);
+      pwm = _motor->m_powerBackFull;
     else
-      pwm = -(_motor->m_powerMin + ((_motor->m_powerMax-_motor->m_powerMin)*(-_power))/100);
+      pwm = _motor->m_powerBackZero + ((_motor->m_powerBackFull-_motor->m_powerBackZero)*(-_power))/100;
   }
   else // forward
   {
     if (_power > 100)
-      pwm = _motor->m_powerMax;
+      pwm = _motor->m_powerForwardFull;
     else
-      pwm = _motor->m_powerMin + ((_motor->m_powerMax-_motor->m_powerMin)*_power)/100;
+      pwm = _motor->m_powerForwardZero + ((_motor->m_powerForwardFull-_motor->m_powerForwardZero)*_power)/100;
   }
 
   int devId = _motor->m_mspI2CDeviceId;
@@ -267,8 +270,8 @@ static int do_roverMotorMspSetPower(RoverOutput* _rover,
   }
 
   unsigned char cmd[2];
-  cmd[0] = (_motor->m_mspI2CMotorCmd)&0xffu;
-  cmd[1] = ((unsigned int)pwm)&0xffu;
+  cmd[0] = _motor->m_mspI2CMotorCmd;
+  cmd[1] = pwm;
 
   if ((res = write(_motor->m_i2cBusFd, &cmd, sizeof(cmd))) != sizeof(cmd))
   {

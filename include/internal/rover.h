@@ -15,8 +15,11 @@ typedef struct RoverConfigMotorMsp
   int m_mspI2CBusId;
   int m_mspI2CDeviceId;
   int m_mspI2CMotorCmd;
-  int m_powerMin;
-  int m_powerMax;
+  int m_powerBackFull;
+  int m_powerBackZero;
+  int m_powerNeutral;
+  int m_powerForwardZero;
+  int m_powerForwardFull;
 } RoverConfigMotorMsp;
 
 typedef struct RoverConfigMotor
@@ -53,8 +56,11 @@ typedef struct RoverMotorMsp
   int m_i2cBusFd;
   int m_mspI2CDeviceId;
   int m_mspI2CMotorCmd;
-  int m_powerMin;
-  int m_powerMax;
+  int m_powerBackFull;
+  int m_powerBackZero;
+  int m_powerNeutral;
+  int m_powerForwardZero;
+  int m_powerForwardFull;
 } RoverMotorMsp;
 
 typedef struct RoverMotor
