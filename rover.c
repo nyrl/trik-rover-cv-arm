@@ -246,9 +246,9 @@ static int do_roverMotorMspSetPower(RoverOutput* _rover,
   else if (_power < 0) // back
   {
     if (_power < -100)
-      pwm = _motor->m_powerMax;
+      pwm = -(_motor->m_powerMax);
     else
-      pwm = _motor->m_powerMin + ((_motor->m_powerMax-_motor->m_powerMin)*(-_power))/100;
+      pwm = -(_motor->m_powerMin + ((_motor->m_powerMax-_motor->m_powerMin)*(-_power))/100);
   }
   else // forward
   {
@@ -267,8 +267,8 @@ static int do_roverMotorMspSetPower(RoverOutput* _rover,
   }
 
   unsigned char cmd[2];
-  cmd[0] = (_motor->m_mspI2CMotorCmd)&0xff;
-  cmd[1] =  pwm&0xff;
+  cmd[0] = (_motor->m_mspI2CMotorCmd)&0xffu;
+  cmd[1] = ((unsigned int)pwm)&0xffu;
 
   if ((res = write(_motor->m_i2cBusFd, &cmd, sizeof(cmd))) != sizeof(cmd))
   {
