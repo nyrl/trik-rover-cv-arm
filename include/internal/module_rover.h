@@ -2,7 +2,6 @@
 #define TRIK_V4L2_DSP_FB_INTERNAL_MODULE_ROVER_H_
 
 #include <stdbool.h>
-#include <time.h>
 
 
 #ifdef __cplusplus
@@ -42,10 +41,6 @@ typedef struct RoverConfig // what user wants to set
   RoverConfigMotor m_motor1;
   RoverConfigMotor m_motor2;
   RoverConfigMotor m_motor3;
-
-  int m_zeroX;
-  int m_zeroY;
-  int m_zeroMass;
 } RoverConfig;
 
 
@@ -79,29 +74,17 @@ typedef struct RoverControlChasis
   RoverMotorMsp* m_motorLeft2;
   RoverMotorMsp* m_motorRight1;
   RoverMotorMsp* m_motorRight2;
-
-  int         m_lastSpeed; // -100..100
-  int         m_lastYaw;   // -100..100
-  int         m_zeroX;
-  int         m_zeroY;
-  int         m_zeroMass;
 } RoverControlChasis;
 
 typedef struct RoverControlHand
 {
   RoverMotor* m_motor1;
   RoverMotor* m_motor2;
-
-  int         m_lastSpeed; // -100..100
-  int         m_zeroY;
 } RoverControlHand;
 
 typedef struct RoverControlArm
 {
   RoverMotor* m_motor;
-  int         m_zeroX;
-  int         m_zeroY;
-  int         m_zeroMass;
 } RoverControlArm;
 
 typedef struct RoverOutput
@@ -119,18 +102,6 @@ typedef struct RoverOutput
   RoverControlChasis m_ctrlChasis;
   RoverControlHand   m_ctrlHand;
   RoverControlArm    m_ctrlArm;
-
-  enum State
-  {
-    StateManual,
-    StatePreparing,
-    StateSearching,
-    StateTracking,
-    StateSqueezing,
-    StateReleasing
-  } m_state;
-  struct timespec m_stateEntryTime;
-
 } RoverOutput;
 
 
@@ -141,8 +112,8 @@ int roverOutputOpen(RoverOutput* _rover, const RoverConfig* _config);
 int roverOutputClose(RoverOutput* _rover);
 int roverOutputStart(RoverOutput* _rover);
 int roverOutputStop(RoverOutput* _rover);
-int roverOutputControlAuto(RoverOutput* _rover, int _targetX, int _targetY, int _targetMass);
-int roverOutputControlManual(RoverOutput* _rover, int _ctrlChasisLR, int _ctrlChasisFB, int _ctrlHand, int _ctrlArm);
+
+int roverOutputControl(RoverOutput* _rover, int _ctrlChasisLeft, int _ctrlChasisRight, int _ctrlHand, int _ctrlArm);
 
 
 #ifdef __cplusplus

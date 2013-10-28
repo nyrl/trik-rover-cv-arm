@@ -7,6 +7,7 @@
 #include "internal/module_v4l2.h"
 #include "internal/module_rc.h"
 #include "internal/module_rover.h"
+#include "internal/module_driver.h"
 
 
 #ifdef __cplusplus
@@ -25,6 +26,7 @@ const V4L2Config*        runtimeCfgV4L2Input(const Runtime* _runtime);
 const FBConfig*          runtimeCfgFBOutput(const Runtime* _runtime);
 const RCConfig*          runtimeCfgRCInput(const Runtime* _runtime);
 const RoverConfig*       runtimeCfgRoverOutput(const Runtime* _runtime);
+const DriverOutput*      runtimeCfgDriverOutput(const Runtime* _runtime);
 
 
 bool runtimeGetTerminate(const Runtime* _runtime);

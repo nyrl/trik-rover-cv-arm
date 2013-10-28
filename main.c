@@ -13,6 +13,7 @@
 #include "internal/module_v4l2.h"
 #include "internal/module_rc.h"
 #include "internal/module_rover.h"
+#include "internal/module_driver.h"
 
 
 
@@ -47,14 +48,15 @@ static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 0x14, 0x00, 0x64 }, //msp lef
                                         { 2, 0x48, 0x15, 0x00, 0x64 }, //msp left2
                                         { 2, 0x48, 0x16, 0x00, 0x64 }, //msp right1
                                         { 2, 0x48, 0x17, 0x00, 0x64 }, //msp right2
-                                        { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  }, //up-down m1
-                                        { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 }, //up-down m2
-                                        { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 }, //squeeze
-                                        0, 50, 600 };
-static RCConfig s_cfgRCInput = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", false, 7.0f, 13.0f, 0.85f, 0.15f, 0.8f, 0.2f };
+                                        { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  },   //up-down1
+                                        { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 },   //up-down2
+                                        { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 } }; //squeeze
+static RCConfig s_cfgRCInput = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", false,
+                                 7.0f, 13.0f, 0.85f, 0.15f, 0.8f, 0.2f };
+static DriverConfig s_cfgDriverOutput = { 0, 50, 600 };
 
 
-static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover);
+static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover, DriverOutput* _driver);
 
 
 static bool parse_args(int _argc, char* const _argv[])
@@ -122,9 +124,9 @@ static bool parse_args(int _argc, char* const _argv[])
     { "rover-p4-neutral",	1,	NULL,	0   },
     { "rover-p4-forward-zero",	1,	NULL,	0   },
     { "rover-p4-forward-full",	1,	NULL,	0   },
-    { "rover-zero-x",		1,	NULL,	0   }, // 57
-    { "rover-zero-y",		1,	NULL,	0   },
-    { "rover-zero-mass",	1,	NULL,	0   },
+    { "target-zero-x",		1,	NULL,	0   }, // 57
+    { "target-zero-y",		1,	NULL,	0   },
+    { "target-zero-mass",	1,	NULL,	0   },
     { "rc-port",		1,	NULL,	0   }, // 60
     { "rc-stdin",		1,	NULL,	0   },
     { "rc-event-input",		1,	NULL,	0   },
@@ -229,9 +231,9 @@ static bool parse_args(int _argc, char* const _argv[])
           case 49+6: s_cfgRoverOutput.m_motorMsp4.m_powerForwardZero = atoi(optarg);	break;
           case 49+7: s_cfgRoverOutput.m_motorMsp4.m_powerForwardFull = atoi(optarg);	break;
 
-          case 57  : s_cfgRoverOutput.m_zeroX    = atoi(optarg);			break;
-          case 57+1: s_cfgRoverOutput.m_zeroY    = atoi(optarg);			break;
-          case 57+2: s_cfgRoverOutput.m_zeroMass = atoi(optarg);			break;
+          case 57  : s_cfgDriverOutput.m_zeroX    = atoi(optarg);			break;
+          case 57+1: s_cfgDriverOutput.m_zeroY    = atoi(optarg);			break;
+          case 57+2: s_cfgDriverOutput.m_zeroMass = atoi(optarg);			break;
 
           case 60  : s_cfgRCInput.m_port = atoi(optarg);				break;
           case 60+1: s_cfgRCInput.m_stdin = atoi(optarg);				break;
@@ -295,9 +297,9 @@ int main(int _argc, char* const _argv[])
                     "   --rover-pN-neutral      <rover-powermotorN-neutral-power>\n"
                     "   --rover-pN-forward-zero <rover-powermotorN-slow-forward-power>\n"
                     "   --rover-pN-forward-full <rover-powermotorN-full-forward-power>\n"
-                    "   --rover-zero-x          <rover-center-X>\n"
-                    "   --rover-zero-y          <rover-center-Y>\n"
-                    "   --rover-zero-mass       <rover-center-mass>\n"
+                    "   --target-zero-x         <target-center-X>\n"
+                    "   --target-zero-y         <target-center-Y>\n"
+                    "   --target-zero-mass      <target-center-mass>\n"
                     "   --rc-port               <remote-control-port>\n"
                     "   --rc-stdin              <remote-control-via-stdin 0/1>\n"
                     "   --rc-event-input        <remote-control-via-event-input-path>\n"
@@ -351,6 +353,13 @@ int main(int _argc, char* const _argv[])
     goto exit_rc_fini;
   }
 
+  if ((res = driverOutputInit(s_cfgVerbose)) != 0)
+  {
+    fprintf(stderr, "driverOutputInit() failed: %d\n", res);
+    exit_code = EX_SOFTWARE;
+    goto exit_rover_fini;
+  }
+
 
   CodecEngine codecEngine;
   memset(&codecEngine, 0, sizeof(codecEngine));
@@ -358,7 +367,7 @@ int main(int _argc, char* const _argv[])
   {
     fprintf(stderr, "codecEngineOpen() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
-    goto exit_rover_fini;
+    goto exit_driver_fini;
   }
 
   V4L2Input v4l2Src;
@@ -410,6 +419,15 @@ int main(int _argc, char* const _argv[])
     goto exit_rc_close;
   }
 
+  DriverOutput driver;
+  memset(&driver, 0, sizeof(driver));
+  if ((res = driverOutputOpen(&driver, &s_cfgDriverOutput)) != 0)
+  {
+    fprintf(stderr, "driverOutputOpen() failed: %d\n", res);
+    exit_code = EX_IOERR;
+    goto exit_rover_close;
+  }
+
 
   size_t srcWidth, srcHeight, srcLineLength, srcImageSize;
   size_t dstWidth, dstHeight, dstLineLength, dstImageSize;
@@ -418,7 +436,7 @@ int main(int _argc, char* const _argv[])
   {
     fprintf(stderr, "v4l2InputGetFormat() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
-    goto exit_rover_close;
+    goto exit_driver_close;
   }
   if ((res = fbOutputGetFormat(&fbDst, &dstWidth, &dstHeight, &dstLineLength, &dstImageSize, &dstFormat)) != 0)
   {
@@ -463,6 +481,13 @@ int main(int _argc, char* const _argv[])
     goto exit_rc_stop;
   }
 
+  if ((res = driverOutputStart(&driver)) != 0)
+  {
+    fprintf(stderr, "driverOutputStart() failed: %d\n", res);
+    exit_code = EX_IOERR;
+    goto exit_rover_stop;
+  }
+
 
   printf("Entering main loop\n");
   struct timespec lastReportTime;
@@ -490,7 +515,7 @@ int main(int _argc, char* const _argv[])
     }
 
 
-    if ((res = mainLoop(&codecEngine, &v4l2Src, &fbDst, &rc, &rover)) != 0)
+    if ((res = mainLoop(&codecEngine, &v4l2Src, &fbDst, &rc, &rover, &driver)) != 0)
     {
       fprintf(stderr, "mainLoop() failed: %d\n", res);
       exit_code = EX_SOFTWARE;
@@ -500,7 +525,11 @@ int main(int _argc, char* const _argv[])
   printf("Left main loop\n");
 
 
-//exit_rover_stop:
+//exit_driver_stop:
+  if ((res = driverOutputStop(&driver)) != 0)
+    fprintf(stderr, "driverOutputStop() failed: %d\n", res);
+
+exit_rover_stop:
   if ((res = roverOutputStop(&rover)) != 0)
     fprintf(stderr, "roverOutputStop() failed: %d\n", res);
 
@@ -520,6 +549,10 @@ exit_ce_stop:
   if ((res = codecEngineStop(&codecEngine)) != 0)
     fprintf(stderr, "codecEngineStop() failed: %d\n", res);
 
+
+exit_driver_close:
+  if ((res = driverOutputClose(&driver)) != 0)
+    fprintf(stderr, "driverOutputClose() failed: %d\n", res);
 
 exit_rover_close:
   if ((res = roverOutputClose(&rover)) != 0)
@@ -541,6 +574,10 @@ exit_ce_close:
   if ((res = codecEngineClose(&codecEngine)) != 0)
     fprintf(stderr, "codecEngineClose() failed: %d\n", res);
 
+
+exit_driver_fini:
+  if ((res = driverOutputFini()) != 0)
+    fprintf(stderr, "driverOutputFini() failed: %d\n", res);
 
 exit_rover_fini:
   if ((res = roverOutputFini()) != 0)
@@ -570,7 +607,7 @@ exit:
 
 
 
-static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover, DriverOutput* _driver)
 {
   int res;
 
@@ -645,9 +682,25 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
 
   if (!ctrlManualMode)
   {
-    if ((res = roverOutputControlAuto(_rover, targetX, targetY, targetMass)) != 0)
+    if ((res = driverOutputControlAuto(_driver, targetX, targetY, targetMass)) != 0)
     {
-      fprintf(stderr, "roverOutputControlAuto() failed: %d\n", res);
+      fprintf(stderr, "driverOutputControlAuto() failed: %d\n", res);
+      return res;
+    }
+
+    int ctrlChasisLeft;
+    int ctrlChasisRight;
+    int ctrlHand;
+    int ctrlArm;
+    if ((res = driverOutputGetControl(_driver, &ctrlChasisLeft, &ctrlChasisRight, &ctrlHand, &ctrlArm)) != 0)
+    {
+      fprintf(stderr, "driverOutputGetControl() failed: %d\n", res);
+      return res;
+    }
+
+    if ((res = roverOutputControl(_rover, ctrlChasisLeft, ctrlChasisRight, ctrlHand, ctrlArm)) != 0)
+    {
+      fprintf(stderr, "roverOutputControl() failed: %d\n", res);
       return res;
     }
   }
@@ -655,7 +708,7 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
   return 0;
 }
 
-static int mainLoopRCManualModeUpdate(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+static int mainLoopRCManualModeUpdate(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover, DriverOutput* _driver)
 {
   int res;
 
@@ -673,9 +726,25 @@ static int mainLoopRCManualModeUpdate(CodecEngine* _ce, V4L2Input* _v4l2Src, FBO
 
   if (ctrlManualMode)
   {
-    if ((res = roverOutputControlManual(_rover, ctrlChasisLR, ctrlChasisFB, ctrlHand, ctrlArm)) != 0)
+    if ((res = driverOutputControlManual(_driver, ctrlChasisLR, ctrlChasisFB, ctrlHand, ctrlArm)) != 0)
     {
-      fprintf(stderr, "roverOutputControlManual() failed: %d\n", res);
+      fprintf(stderr, "driverOutputControlManual() failed: %d\n", res);
+      return res;
+    }
+
+    int ctrlChasisLeft;
+    int ctrlChasisRight;
+    int ctrlHand;
+    int ctrlArm;
+    if ((res = driverOutputGetControl(_driver, &ctrlChasisLeft, &ctrlChasisRight, &ctrlHand, &ctrlArm)) != 0)
+    {
+      fprintf(stderr, "driverOutputGetControl() failed: %d\n", res);
+      return res;
+    }
+
+    if ((res = roverOutputControl(_rover, ctrlChasisLeft, ctrlChasisRight, ctrlHand, ctrlArm)) != 0)
+    {
+      fprintf(stderr, "roverOutputControl() failed: %d\n", res);
       return res;
     }
   }
@@ -683,7 +752,7 @@ static int mainLoopRCManualModeUpdate(CodecEngine* _ce, V4L2Input* _v4l2Src, FBO
   return 0;
 }
 
-static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover, DriverOutput* _driver)
 {
   int res;
 
@@ -693,10 +762,10 @@ static int mainLoopRCStdin(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbD
     return res;
   }
 
-  return mainLoopRCManualModeUpdate(_ce, _v4l2Src, _fbDst, _rc, _rover);
+  return mainLoopRCManualModeUpdate(_ce, _v4l2Src, _fbDst, _rc, _rover, _driver);
 }
 
-static int mainLoopRCEventInput(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+static int mainLoopRCEventInput(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover, DriverOutput* _driver)
 {
   int res;
 
@@ -706,10 +775,10 @@ static int mainLoopRCEventInput(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput*
     return res;
   }
 
-  return mainLoopRCManualModeUpdate(_ce, _v4l2Src, _fbDst, _rc, _rover);
+  return mainLoopRCManualModeUpdate(_ce, _v4l2Src, _fbDst, _rc, _rover, _driver);
 }
 
-static int mainLoopRCServer(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+static int mainLoopRCServer(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover, DriverOutput* _driver)
 {
   int res;
 
@@ -722,7 +791,7 @@ static int mainLoopRCServer(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fb
   return 0;
 }
 
-static int mainLoopRCConnection(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+static int mainLoopRCConnection(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover, DriverOutput* _driver)
 {
   int res;
 
@@ -732,11 +801,11 @@ static int mainLoopRCConnection(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput*
     return res;
   }
 
-  return mainLoopRCManualModeUpdate(_ce, _v4l2Src, _fbDst, _rc, _rover);
+  return mainLoopRCManualModeUpdate(_ce, _v4l2Src, _fbDst, _rc, _rover, _driver);
 }
 
 
-static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover)
+static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCInput* _rc, RoverOutput* _rover, DriverOutput* _driver)
 {
   int res;
 
@@ -787,7 +856,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
   bool hasAnything = false;;
   if (FD_ISSET(_rc->m_serverFd, &fdsIn))
   {
-    if ((res = mainLoopRCServer(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    if ((res = mainLoopRCServer(_ce, _v4l2Src, _fbDst, _rc, _rover, _driver)) != 0)
     {
       fprintf(stderr, "mainLoopRCServer() failed: %d\n", res);
       return res;
@@ -797,7 +866,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
 
   if (_rc->m_stdinFd != -1 && FD_ISSET(_rc->m_stdinFd, &fdsIn))
   {
-    if ((res = mainLoopRCStdin(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    if ((res = mainLoopRCStdin(_ce, _v4l2Src, _fbDst, _rc, _rover, _driver)) != 0)
     {
       fprintf(stderr, "mainLoopRCStdin() failed: %d\n", res);
       return res;
@@ -807,7 +876,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
 
   if (_rc->m_eventInputFd != -1 && FD_ISSET(_rc->m_eventInputFd, &fdsIn))
   {
-    if ((res = mainLoopRCEventInput(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    if ((res = mainLoopRCEventInput(_ce, _v4l2Src, _fbDst, _rc, _rover, _driver)) != 0)
     {
       fprintf(stderr, "mainLoopRCEventInput() failed: %d\n", res);
       return res;
@@ -817,7 +886,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
 
   if (_rc->m_connectionFd != -1 && FD_ISSET(_rc->m_connectionFd, &fdsIn))
   {
-    if ((res = mainLoopRCConnection(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    if ((res = mainLoopRCConnection(_ce, _v4l2Src, _fbDst, _rc, _rover, _driver)) != 0)
     {
       fprintf(stderr, "mainLoopRCConnection() failed: %d\n", res);
       return res;
@@ -828,7 +897,7 @@ static int mainLoop(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _fbDst, RCI
   // don't go for video frame if did any other action
   if (!hasAnything && FD_ISSET(_v4l2Src->m_fd, &fdsIn))
   {
-    if ((res = mainLoopV4L2Frame(_ce, _v4l2Src, _fbDst, _rc, _rover)) != 0)
+    if ((res = mainLoopV4L2Frame(_ce, _v4l2Src, _fbDst, _rc, _rover, _driver)) != 0)
     {
       fprintf(stderr, "mainLoopV4L2Frame() failed: %d\n", res);
       return res;

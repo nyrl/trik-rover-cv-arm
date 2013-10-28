@@ -154,6 +154,7 @@ APP.srcs =                      \
 	module_v4l2.c           \
 	module_rc.c             \
 	module_rover.c          \
+	module_driver.c         \
 	thread_input.c          \
 	thread_video.c
 
