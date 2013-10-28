@@ -621,14 +621,6 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
     return res;
   }
 
-  if (s_cfgVerbose)
-  {
-    fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
-            frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, frameDstUsed);
-    if (targetMass > 0)
-      fprintf(stderr, "Target detected at %d x %d @ %d\n", targetX, targetY, targetMass);
-  }
-
   if ((res = fbOutputPutFrame(_fbDst)) != 0)
   {
     fprintf(stderr, "fbOutputPutFrame() failed: %d\n", res);

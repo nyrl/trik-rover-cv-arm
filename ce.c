@@ -22,6 +22,9 @@
 #define ALIGN_UP(v, a) ((((v)+(a)-1)/(a))*(a))
 
 
+static bool s_verbose = false;
+
+
 static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBufferSize)
 {
   memset(&_ce->m_allocParams, 0, sizeof(_ce->m_allocParams));
@@ -328,6 +331,7 @@ int codecEngineInit(bool _verbose)
 {
   CERuntime_init(); /* init Codec Engine */
 
+  s_verbose = _verbose;
   if (_verbose)
   {
     Diags_setMask("xdc.runtime.Main+EX1234567");
@@ -441,19 +445,31 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
                               float _detectValFrom, float _detectValTo,
                               int* _targetX, int* _targetY, int* _targetMass)
 {
+  int res;
+
   if (_ce == NULL || _targetX == NULL || _targetY == NULL || _targetMass == NULL)
     return EINVAL;
 
   if (_ce->m_handle == NULL)
     return ENOTCONN;
 
-  return do_transcodeFrame(_ce,
-                           _srcFramePtr, _srcFrameSize,
-                           _dstFramePtr, _dstFrameSize, _dstFrameUsed,
-                           _detectHueFrom, _detectHueTo,
-                           _detectSatFrom, _detectSatTo,
-                           _detectValFrom, _detectValTo,
-                           _targetX, _targetY, _targetMass);
+  res = do_transcodeFrame(_ce,
+                          _srcFramePtr, _srcFrameSize,
+                          _dstFramePtr, _dstFrameSize, _dstFrameUsed,
+                          _detectHueFrom, _detectHueTo,
+                          _detectSatFrom, _detectSatTo,
+                          _detectValFrom, _detectValTo,
+                          _targetX, _targetY, _targetMass);
+
+  if (s_verbose)
+  {
+    fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
+            _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, *_dstFrameUsed);
+    if (*_targetMass > 0)
+      fprintf(stderr, "Target detected at %d x %d @ %d\n", *_targetX, *_targetY, *_targetMass);
+  }
+
+  return res;
 }
 
 int codecEngineReportLoad(CodecEngine* _ce)
