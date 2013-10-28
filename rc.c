@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -10,6 +11,7 @@
 #include <errno.h>
 #include <termios.h>
 #include <netdb.h>
+#include <linux/input.h>
 
 #include "internal/rc.h"
 
@@ -101,6 +103,50 @@ static int do_openStdio(RCInput* _rc, bool m_stdin)
 
 static int do_closeStdio(RCInput* _rc)
 {
+  return 0;
+}
+
+
+static int do_openEventInput(RCInput* _rc, const char* _eventInput)
+{
+  int res;
+  if (_rc == NULL)
+    return EINVAL;
+
+  if (_eventInput == NULL)
+  {
+    _rc->m_eventInputFd = -1;
+    return 0;
+  }
+
+  _rc->m_eventInputFd = open(_eventInput, O_RDONLY|O_SYNC, 0);
+  if (_rc->m_eventInputFd < 0)
+  {
+    res = errno;
+    fprintf(stderr, "open(%s) failed: %d\n", _eventInput, res);
+    _rc->m_eventInputFd = -1;
+    return res;
+  }
+
+  return 0;
+}
+
+static int do_closeEventInput(RCInput* _rc)
+{
+  int res;
+  if (_rc == NULL)
+    return EINVAL;
+
+  if (_rc->m_eventInputFd == -1)
+    return 0;
+
+  if (close(_rc->m_eventInputFd) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "close() failed: %d\n", res);
+    return res;
+  }
+
   return 0;
 }
 
@@ -197,6 +243,38 @@ static int do_readStdio(RCInput* _rc)
           _rc->m_manualCtrlChasisFB,
           _rc->m_manualCtrlHand,
           _rc->m_manualCtrlArm);
+  return 0;
+}
+
+static int do_readEventInput(RCInput* _rc)
+{
+  int res;
+  struct input_event evt;
+
+  if (_rc == NULL)
+    return EINVAL;
+
+  if (_rc->m_eventInputFd == -1)
+    return ENOTCONN;
+
+  if ((res = read(_rc->m_eventInputFd, &evt, sizeof(evt))) != sizeof(evt))
+  {
+    if (res >= 0)
+      res = E2BIG;
+    else
+      res = errno;
+    fprintf(stderr, "read(event-input) failed: %d\n", res);
+    return res;
+  }
+
+  if (   evt.type == EV_KEY
+      && evt.code == KEY_F2
+      && evt.value == 0) // key release
+  {
+    _rc->m_manualMode = !_rc->m_manualMode;
+    fprintf(stderr, "%s control\n", _rc->m_manualMode?"manual":"auto");
+  }
+
   return 0;
 }
 
@@ -385,7 +463,7 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config)
 
   if (_rc == NULL)
     return EINVAL;
-  if (_rc->m_serverFd != -1)
+  if (_rc->m_eventInputFd != -1 || _rc->m_serverFd != -1)
     return EALREADY;
 
   if ((res = do_openServerFd(_rc, _config->m_port)) != 0)
@@ -393,6 +471,13 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config)
 
   if ((res = do_openStdio(_rc, _config->m_stdin)) != 0)
   {
+    do_closeServerFd(_rc);
+    return res;
+  }
+
+  if ((res = do_openEventInput(_rc, _config->m_eventInput)) != 0)
+  {
+    do_closeStdio(_rc);
     do_closeServerFd(_rc);
     return res;
   }
@@ -423,6 +508,7 @@ int rcInputClose(RCInput* _rc)
   _rc->m_readBuffer = NULL;
   _rc->m_readBufferSize = 0;
 
+  do_closeEventInput(_rc);
   do_closeStdio(_rc);
   do_closeServerFd(_rc);
 
@@ -477,6 +563,19 @@ int rcInputReadStdin(RCInput* _rc)
     return EINVAL;
 
   if ((res = do_readStdio(_rc)) != 0)
+    return res;
+
+  return 0;
+}
+
+int rcInputReadEventInput(RCInput* _rc)
+{
+  int res;
+
+  if (_rc == NULL)
+    return EINVAL;
+
+  if ((res = do_readEventInput(_rc)) != 0)
     return res;
 
   return 0;

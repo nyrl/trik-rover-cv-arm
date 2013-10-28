@@ -13,6 +13,7 @@ typedef struct RCConfig // what user wants to set
 {
   int m_port;
   bool m_stdin;
+  const char* m_eventInput;
   bool m_manualMode;
 
   float m_autoTargetDetectHue;
@@ -26,6 +27,7 @@ typedef struct RCConfig // what user wants to set
 typedef struct RCInput
 {
   int                      m_stdinFd;
+  int                      m_eventInputFd;
   int                      m_serverFd;
   int                      m_connectionFd;
   char*                    m_readBuffer;
@@ -57,6 +59,7 @@ int rcInputStart(RCInput* _rc);
 int rcInputStop(RCInput* _rc);
 
 int rcInputReadStdin(RCInput* _rc);
+int rcInputReadEventInput(RCInput* _rc);
 int rcInputAcceptConnection(RCInput* _rc);
 int rcInputReadConnection(RCInput* _rc);
 
