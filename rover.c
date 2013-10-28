@@ -14,6 +14,7 @@
 
 
 
+static bool s_verbose = false;
 
 static int do_roverOpenMotorMsp(RoverOutput* _rover,
                                 RoverMotorMsp* _motor,
@@ -556,11 +557,13 @@ static int do_roverCtrlArmTracking(RoverOutput* _rover, int _targetX, int _targe
   if (!hasLock)
     _rover->m_stateEntryTime.tv_sec = 0;
 
-#warning DEBUG
-#if 1
-  fprintf(stderr, "%d %d %d %s (%d->%d %d->%d %d->%d)\n",
-          diffX, diffY, diffMass, hasLock?" ### LOCK ### ":"", _targetX, arm->m_zeroX, _targetY, arm->m_zeroY, _targetMass, arm->m_zeroMass);
-#endif
+  if (s_verbose)
+    fprintf(stderr, "%d %d %d %s (%d->%d %d->%d %d->%d)\n",
+            diffX, diffY, diffMass,
+            hasLock?" ### LOCK ### ":"",
+            _targetX, arm->m_zeroX,
+            _targetY, arm->m_zeroY,
+            _targetMass, arm->m_zeroMass);
 
   return 0;
 }
@@ -663,7 +666,8 @@ static int do_roverCtrlArmReleasing(RoverOutput* _rover, int _ms)
 
 int roverOutputInit(bool _verbose)
 {
-  (void)_verbose;
+  s_verbose = _verbose;
+
   return 0;
 }
 

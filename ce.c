@@ -122,13 +122,12 @@ static int do_setupCodec(CodecEngine* _ce, const char* _codecName,
   if (_codecName == NULL)
     return EINVAL;
 
-#if 1
-  fprintf(stderr, "VIDTRANSCODE_control(%c%c%c%c@%zux%zu[%zu] -> %c%c%c%c@%zux%zu[%zu])\n",
-          _srcFormat&0xff, (_srcFormat>>8)&0xff, (_srcFormat>>16)&0xff, (_srcFormat>>24)&0xff,
-          _srcWidth, _srcHeight, _srcLineLength,
-          _dstFormat&0xff, (_dstFormat>>8)&0xff, (_dstFormat>>16)&0xff, (_dstFormat>>24)&0xff,
-          _dstWidth, _dstHeight, _dstLineLength);
-#endif
+  if (s_verbose)
+    fprintf(stderr, "VIDTRANSCODE_control(%c%c%c%c@%zux%zu[%zu] -> %c%c%c%c@%zux%zu[%zu])\n",
+            _srcFormat&0xff, (_srcFormat>>8)&0xff, (_srcFormat>>16)&0xff, (_srcFormat>>24)&0xff,
+            _srcWidth, _srcHeight, _srcLineLength,
+            _dstFormat&0xff, (_dstFormat>>8)&0xff, (_dstFormat>>16)&0xff, (_dstFormat>>24)&0xff,
+            _dstWidth, _dstHeight, _dstLineLength);
 
   TRIK_VIDTRANSCODE_RESAMPLE_Params ceParams;
   memset(&ceParams, 0, sizeof(ceParams));
