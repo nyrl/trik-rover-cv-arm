@@ -56,8 +56,11 @@ typedef struct Runtime
 } Runtime;
 
 
-int runtimeInit(Runtime* _runtime);
+int runtimeReset(Runtime* _runtime);
 int runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[]);
+
+int runtimeInit(Runtime* _runtime);
+int runtimeFini(Runtime* _runtime);
 
 
 bool                     runtimeCfgVerbose(const Runtime* _runtime);

@@ -158,20 +158,11 @@ int threadInput(void* _arg)
   }
 
 
-#warning Move init/fini code to runtime?
-  if ((res = rcInputInit(runtimeCfgVerbose(runtime))) != 0)
-  {
-    fprintf(stderr, "rcInputInit() failed: %d\n", res);
-    exit_code = res;
-    goto exit;
-  }
-
-
   if ((res = rcInputOpen(rc, runtimeCfgRCInput(runtime))) != 0)
   {
     fprintf(stderr, "rcInputOpen() failed: %d\n", res);
     exit_code = res;
-    goto exit_rc_fini;
+    goto exit;
   }
 
 
@@ -204,11 +195,6 @@ exit_rc_stop:
 exit_rc_close:
   if ((res = rcInputClose(rc)) != 0)
     fprintf(stderr, "rcInputClose() failed: %d\n", res);
-
-
-exit_rc_fini:
-  if ((res = rcInputFini()) != 0)
-    fprintf(stderr, "rcInputFini() failed: %d\n", res);
 
 
 exit:

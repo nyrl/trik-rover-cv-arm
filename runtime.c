@@ -8,7 +8,7 @@
 #include "internal/runtime.h"
 
 
-int runtimeInit(Runtime* _runtime)
+int runtimeReset(Runtime* _runtime)
 {
   memset(&_runtime, 0, sizeof(_runtime));
 
@@ -52,6 +52,85 @@ int runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
 {
 #warning TODO parse command line args
   return EINVAL;
+}
+
+
+int runtimeInit(Runtime* _runtime)
+{
+  int res = 0;
+  int exit_code = 0;
+  bool verbose;
+
+  if (_runtime == NULL)
+    return EINVAL;
+
+  verbose = runtimeCfgVerbose(_runtime);
+
+  if ((res = codecEngineInit(verbose)) != 0)
+  {
+    fprintf(stderr, "codecEngineInit() failed: %d\n", res);
+    exit_code = res;
+  }
+
+  if ((res = v4l2InputInit(verbose)) != 0)
+  {
+    fprintf(stderr, "v4l2InputInit() failed: %d\n", res);
+    exit_code = res;
+  }
+
+  if ((res = fbOutputInit(verbose)) != 0)
+  {
+    fprintf(stderr, "fbOutputInit() failed: %d\n", res);
+    exit_code = res;
+  }
+
+  if ((res = rcInputInit(verbose)) != 0)
+  {
+    fprintf(stderr, "rcInputInit() failed: %d\n", res);
+    exit_code = res;
+  }
+
+  if ((res = roverOutputInit(verbose)) != 0)
+  {
+    fprintf(stderr, "roverOutputInit() failed: %d\n", res);
+    exit_code = res;
+  }
+
+  if ((res = driverOutputInit(verbose)) != 0)
+  {
+    fprintf(stderr, "driverOutputInit() failed: %d\n", res);
+    exit_code = res;
+  }
+
+  return exit_code;
+}
+
+int runtimeFini(Runtime* _runtime)
+{
+  int res;
+
+  if (_runtime == NULL)
+    return EINVAL;
+
+  if ((res = driverOutputFini()) != 0)
+    fprintf(stderr, "driverOutputFini() failed: %d\n", res);
+
+  if ((res = roverOutputFini()) != 0)
+    fprintf(stderr, "roverOutputFini() failed: %d\n", res);
+
+  if ((res = rcInputFini()) != 0)
+    fprintf(stderr, "rcInputFini() failed: %d\n", res);
+
+  if ((res = fbOutputFini()) != 0)
+    fprintf(stderr, "fbOutputFini() failed: %d\n", res);
+
+  if ((res = v4l2InputFini()) != 0)
+    fprintf(stderr, "v4l2InputFini() failed: %d\n", res);
+
+  if ((res = codecEngineFini()) != 0)
+    fprintf(stderr, "codecEngineFini() failed: %d\n", res);
+
+  return 0;
 }
 
 

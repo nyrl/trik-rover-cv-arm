@@ -134,33 +134,11 @@ int threadVideo(void* _arg)
   }
 
 
-  if ((res = codecEngineInit(runtimeCfgVerbose(runtime))) != 0)
-  {
-    fprintf(stderr, "codecEngineInit() failed: %d\n", res);
-    exit_code = res;
-    goto exit;
-  }
-
-  if ((res = v4l2InputInit(runtimeCfgVerbose(runtime))) != 0)
-  {
-    fprintf(stderr, "v4l2InputInit() failed: %d\n", res);
-    exit_code = res;
-    goto exit_ce_fini;
-  }
-
-  if ((res = fbOutputInit(runtimeCfgVerbose(runtime))) != 0)
-  {
-    fprintf(stderr, "fbOutputInit() failed: %d\n", res);
-    exit_code = res;
-    goto exit_v4l2_fini;
-  }
-
-
   if ((res = codecEngineOpen(ce, runtimeCfgCodecEngine(runtime))) != 0)
   {
     fprintf(stderr, "codecEngineOpen() failed: %d\n", res);
     exit_code = res;
-    goto exit_fb_fini;
+    goto exit;
   }
 
   if ((res = v4l2InputOpen(v4l2, runtimeCfgV4L2Input(runtime))) != 0)
@@ -286,19 +264,6 @@ exit_v4l2_close:
 exit_ce_close:
   if ((res = codecEngineClose(ce)) != 0)
     fprintf(stderr, "codecEngineClose() failed: %d\n", res);
-
-
-exit_fb_fini:
-  if ((res = fbOutputFini()) != 0)
-    fprintf(stderr, "fbOutputFini() failed: %d\n", res);
-
-exit_v4l2_fini:
-  if ((res = v4l2InputFini()) != 0)
-    fprintf(stderr, "v4l2InputFini() failed: %d\n", res);
-
-exit_ce_fini:
-  if ((res = codecEngineFini()) != 0)
-    fprintf(stderr, "codecEngineFini() failed: %d\n", res);
 
 
 exit:
