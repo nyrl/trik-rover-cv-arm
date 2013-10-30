@@ -16,14 +16,14 @@ typedef struct RCConfig // what user wants to set
   int m_port;
   bool m_stdin;
   const char* m_eventInput;
-  bool m_manualMode;
+  bool  m_manualMode;
 
-  float m_autoTargetDetectHue;
-  float m_autoTargetDetectHueTolerance;
-  float m_autoTargetDetectSat;
-  float m_autoTargetDetectSatTolerance;
-  float m_autoTargetDetectVal;
-  float m_autoTargetDetectValTolerance;
+  int  m_targetDetectHue;
+  int  m_targetDetectHueTolerance;
+  int  m_targetDetectSat;
+  int  m_targetDetectSatTolerance;
+  int  m_targetDetectVal;
+  int  m_targetDetectValTolerance;
 } RCConfig;
 
 typedef struct RCInput
@@ -36,24 +36,16 @@ typedef struct RCInput
   size_t                   m_readBufferSize;
   size_t                   m_readBufferUsed;
 
+  bool                     m_manualControlUpdated;
+  DriverManualControl      m_manualControl;
 
-
-
-#warning Rework
-  bool                     m_manualMode;
-
-  int                      m_manualCtrlChasisLR;
-  int                      m_manualCtrlChasisFB;
-  int                      m_manualCtrlHand;
-  int                      m_manualCtrlArm;
-
-
-  float                    m_autoTargetDetectHue;
-  float                    m_autoTargetDetectHueTolerance;
-  float                    m_autoTargetDetectSat;
-  float                    m_autoTargetDetectSatTolerance;
-  float                    m_autoTargetDetectVal;
-  float                    m_autoTargetDetectValTolerance;
+  bool                     m_targetDetectParamsUpdated;
+  int                      m_targetDetectHue;
+  int                      m_targetDetectHueTolerance;
+  int                      m_targetDetectSat;
+  int                      m_targetDetectSatTolerance;
+  int                      m_targetDetectVal;
+  int                      m_targetDetectValTolerance;
 } RCInput;
 
 

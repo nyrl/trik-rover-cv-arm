@@ -173,11 +173,127 @@ static int do_unlistenServerFd(RCInput* _rc)
   if (_rc == NULL)
     return EINVAL;
 
-#warning not possible without closing socket?
+  // not possible without closing socket
 
   return 0;
 }
 
+static int do_setupDriverManualControl(RCInput* _rc, bool _manualMode)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+  _rc->m_manualControl.m_manualMode = _manualMode;
+
+  return 0;
+}
+
+static int do_startDriverManualControl(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+  _rc->m_manualControlUpdated = true;
+  _rc->m_manualControl.m_ctrlChasisLR = 0;
+  _rc->m_manualControl.m_ctrlChasisFB = 0;
+  _rc->m_manualControl.m_ctrlHand     = 0;
+  _rc->m_manualControl.m_ctrlArm      = 0;
+
+  return 0;
+}
+
+static void do_resetDriverManualControl(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return;
+
+  _rc->m_manualControlUpdated = true;
+  _rc->m_manualControl.m_ctrlChasisLR = 0;
+  _rc->m_manualControl.m_ctrlChasisFB = 0;
+  _rc->m_manualControl.m_ctrlHand     = 0;
+  _rc->m_manualControl.m_ctrlArm      = 0;
+}
+
+static int do_stopDriverManualControl(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+  _rc->m_manualControlUpdated = false;
+
+  return 0;
+}
+
+static int do_setupTargetDetectParams(RCInput* _rc,
+                                      int _targetDetectHue, int _targetDetectHueTolerance,
+                                      int _targetDetectSat, int _targetDetectSatTolerance,
+                                      int _targetDetectVal, int _targetDetectValTolerance)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+  _rc->m_targetDetectHue          = _targetDetectHue;
+  _rc->m_targetDetectHueTolerance = _targetDetectHueTolerance;
+  _rc->m_targetDetectSat          = _targetDetectSat;
+  _rc->m_targetDetectSatTolerance = _targetDetectSatTolerance;
+  _rc->m_targetDetectVal          = _targetDetectVal;
+  _rc->m_targetDetectValTolerance = _targetDetectValTolerance;
+
+  return 0;
+}
+
+static int do_startTargetDetectParams(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+  _rc->m_targetDetectParamsUpdated = true;
+
+  return 0;
+}
+
+static int do_stopTargetDetectParams(RCInput* _rc)
+{
+  if (_rc == NULL)
+    return EINVAL;
+
+  _rc->m_targetDetectParamsUpdated = false;
+
+  return 0;
+}
+
+
+static int makeValueRange(int _val, int _adj, int _min, int _max)
+{
+  _val += _adj;
+  if (_val > _max)
+    return _max;
+  else if (_val < _min)
+    return _min;
+  else
+    return _val;
+}
+
+static int makeValueWrap(int _val, int _adj, int _min, int _max)
+{
+  _val += _adj;
+  while (_val > _max)
+    _val -= (_max-_min);
+  while (_val < _min)
+    _val += (_max-_min);
+
+  return _val;
+}
+
+static void adjustValueRange(int* _val, int _adj, int _min, int _max)
+{
+  *_val = makeValueRange(*_val, _adj, _min, _max);
+}
+
+static void adjustValueWrap(int* _val, int _adj, int _min, int _max)
+{
+  *_val = makeValueWrap(*_val, _adj, _min, _max);
+}
 
 static int do_readStdin(RCInput* _rc)
 {
@@ -202,47 +318,47 @@ static int do_readStdin(RCInput* _rc)
 
   switch (key)
   {
-    case '1': _rc->m_autoTargetDetectHue += 1.0f; break;
-    case '2': _rc->m_autoTargetDetectHue -= 1.0f; break;
-    case '!': _rc->m_autoTargetDetectHueTolerance += 1.0f; break;
-    case '@': _rc->m_autoTargetDetectHueTolerance -= 1.0f; break;
-    case '3': _rc->m_autoTargetDetectSat += 0.05f; break;
-    case '4': _rc->m_autoTargetDetectSat -= 0.05f; break;
-    case '#': _rc->m_autoTargetDetectSatTolerance += 0.05f; break;
-    case '$': _rc->m_autoTargetDetectSatTolerance -= 0.05f; break;
-    case '5': _rc->m_autoTargetDetectVal += 0.05f; break;
-    case '6': _rc->m_autoTargetDetectVal -= 0.05f; break;
-    case '%': _rc->m_autoTargetDetectValTolerance += 0.05f; break;
-    case '^': _rc->m_autoTargetDetectValTolerance -= 0.05f; break;
-    case 'w': _rc->m_manualCtrlChasisFB += 10; break;
-    case 'W': _rc->m_manualCtrlChasisFB = 0; break;
-    case 's': _rc->m_manualCtrlChasisFB -= 10; break;
-    case 'S': _rc->m_manualCtrlChasisFB = 0; break;
-    case 'a': _rc->m_manualCtrlChasisLR -= 10; break;
-    case 'A': _rc->m_manualCtrlChasisLR = 0; break;
-    case 'd': _rc->m_manualCtrlChasisLR += 10; break;
-    case 'D': _rc->m_manualCtrlChasisLR = 0; break;
-    case 'z': _rc->m_manualCtrlArm += 10; break;
-    case 'Z': _rc->m_manualCtrlArm = 0; break;
-    case 'x': _rc->m_manualCtrlArm -= 10; break;
-    case 'X': _rc->m_manualCtrlArm = 0; break;
-    case 'r': _rc->m_manualCtrlHand += 10; break;
-    case 'R': _rc->m_manualCtrlHand = 0; break;
-    case 'f': _rc->m_manualCtrlHand -= 10; break;
-    case 'F': _rc->m_manualCtrlHand = 0; break;
-    case 'm': _rc->m_manualMode = !_rc->m_manualMode; break;
+    case '1': adjustValueWrap(&_rc->m_targetDetectHue, +1, 0, 360);           _rc->m_targetDetectParamsUpdated = true; break;
+    case '2': adjustValueWrap(&_rc->m_targetDetectHue, -1, 0, 360);           _rc->m_targetDetectParamsUpdated = true; break;
+    case '!': adjustValueRange(&_rc->m_targetDetectHueTolerance, +1, 0, 179); _rc->m_targetDetectParamsUpdated = true; break;
+    case '@': adjustValueRange(&_rc->m_targetDetectHueTolerance, -1, 0, 179); _rc->m_targetDetectParamsUpdated = true; break;
+    case '3': adjustValueRange(&_rc->m_targetDetectSat, +1, 0, 100);          _rc->m_targetDetectParamsUpdated = true; break;
+    case '4': adjustValueRange(&_rc->m_targetDetectSat, -1, 0, 100);          _rc->m_targetDetectParamsUpdated = true; break;
+    case '#': adjustValueRange(&_rc->m_targetDetectSatTolerance, +1, 0, 100); _rc->m_targetDetectParamsUpdated = true; break;
+    case '$': adjustValueRange(&_rc->m_targetDetectSatTolerance, -1, 0, 100); _rc->m_targetDetectParamsUpdated = true; break;
+    case '5': adjustValueRange(&_rc->m_targetDetectVal, +1, 0, 100);          _rc->m_targetDetectParamsUpdated = true; break;
+    case '6': adjustValueRange(&_rc->m_targetDetectVal, -1, 0, 100);          _rc->m_targetDetectParamsUpdated = true; break;
+    case '%': adjustValueRange(&_rc->m_targetDetectValTolerance, +1, 0, 100); _rc->m_targetDetectParamsUpdated = true; break;
+    case '^': adjustValueRange(&_rc->m_targetDetectValTolerance, -1, 0, 100); _rc->m_targetDetectParamsUpdated = true; break;
+    case 'w': adjustValueRange(&_rc->m_manualControl.m_ctrlChasisFB, +5, -100, 100); _rc->m_manualControlUpdated = true; break;
+    case 'W': _rc->m_manualControl.m_ctrlChasisFB = 0;                               _rc->m_manualControlUpdated = true; break;
+    case 's': adjustValueRange(&_rc->m_manualControl.m_ctrlChasisFB, -5, -100, 100); _rc->m_manualControlUpdated = true; break;
+    case 'S': _rc->m_manualControl.m_ctrlChasisFB = 0;                               _rc->m_manualControlUpdated = true; break;
+    case 'a': adjustValueRange(&_rc->m_manualControl.m_ctrlChasisLR, -5, -100, 100); _rc->m_manualControlUpdated = true; break;
+    case 'A': _rc->m_manualControl.m_ctrlChasisLR = 0;                               _rc->m_manualControlUpdated = true; break;
+    case 'd': adjustValueRange(&_rc->m_manualControl.m_ctrlChasisLR, +5, -100, 100); _rc->m_manualControlUpdated = true; break;
+    case 'D': _rc->m_manualControl.m_ctrlChasisLR = 0;                               _rc->m_manualControlUpdated = true; break;
+    case 'z': adjustValueRange(&_rc->m_manualControl.m_ctrlArm, +5, -100, 100);      _rc->m_manualControlUpdated = true; break;
+    case 'Z': _rc->m_manualControl.m_ctrlArm = 0;                                    _rc->m_manualControlUpdated = true; break;
+    case 'x': adjustValueRange(&_rc->m_manualControl.m_ctrlArm, -5, -100, 100);      _rc->m_manualControlUpdated = true; break;
+    case 'X': _rc->m_manualControl.m_ctrlArm = 0;                                    _rc->m_manualControlUpdated = true; break;
+    case 'r': adjustValueRange(&_rc->m_manualControl.m_ctrlHand, +5, -100, 100);     _rc->m_manualControlUpdated = true; break;
+    case 'R': _rc->m_manualControl.m_ctrlHand = 0;                                   _rc->m_manualControlUpdated = true; break;
+    case 'f': adjustValueRange(&_rc->m_manualControl.m_ctrlHand, -5, -100, 100);     _rc->m_manualControlUpdated = true; break;
+    case 'F': _rc->m_manualControl.m_ctrlHand = 0;                                   _rc->m_manualControlUpdated = true; break;
+    case 'm': _rc->m_manualControl.m_manualMode = !_rc->m_manualControl.m_manualMode;_rc->m_manualControlUpdated = true; break;
   };
 
-  fprintf(stderr, "Target detection: hue %f [%f], sat %f [%f], val %f [%f]\n",
-          _rc->m_autoTargetDetectHue, _rc->m_autoTargetDetectHueTolerance,
-          _rc->m_autoTargetDetectSat, _rc->m_autoTargetDetectSatTolerance,
-          _rc->m_autoTargetDetectVal, _rc->m_autoTargetDetectValTolerance);
+  fprintf(stderr, "Target detection: hue %d [%d], sat %d [%d], val %d [%d]\n",
+          _rc->m_targetDetectHue, _rc->m_targetDetectHueTolerance,
+          _rc->m_targetDetectSat, _rc->m_targetDetectSatTolerance,
+          _rc->m_targetDetectVal, _rc->m_targetDetectValTolerance);
   fprintf(stderr, "Manual control: %s chasis %d %d, hand %d, arm %d\n",
-          _rc->m_manualMode?"manual":"auto",
-          _rc->m_manualCtrlChasisLR,
-          _rc->m_manualCtrlChasisFB,
-          _rc->m_manualCtrlHand,
-          _rc->m_manualCtrlArm);
+          _rc->m_manualControl.m_manualMode?"manual":"auto",
+          _rc->m_manualControl.m_ctrlChasisLR,
+          _rc->m_manualControl.m_ctrlChasisFB,
+          _rc->m_manualControl.m_ctrlHand,
+          _rc->m_manualControl.m_ctrlArm);
   return 0;
 }
 
@@ -271,8 +387,9 @@ static int do_readEventInput(RCInput* _rc)
       && evt.code == KEY_F2
       && evt.value == 0) // key release
   {
-    _rc->m_manualMode = !_rc->m_manualMode;
-    fprintf(stderr, "%s control\n", _rc->m_manualMode?"manual":"auto");
+    _rc->m_manualControl.m_manualMode = !_rc->m_manualControl.m_manualMode;
+    _rc->m_manualControlUpdated = true;
+    fprintf(stderr, "%s control\n", _rc->m_manualControl.m_manualMode?"manual":"auto");
   }
 
   return 0;
@@ -301,10 +418,7 @@ static int do_acceptConnection(RCInput* _rc)
   }
 
   _rc->m_readBufferUsed = 0;
-  _rc->m_manualCtrlChasisLR = 0;
-  _rc->m_manualCtrlChasisFB = 0;
-  _rc->m_manualCtrlHand     = 0;
-  _rc->m_manualCtrlArm      = 0;
+  do_resetDriverManualControl(_rc);
 
   return 0;
 }
@@ -323,10 +437,7 @@ static int do_dropConnection(RCInput* _rc)
   _rc->m_connectionFd = -1;
 
   _rc->m_readBufferUsed = 0;
-  _rc->m_manualCtrlChasisLR = 0;
-  _rc->m_manualCtrlChasisFB = 0;
-  _rc->m_manualCtrlHand     = 0;
-  _rc->m_manualCtrlArm      = 0;
+  do_resetDriverManualControl(_rc);
 
   return 0;
 }
@@ -375,8 +486,9 @@ static int do_readConnection(RCInput* _rc)
       parseAt += strlen("pad 1 ");
       if (strncmp(parseAt, "up", strlen("up")) == 0)
       {
-        _rc->m_manualCtrlChasisLR = 0;
-        _rc->m_manualCtrlChasisFB = 0;
+        _rc->m_manualControl.m_ctrlChasisLR = 0;
+        _rc->m_manualControl.m_ctrlChasisFB = 0;
+        _rc->m_manualControlUpdated = true;
       }
       else
       {
@@ -384,8 +496,9 @@ static int do_readConnection(RCInput* _rc)
         int fb;
         if (sscanf(parseAt, "%d %d", &lr, &fb) == 2)
         {
-          _rc->m_manualCtrlChasisLR = lr;
-          _rc->m_manualCtrlChasisFB = fb;
+          _rc->m_manualControl.m_ctrlChasisLR = makeValueRange(0, lr, -100, 100);
+          _rc->m_manualControl.m_ctrlChasisFB = makeValueRange(0, fb, -100, 100);
+          _rc->m_manualControlUpdated = true;
         }
         else
           fprintf(stderr, "Failed to parse pad 1 arguments '%s'\n", parseAt);
@@ -396,8 +509,9 @@ static int do_readConnection(RCInput* _rc)
       parseAt += strlen("pad 2 ");
       if (strncmp(parseAt, "up", strlen("up")) == 0)
       {
-        _rc->m_manualCtrlHand = 0;
-        _rc->m_manualCtrlArm = 0;
+        _rc->m_manualControl.m_ctrlHand = 0;
+        _rc->m_manualControl.m_ctrlArm = 0;
+        _rc->m_manualControlUpdated = true;
       }
       else
       {
@@ -405,8 +519,8 @@ static int do_readConnection(RCInput* _rc)
         int arm;
         if (sscanf(parseAt, "%d %d", &arm, &hand) == 2)
         {
-          _rc->m_manualCtrlHand = hand;
-          _rc->m_manualCtrlArm  = arm;
+          _rc->m_manualControl.m_ctrlHand = makeValueRange(0, hand, -100, 100);
+          _rc->m_manualControl.m_ctrlArm  = makeValueRange(0, arm,  -100, 100);
         }
         else
           fprintf(stderr, "Failed to parse pad 2 arguments '%s'\n", parseAt);
@@ -419,9 +533,10 @@ static int do_readConnection(RCInput* _rc)
       if (sscanf(parseAt, "%d down", &btn) == 1)
       {
         if (btn == 1)
-          _rc->m_manualMode = true;
+          _rc->m_manualControl.m_manualMode = true;
         else if (btn == 2)
-          _rc->m_manualMode = false;
+          _rc->m_manualControl.m_manualMode = false;
+        _rc->m_manualControlUpdated = true;
       }
       else
         fprintf(stderr, "Failed to parse btn arguments '%s'\n", parseAt);
@@ -436,11 +551,11 @@ static int do_readConnection(RCInput* _rc)
   memmove(_rc->m_readBuffer, parseAt, _rc->m_readBufferUsed);
 
   fprintf(stderr, "Manual control: %s chasis %d %d, hand %d, arm %d\n",
-          _rc->m_manualMode?"manual":"auto",
-          _rc->m_manualCtrlChasisLR,
-          _rc->m_manualCtrlChasisFB,
-          _rc->m_manualCtrlHand,
-          _rc->m_manualCtrlArm);
+          _rc->m_manualControl.m_manualMode?"manual":"auto",
+          _rc->m_manualControl.m_ctrlChasisLR,
+          _rc->m_manualControl.m_ctrlChasisFB,
+          _rc->m_manualControl.m_ctrlHand,
+          _rc->m_manualControl.m_ctrlArm);
 
   return 0;
 }
@@ -482,17 +597,27 @@ int rcInputOpen(RCInput* _rc, const RCConfig* _config)
     return res;
   }
 
+  if ((res = do_setupDriverManualControl(_rc, _config->m_manualMode)) != 0)
+  {
+    do_closeEventInput(_rc);
+    do_closeStdin(_rc);
+    do_closeServerFd(_rc);
+  }
+
+  if ((res = do_setupTargetDetectParams(_rc,
+                                        _config->m_targetDetectHue, _config->m_targetDetectHueTolerance,
+                                        _config->m_targetDetectSat, _config->m_targetDetectSatTolerance,
+                                        _config->m_targetDetectVal, _config->m_targetDetectValTolerance)) != 0)
+  {
+    do_closeEventInput(_rc);
+    do_closeStdin(_rc);
+    do_closeServerFd(_rc);
+  }
+
   _rc->m_readBufferSize = 1000;
   _rc->m_readBuffer = malloc(_rc->m_readBufferSize);
 
   _rc->m_connectionFd = -1;
-  _rc->m_manualMode = _config->m_manualMode;
-  _rc->m_autoTargetDetectHue          = _config->m_autoTargetDetectHue;
-  _rc->m_autoTargetDetectHueTolerance = _config->m_autoTargetDetectHueTolerance;
-  _rc->m_autoTargetDetectSat          = _config->m_autoTargetDetectSat;
-  _rc->m_autoTargetDetectSatTolerance = _config->m_autoTargetDetectSatTolerance;
-  _rc->m_autoTargetDetectVal          = _config->m_autoTargetDetectVal;
-  _rc->m_autoTargetDetectValTolerance = _config->m_autoTargetDetectValTolerance;
 
   return 0;
 }
@@ -527,30 +652,33 @@ int rcInputStart(RCInput* _rc)
   if ((res = do_listenServerFd(_rc)) != 0)
     return res;
 
-  _rc->m_manualCtrlChasisLR = 0;
-  _rc->m_manualCtrlChasisFB = 0;
-  _rc->m_manualCtrlHand = 0;
-  _rc->m_manualCtrlArm = 0;
+  if ((res = do_startDriverManualControl(_rc)) != 0)
+  {
+    do_unlistenServerFd(_rc);
+    return res;
+  }
+
+  if ((res = do_startTargetDetectParams(_rc)) != 0)
+  {
+    do_stopDriverManualControl(_rc);
+    do_unlistenServerFd(_rc);
+    return res;
+  }
 
   return 0;
 }
 
 int rcInputStop(RCInput* _rc)
 {
-  int res;
-
   if (_rc == NULL)
     return EINVAL;
   if (_rc->m_serverFd == -1)
     return ENOTCONN;
 
-  if ((res = do_unlistenServerFd(_rc)) != 0)
-    return res;
+  do_stopTargetDetectParams(_rc);
+  do_stopDriverManualControl(_rc);
 
-  _rc->m_manualCtrlChasisLR = 0;
-  _rc->m_manualCtrlChasisFB = 0;
-  _rc->m_manualCtrlHand = 0;
-  _rc->m_manualCtrlArm = 0;
+  do_unlistenServerFd(_rc);
 
   return 0;
 }
@@ -614,12 +742,11 @@ int rcInputGetManualControl(RCInput* _rc,
   if (_rc == NULL || _manualControl == NULL)
     return EINVAL;
 
-#warning Return result only once?
-  _manualControl->m_manualMode   = _rc->m_manualMode;
-  _manualControl->m_ctrlChasisLR = _rc->m_manualCtrlChasisLR;
-  _manualControl->m_ctrlChasisFB = _rc->m_manualCtrlChasisFB;
-  _manualControl->m_ctrlHand     = _rc->m_manualCtrlHand;
-  _manualControl->m_ctrlArm      = _rc->m_manualCtrlArm;
+  if (!_rc->m_manualControlUpdated)
+    return ENODATA;
+
+  _rc->m_manualControlUpdated = false;
+  *_manualControl = _rc->m_manualControl;
 
   return 0;
 }
@@ -630,24 +757,18 @@ int rcInputGetTargetDetectParams(RCInput* _rc,
   if (_rc == NULL)
     return EINVAL;
 
-#warning Return result only once?
-  // valid both in auto and manual mode!
-  _targetParams->m_detectHueFrom = _rc->m_autoTargetDetectHue-_rc->m_autoTargetDetectHueTolerance;
-  _targetParams->m_detectHueTo   = _rc->m_autoTargetDetectHue+_rc->m_autoTargetDetectHueTolerance;
-  while (_targetParams->m_detectHueFrom < 0.0f)
-    _targetParams->m_detectHueFrom += 360.0f;
-  while (_targetParams->m_detectHueFrom >= 360.0f)
-    _targetParams->m_detectHueFrom -= 360.0f;
-  while (_targetParams->m_detectHueTo < 0.0f)
-    _targetParams->m_detectHueTo += 360.0f;
-  while (_targetParams->m_detectHueTo >= 360.0f)
-    _targetParams->m_detectHueTo -= 360.0f;
+  if (!_rc->m_targetDetectParamsUpdated)
+    return ENODATA;
 
-  _targetParams->m_detectSatFrom = _rc->m_autoTargetDetectSat-_rc->m_autoTargetDetectSatTolerance;
-  _targetParams->m_detectSatTo   = _rc->m_autoTargetDetectSat+_rc->m_autoTargetDetectSatTolerance;
-  _targetParams->m_detectValFrom = _rc->m_autoTargetDetectVal-_rc->m_autoTargetDetectValTolerance;
-  _targetParams->m_detectValTo   = _rc->m_autoTargetDetectVal+_rc->m_autoTargetDetectValTolerance;
+  _rc->m_targetDetectParamsUpdated = false;
+  _targetParams->m_detectHueFrom = makeValueWrap( _rc->m_targetDetectHue, -_rc->m_targetDetectHueTolerance, 0, 360);
+  _targetParams->m_detectHueTo   = makeValueWrap( _rc->m_targetDetectHue, +_rc->m_targetDetectHueTolerance, 0, 360);
+  _targetParams->m_detectSatFrom = makeValueRange(_rc->m_targetDetectSat, -_rc->m_targetDetectSatTolerance, 0, 100);
+  _targetParams->m_detectSatTo   = makeValueRange(_rc->m_targetDetectSat, +_rc->m_targetDetectSatTolerance, 0, 100);
+  _targetParams->m_detectValFrom = makeValueRange(_rc->m_targetDetectVal, -_rc->m_targetDetectValTolerance, 0, 100);
+  _targetParams->m_detectValTo   = makeValueRange(_rc->m_targetDetectVal, +_rc->m_targetDetectValTolerance, 0, 100);
 
   return 0;
 }
+
 

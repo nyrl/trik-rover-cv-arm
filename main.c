@@ -53,7 +53,7 @@ static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 0x14, -100, -1, 0, 1, 100 }, 
                                         { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 },   //hand up-down2
                                         { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 } }; //arm squeeze
 static RCConfig s_cfgRCInput = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", false,
-                                 7.0f, 13.0f, 0.85f, 0.15f, 0.8f, 0.2f };
+                                 7, 13, 85, 15, 80, 20 };
 static DriverConfig s_cfgDriverOutput = { 0, 50, 600 };
 
 
@@ -241,12 +241,12 @@ static bool parse_args(int _argc, char* const _argv[])
           case 60+2: s_cfgRCInput.m_eventInput = optarg;					break;
           case 60+3: s_cfgRCInput.m_manualMode = atoi(optarg);					break;
 
-          case 64  : s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);				break;
-          case 64+1: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);		break;
-          case 66  : s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);				break;
-          case 66+1: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);		break;
-          case 68  : s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);				break;
-          case 68+1: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);		break;
+          case 64  : s_cfgRCInput.m_targetDetectHue = atoi(optarg);				break;
+          case 64+1: s_cfgRCInput.m_targetDetectHueTolerance = atoi(optarg);			break;
+          case 66  : s_cfgRCInput.m_targetDetectSat = atoi(optarg);				break;
+          case 66+1: s_cfgRCInput.m_targetDetectSatTolerance = atoi(optarg);			break;
+          case 68  : s_cfgRCInput.m_targetDetectVal = atoi(optarg);				break;
+          case 68+1: s_cfgRCInput.m_targetDetectValTolerance = atoi(optarg);			break;
 
           default:
             return false;

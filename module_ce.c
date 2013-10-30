@@ -203,13 +203,14 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcInArgs.base.size = sizeof(tcInArgs);
   tcInArgs.base.numBytes = _srcFrameSize;
   tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
-#warning TODO consider float/int interface
-  tcInArgs.detectHueFrom = _targetParams->m_detectHueFrom;
-  tcInArgs.detectHueTo   = _targetParams->m_detectHueTo;
-  tcInArgs.detectSatFrom = _targetParams->m_detectSatFrom;
-  tcInArgs.detectSatTo   = _targetParams->m_detectSatTo;
-  tcInArgs.detectValFrom = _targetParams->m_detectValFrom;
-  tcInArgs.detectValTo   = _targetParams->m_detectValTo;
+
+#warning TODO rework DSP interface on ints
+  tcInArgs.detectHueFrom = (float)_targetParams->m_detectHueFrom; // already 0-360
+  tcInArgs.detectHueTo   = (float)_targetParams->m_detectHueTo;   // already 0-360
+  tcInArgs.detectSatFrom = (float)_targetParams->m_detectSatFrom / 100.0; // adjusting 0..100 to 0..1
+  tcInArgs.detectSatTo   = (float)_targetParams->m_detectSatTo / 100.0;   // adjusting 0..100 to 0..1
+  tcInArgs.detectValFrom = (float)_targetParams->m_detectValFrom / 100.0; // adjusting 0..100 to 0..1
+  tcInArgs.detectValTo   = (float)_targetParams->m_detectValTo / 100.0;   // adjusting 0..100 to 0..1
 
   VIDTRANSCODE_OutArgs tcOutArgs;
   memset(&tcOutArgs,    0, sizeof(tcOutArgs));
@@ -272,7 +273,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
   memcpy(_dstFramePtr, _ce->m_dstBuffer, *_dstFrameUsed);
 
 
-#warning TODO use outArgs to get target; consider float/int interface
+#warning TODO rework DSP to use outArgs to get target
   const char* dspInfo = _ce->m_dstInfoBuffer;
   if (dspInfo && dspInfo[0] != '\0')
     sscanf(dspInfo, "%i x %i %i",

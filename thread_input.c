@@ -158,6 +158,7 @@ int threadInput(void* _arg)
   }
 
 
+#warning Move init/fini code to runtime?
   if ((res = rcInputInit(runtimeCfgVerbose(runtime))) != 0)
   {
     fprintf(stderr, "rcInputInit() failed: %d\n", res);

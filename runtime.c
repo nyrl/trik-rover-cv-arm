@@ -50,7 +50,7 @@ int runtimeInit(Runtime* _runtime)
 
 int runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
 {
-#warning TODO
+#warning TODO parse command line args
   return EINVAL;
 }
 

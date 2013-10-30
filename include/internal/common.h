@@ -10,12 +10,12 @@ extern "C" {
 
 typedef struct TargetDetectParams
 {
-  float m_detectHueFrom;
-  float m_detectHueTo;
-  float m_detectSatFrom;
-  float m_detectSatTo;
-  float m_detectValFrom;
-  float m_detectValTo;
+  int m_detectHueFrom;
+  int m_detectHueTo;
+  int m_detectSatFrom;
+  int m_detectSatTo;
+  int m_detectValFrom;
+  int m_detectValTo;
 } TargetDetectParams;
 
 typedef struct TargetLocation
