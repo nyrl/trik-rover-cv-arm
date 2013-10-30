@@ -41,6 +41,7 @@ int runtimeReset(Runtime* _runtime)
   memset(&_runtime->m_modules.m_driverOutput, 0, sizeof(_runtime->m_modules.m_driverOutput));
 
   _runtime->m_state.m_terminate = false;
+  pthread_mutex_init(&_runtime->m_state.m_mutex, NULL);
   memset(&_runtime->m_state.m_targetParams,        0, sizeof(_runtime->m_state.m_targetParams));
   memset(&_runtime->m_state.m_targetLocation,      0, sizeof(_runtime->m_state.m_targetLocation));
   memset(&_runtime->m_state.m_driverManualControl, 0, sizeof(_runtime->m_state.m_driverManualControl));
@@ -246,7 +247,7 @@ DriverOutput* runtimeModDriverOutput(Runtime* _runtime)
 
 
 
-bool runtimeGetTerminate(const Runtime* _runtime)
+bool runtimeGetTerminate(Runtime* _runtime)
 {
   if (_runtime == NULL)
     return true;
@@ -263,13 +264,14 @@ int runtimeSetTerminate(Runtime* _runtime, bool _terminate)
   return 0;
 }
 
-int runtimeGetTargetDetectParams(const Runtime* _runtime, TargetDetectParams* _targetParams)
+int runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetParams)
 {
   if (_runtime == NULL || _targetParams == NULL)
     return EINVAL;
 
-#warning TODO add lock
+  pthread_mutex_lock(&_runtime->m_state.m_mutex);
   *_targetParams = _runtime->m_state.m_targetParams;
+  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }
 
@@ -278,18 +280,20 @@ int runtimeSetTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _t
   if (_runtime == NULL || _targetParams == NULL)
     return EINVAL;
 
-#warning TODO add lock
+  pthread_mutex_lock(&_runtime->m_state.m_mutex);
   _runtime->m_state.m_targetParams = *_targetParams;
+  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }
 
-int runtimeGetTargetLocation(const Runtime* _runtime, TargetLocation* _targetLocation)
+int runtimeGetTargetLocation(Runtime* _runtime, TargetLocation* _targetLocation)
 {
   if (_runtime == NULL || _targetLocation == NULL)
     return EINVAL;
 
-#warning TODO add lock
+  pthread_mutex_lock(&_runtime->m_state.m_mutex);
   *_targetLocation = _runtime->m_state.m_targetLocation;
+  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }
 
@@ -298,18 +302,20 @@ int runtimeSetTargetLocation(Runtime* _runtime, const TargetLocation* _targetLoc
   if (_runtime == NULL || _targetLocation == NULL)
     return EINVAL;
 
-#warning TODO add lock
+  pthread_mutex_lock(&_runtime->m_state.m_mutex);
   _runtime->m_state.m_targetLocation = *_targetLocation;
+  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }
 
-int runtimeGetDriverManualControl(const Runtime* _runtime, DriverManualControl* _manualControl)
+int runtimeGetDriverManualControl(Runtime* _runtime, DriverManualControl* _manualControl)
 {
   if (_runtime == NULL || _manualControl == NULL)
     return EINVAL;
 
-#warning TODO add lock
+  pthread_mutex_lock(&_runtime->m_state.m_mutex);
   *_manualControl = _runtime->m_state.m_driverManualControl;
+  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }
 
@@ -318,8 +324,9 @@ int runtimeSetDriverManualControl(Runtime* _runtime, const DriverManualControl* 
   if (_runtime == NULL || _manualControl == NULL)
     return EINVAL;
 
-#warning TODO add lock
+  pthread_mutex_lock(&_runtime->m_state.m_mutex);
   _runtime->m_state.m_driverManualControl = *_manualControl;
+  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }
 

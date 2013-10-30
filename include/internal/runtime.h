@@ -1,6 +1,7 @@
 #ifndef TRIK_V4L2_DSP_FB_INTERNAL_RUNTIME_H_
 #define TRIK_V4L2_DSP_FB_INTERNAL_RUNTIME_H_
 
+#include <pthread.h>
 
 #include "internal/common.h"
 #include "internal/module_ce.h"
@@ -40,11 +41,12 @@ typedef struct RuntimeModules
 
 typedef struct RuntimeState
 {
-  volatile bool       m_terminate;
+  volatile bool           m_terminate;
+  pthread_mutex_t         m_mutex;
 
-  TargetDetectParams  m_targetParams;
-  TargetLocation      m_targetLocation;
-  DriverManualControl m_driverManualControl;
+  TargetDetectParams      m_targetParams;
+  TargetLocation          m_targetLocation;
+  DriverManualControl     m_driverManualControl;
 } RuntimeState;
 
 typedef struct Runtime
@@ -79,13 +81,13 @@ RoverOutput*  runtimeModRoverOutput(Runtime* _runtime);
 DriverOutput* runtimeModDriverOutput(Runtime* _runtime);
 
 
-bool runtimeGetTerminate(const Runtime* _runtime);
+bool runtimeGetTerminate(Runtime* _runtime);
 int  runtimeSetTerminate(Runtime* _runtime, bool _terminate);
-int  runtimeGetTargetDetectParams(const Runtime* _runtime, TargetDetectParams* _targetParams);
+int  runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetParams);
 int  runtimeSetTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetParams);
-int  runtimeGetTargetLocation(const Runtime* _runtime, TargetLocation* _targetLocation);
+int  runtimeGetTargetLocation(Runtime* _runtime, TargetLocation* _targetLocation);
 int  runtimeSetTargetLocation(Runtime* _runtime, const TargetLocation* _targetLocation);
-int  runtimeGetDriverManualControl(const Runtime* _runtime, DriverManualControl* _manualControl);
+int  runtimeGetDriverManualControl(Runtime* _runtime, DriverManualControl* _manualControl);
 int  runtimeSetDriverManualControl(Runtime* _runtime, const DriverManualControl* _manualControl);
 
 
