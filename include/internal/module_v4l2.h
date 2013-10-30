@@ -6,6 +6,8 @@
 #include <inttypes.h>
 #include <linux/videodev2.h>
 
+#include "internal/common.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus

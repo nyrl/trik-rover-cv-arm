@@ -608,52 +608,45 @@ int rcInputReadConnection(RCInput* _rc)
 }
 
 
-int rcInputGetManualControl(RCInput* _rc, bool* _manualMode,
-                            int* _ctrlChasisLR, int* _ctrlChasisFB,
-                            int* _ctrlHand,     int* _ctrlArm)
+int rcInputGetManualControl(RCInput* _rc,
+                            DriverManualControl* _manualControl)
 {
-  if (_rc == NULL)
+  if (_rc == NULL || _manualControl == NULL)
     return EINVAL;
 
-  if (_manualMode)
-    *_manualMode = _rc->m_manualMode;
-
-  if (_ctrlChasisLR)
-    *_ctrlChasisLR = _rc->m_manualMode ? _rc->m_manualCtrlChasisLR : 0;
-  if (_ctrlChasisFB)
-    *_ctrlChasisFB = _rc->m_manualMode ? _rc->m_manualCtrlChasisFB : 0;
-  if (_ctrlHand)
-    *_ctrlHand = _rc->m_manualMode ? _rc->m_manualCtrlHand : 0;
-  if (_ctrlArm)
-    *_ctrlArm = _rc->m_manualMode ? _rc->m_manualCtrlArm : 0;
+#warning Return result only once?
+  _manualControl->m_manualMode   = _rc->m_manualMode;
+  _manualControl->m_ctrlChasisLR = _rc->m_manualCtrlChasisLR;
+  _manualControl->m_ctrlChasisFB = _rc->m_manualCtrlChasisFB;
+  _manualControl->m_ctrlHand     = _rc->m_manualCtrlHand;
+  _manualControl->m_ctrlArm      = _rc->m_manualCtrlArm;
 
   return 0;
 }
 
-int rcInputGetAutoTargetDetectParams(RCInput* _rc,
-                                     float* _detectHueFrom, float* _detectHueTo,
-                                     float* _detectSatFrom, float* _detectSatTo,
-                                     float* _detectValFrom, float* _detectValTo)
+int rcInputGetTargetDetectParams(RCInput* _rc,
+                                 TargetDetectParams* _targetParams)
 {
   if (_rc == NULL)
     return EINVAL;
 
+#warning Return result only once?
   // valid both in auto and manual mode!
-  *_detectHueFrom = _rc->m_autoTargetDetectHue-_rc->m_autoTargetDetectHueTolerance;
-  *_detectHueTo   = _rc->m_autoTargetDetectHue+_rc->m_autoTargetDetectHueTolerance;
-  while (*_detectHueFrom < 0.0f)
-    *_detectHueFrom += 360.0f;
-  while (*_detectHueFrom >= 360.0f)
-    *_detectHueFrom -= 360.0f;
-  while (*_detectHueTo < 0.0f)
-    *_detectHueTo += 360.0f;
-  while (*_detectHueTo >= 360.0f)
-    *_detectHueTo -= 360.0f;
+  _targetParams->m_detectHueFrom = _rc->m_autoTargetDetectHue-_rc->m_autoTargetDetectHueTolerance;
+  _targetParams->m_detectHueTo   = _rc->m_autoTargetDetectHue+_rc->m_autoTargetDetectHueTolerance;
+  while (_targetParams->m_detectHueFrom < 0.0f)
+    _targetParams->m_detectHueFrom += 360.0f;
+  while (_targetParams->m_detectHueFrom >= 360.0f)
+    _targetParams->m_detectHueFrom -= 360.0f;
+  while (_targetParams->m_detectHueTo < 0.0f)
+    _targetParams->m_detectHueTo += 360.0f;
+  while (_targetParams->m_detectHueTo >= 360.0f)
+    _targetParams->m_detectHueTo -= 360.0f;
 
-  *_detectSatFrom = _rc->m_autoTargetDetectSat-_rc->m_autoTargetDetectSatTolerance;
-  *_detectSatTo   = _rc->m_autoTargetDetectSat+_rc->m_autoTargetDetectSatTolerance;
-  *_detectValFrom = _rc->m_autoTargetDetectVal-_rc->m_autoTargetDetectValTolerance;
-  *_detectValTo   = _rc->m_autoTargetDetectVal+_rc->m_autoTargetDetectValTolerance;
+  _targetParams->m_detectSatFrom = _rc->m_autoTargetDetectSat-_rc->m_autoTargetDetectSatTolerance;
+  _targetParams->m_detectSatTo   = _rc->m_autoTargetDetectSat+_rc->m_autoTargetDetectSatTolerance;
+  _targetParams->m_detectValFrom = _rc->m_autoTargetDetectVal-_rc->m_autoTargetDetectValTolerance;
+  _targetParams->m_detectValTo   = _rc->m_autoTargetDetectVal+_rc->m_autoTargetDetectValTolerance;
 
   return 0;
 }

@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
+#include "internal/common.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -34,12 +36,17 @@ typedef struct RCInput
   size_t                   m_readBufferSize;
   size_t                   m_readBufferUsed;
 
+
+
+
+#warning Rework
   bool                     m_manualMode;
 
   int                      m_manualCtrlChasisLR;
   int                      m_manualCtrlChasisFB;
   int                      m_manualCtrlHand;
   int                      m_manualCtrlArm;
+
 
   float                    m_autoTargetDetectHue;
   float                    m_autoTargetDetectHueTolerance;
@@ -48,6 +55,8 @@ typedef struct RCInput
   float                    m_autoTargetDetectVal;
   float                    m_autoTargetDetectValTolerance;
 } RCInput;
+
+
 
 
 int rcInputInit(bool _verbose);
@@ -63,13 +72,8 @@ int rcInputReadEventInput(RCInput* _rc);
 int rcInputAcceptConnection(RCInput* _rc);
 int rcInputReadConnection(RCInput* _rc);
 
-int rcInputGetManualControl(RCInput* _rc, bool* _manualMode,
-                            int* _ctrlChasisLR, int* _ctrlChasisFB,
-                            int* _ctrlHand,     int* _ctrlArm);
-int rcInputGetAutoTargetDetectParams(RCInput* _rc,
-                                     float* _detectHueFrom, float* _detectHueTo,
-                                     float* _detectSatFrom, float* _detectSatTo,
-                                     float* _detectValFrom, float* _detectValTo);
+int rcInputGetManualControl(RCInput* _rc, DriverManualControl* _manualControl);
+int rcInputGetTargetDetectParams(RCInput* _rc, TargetDetectParams* _targetParams);
 
 #ifdef __cplusplus
 } // extern "C"

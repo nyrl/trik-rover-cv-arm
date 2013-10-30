@@ -1,16 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-//#include <string.h>
-//#include <unistd.h>
-//#include <assert.h>
-//#include <sys/types.h>
-//#include <sys/stat.h>
-//#include <sys/ioctl.h>
-//#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+#include <assert.h>
+#include <time.h>
 #include <errno.h>
 
 #include "internal/module_driver.h"
-
 
 
 static bool s_verbose = false;
@@ -507,9 +503,9 @@ int driverOutputStop(DriverOutput* _driver)
   return 0;
 }
 
-int driverOutputControlManual(DriverOutput* _driver, int _ctrlChasisLR, int _ctrlChasisFB, int _ctrlHand, int _ctrlArm)
+int driverOutputControlManual(DriverOutput* _driver, const DriverManualControl* _manualControl)
 {
-  if (_driver == NULL)
+  if (_driver == NULL || _manualControl == NULL)
     return EINVAL;
 
   if (_driver->m_state != StateManual)
@@ -519,16 +515,18 @@ int driverOutputControlManual(DriverOutput* _driver, int _ctrlChasisLR, int _ctr
     _driver->m_stateEntryTime.tv_sec = 0;
   }
 
-  do_driverCtrlChasisManual(_driver, _ctrlChasisLR, _ctrlChasisFB);
-  do_driverCtrlHandManual(_driver, _ctrlHand);
-  do_driverCtrlArmManual(_driver, _ctrlArm);
+#warning Migrate target location checks from here
+
+  do_driverCtrlChasisManual(_driver, _manualControl->m_ctrlChasisLR, _manualControl->m_ctrlChasisFB);
+  do_driverCtrlHandManual(_driver, _manualControl->m_ctrlHand);
+  do_driverCtrlArmManual(_driver, _manualControl->m_ctrlArm);
 
   return 0;
 }
 
-int driverOutputControlAuto(DriverOutput* _driver, int _targetX, int _targetY, int _targetMass)
+int driverOutputControlAuto(DriverOutput* _driver, const TargetLocation* _targetLocation)
 {
-  if (_driver == NULL)
+  if (_driver == NULL || _targetLocation == NULL)
     return EINVAL;
 
   if (_driver->m_stateEntryTime.tv_sec == 0)
@@ -569,7 +567,7 @@ int driverOutputControlAuto(DriverOutput* _driver, int _targetX, int _targetY, i
       do_driverCtrlHandSearching(_driver);
       do_driverCtrlArmSearching(_driver);
       do_driverCtrlSearching(_driver);
-      if (_targetMass > 0)
+      if (_targetLocation->m_targetMass > 0)
       {
         fprintf(stderr, "*** FOUND TARGET ***\n");
         _driver->m_state = StateTracking;
@@ -578,11 +576,11 @@ int driverOutputControlAuto(DriverOutput* _driver, int _targetX, int _targetY, i
       break;
 
     case StateTracking:
-      do_driverCtrlChasisTracking(_driver, _targetX, _targetY, _targetMass);
-      do_driverCtrlHandTracking(_driver, _targetX, _targetY, _targetMass);
-      do_driverCtrlArmTracking(_driver, _targetX, _targetY, _targetMass);
-      do_driverCtrlTracking(_driver, _targetX, _targetY, _targetMass);
-      if (_targetMass <= 0)
+      do_driverCtrlChasisTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetMass);
+      do_driverCtrlHandTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetMass);
+      do_driverCtrlArmTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetMass);
+      do_driverCtrlTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetMass);
+      if (_targetLocation->m_targetMass <= 0)
       {
         fprintf(stderr, "*** LOST TARGET ***\n");
         _driver->m_state = StateSearching;
@@ -601,7 +599,7 @@ int driverOutputControlAuto(DriverOutput* _driver, int _targetX, int _targetY, i
       do_driverCtrlHandSqueezing(_driver);
       do_driverCtrlArmSqueezing(_driver);
       do_driverCtrlSqueezing(_driver);
-      if (_targetMass <= 0)
+      if (_targetLocation->m_targetMass <= 0)
       {
         fprintf(stderr, "*** LOCK FAILED ***\n");
         _driver->m_state = StatePreparing;
@@ -632,20 +630,19 @@ int driverOutputControlAuto(DriverOutput* _driver, int _targetX, int _targetY, i
   return 0;
 }
 
-int driverOutputGetControl(const DriverOutput* _driver,
-                           int* _ctrlChasisLeft, int* _ctrlChasisRight,
-                           int* _ctrlHand,       int* _ctrlArm)
+int driverOutputGetRoverControl(const DriverOutput* _driver,
+                                RoverControl* _roverControl)
 {
   int res;
 
   if (_driver == NULL)
     return EINVAL;
 
-  if ((res = do_driverCtrlChasisGetControl(_driver, _ctrlChasisLeft, _ctrlChasisRight)) != 0)
+  if ((res = do_driverCtrlChasisGetControl(_driver, &_roverControl->m_chasisLeftSpeed, &_roverControl->m_chasisRightSpeed)) != 0)
     return res;
-  if ((res = do_driverCtrlHandGetControl(_driver, _ctrlHand)) != 0)
+  if ((res = do_driverCtrlHandGetControl(_driver, &_roverControl->m_handSpeed)) != 0)
     return res;
-  if ((res = do_driverCtrlArmGetControl(_driver, _ctrlArm)) != 0)
+  if ((res = do_driverCtrlArmGetControl(_driver, &_roverControl->m_armSpeed)) != 0)
     return res;
 
   return 0;

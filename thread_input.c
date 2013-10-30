@@ -1,7 +1,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sysexits.h>
 #include <stdbool.h>
 #include <errno.h>
 #include <time.h>
@@ -15,14 +14,15 @@
 
 
 
-static int input_loop(Runtime* _runtime, RCInput* _rc)
+static int threadInputSelectLoop(Runtime* _runtime, RCInput* _rc)
 {
   int res;
   int maxFd = 0;
   fd_set fdsIn;
-  static const struct timespec s_select_timeout = { .tv_sec=1, .tv_nsec=0 };
+  static const struct timespec s_selectTimeout = { .tv_sec=1, .tv_nsec=0 };
 
-  assert(_runtime != NULL && _rc != NULL);
+  if (_runtime == NULL || _rc == NULL)
+    return EINVAL;
 
   FD_ZERO(&fdsIn);
 
@@ -52,7 +52,7 @@ static int input_loop(Runtime* _runtime, RCInput* _rc)
   }
 
 
-  if ((res = pselect(maxFd+1, &fdsIn, NULL, NULL, &s_select_timeout, NULL)) < 0)
+  if ((res = pselect(maxFd+1, &fdsIn, NULL, NULL, &s_selectTimeout, NULL)) < 0)
   {
     res = errno;
     fprintf(stderr, "pselect() failed: %d\n", res);
@@ -96,47 +96,40 @@ static int input_loop(Runtime* _runtime, RCInput* _rc)
     }
   }
 
-
-  bool ctrlManualMode;
-  int ctrlChasisLR;
-  int ctrlChasisFB;
-  int ctrlHand;
-  int ctrlArm;
-  if ((res = rcInputGetManualControl(_rc, &ctrlManualMode, &ctrlChasisLR, &ctrlChasisFB, &ctrlHand, &ctrlArm)) != 0)
+  DriverManualControl driverManualControl;
+  if ((res = rcInputGetManualControl(_rc, &driverManualControl)) != 0)
   {
-    fprintf(stderr, "rcInputGetManualControl() failed: %d\n", res);
-    return res;
+    if (res != ENODATA)
+    {
+      fprintf(stderr, "rcInputGetManualControl() failed: %d\n", res);
+      return res;
+    }
+  }
+  else
+  {
+    if ((res = runtimeSetDriverManualControl(_runtime, &driverManualControl)) != 0)
+    {
+      fprintf(stderr, "runtimeSetDriverManualControl() failed: %d\n", res);
+      return res;
+    }
   }
 
-  if ((res = runtimeSetManualControl(_runtime, ctrlManualMode, ctrlChasisLR, ctrlChasisFB, ctrlHand, ctrlArm)) != 0)
+  TargetDetectParams targetParams;
+  if ((res = rcInputGetTargetDetectParams(_rc, &targetParams)) != 0)
   {
-    fprintf(stderr, "runtimeSetManualControl() failed: %d\n", res);
-    return res;
+    if (res != ENODATA)
+    {
+      fprintf(stderr, "rcInputGetTargetDetectParams() failed: %d\n", res);
+      return res;
+    }
   }
-
-
-  float detectHueFrom;
-  float detectHueTo;
-  float detectSatFrom;
-  float detectSatTo;
-  float detectValFrom;
-  float detectValTo;
-  if ((res = rcInputGetAutoTargetDetectParams(_rc,
-                                              &detectHueFrom, &detectHueTo,
-                                              &detectSatFrom, &detectSatTo,
-                                              &detectValFrom, &detectValTo)) != 0)
+  else
   {
-    fprintf(stderr, "rcInputGetAutoTargetDetectParams() failed: %d\n", res);
-    return res;
-  }
-
-  if ((res = runtimeSetAutoTargetDetectParams(_runtime,
-                                              detectHueFrom, detectHueTo,
-                                              detectSatFrom, detectSatTo,
-                                              detectValFrom, detectValTo)) != 0)
-  {
-    fprintf(stderr, "runtimeSetAutoTargetDetectParams() failed: %d\n", res);
-    return res;
+    if ((res = runtimeSetTargetDetectParams(_runtime, &targetParams)) != 0)
+    {
+      fprintf(stderr, "runtimeSetTargetDetectParams() failed: %d\n", res);
+      return res;
+    }
   }
 
   return 0;
@@ -145,38 +138,46 @@ static int input_loop(Runtime* _runtime, RCInput* _rc)
 
 
 
-int input_thread(void* _arg)
+int threadInput(void* _arg)
 {
   int res = 0;
-  int exit_code = EX_OK;
+  int exit_code = 0;
   Runtime* runtime = (Runtime*)_arg;
+  RCInput* rc;
 
-  if ((res = rcInputInit(runtimeCfgVerbose(runtime))) != 0)
+  if (runtime == NULL)
   {
-    fprintf(stderr, "rcInputInit() failed: %d\n", res);
-    exit_code = EX_SOFTWARE;
+    exit_code = EINVAL;
+    goto exit;
+  }
+
+  if ((rc = runtimeModRCInput(runtime)) == NULL)
+  {
+    exit_code = EINVAL;
     goto exit;
   }
 
 
-  RCInput rc;
-  memset(&rc, 0, sizeof(rc));
-  rc.m_stdinFd = -1;
-  rc.m_eventInputFd = -1;
-  rc.m_serverFd = -1;
-  rc.m_connectionFd = -1;
-  if ((res = rcInputOpen(&rc, runtimeCfgRCInput(runtime))) != 0)
+  if ((res = rcInputInit(runtimeCfgVerbose(runtime))) != 0)
+  {
+    fprintf(stderr, "rcInputInit() failed: %d\n", res);
+    exit_code = res;
+    goto exit;
+  }
+
+
+  if ((res = rcInputOpen(rc, runtimeCfgRCInput(runtime))) != 0)
   {
     fprintf(stderr, "rcInputOpen() failed: %d\n", res);
-    exit_code = EX_IOERR;
+    exit_code = res;
     goto exit_rc_fini;
   }
 
 
-  if ((res = rcInputStart(&rc)) != 0)
+  if ((res = rcInputStart(rc)) != 0)
   {
     fprintf(stderr, "rcInputStart() failed: %d\n", res);
-    exit_code = EX_IOERR;
+    exit_code = res;
     goto exit_rc_close;
   }
 
@@ -184,23 +185,23 @@ int input_thread(void* _arg)
   printf("Entering input thread loop\n");
   while (!runtimeGetTerminate(runtime))
   {
-    if ((res = input_loop(runtime, &rc)) != 0)
+    if ((res = threadInputSelectLoop(runtime, rc)) != 0)
     {
       fprintf(stderr, "input_loop() failed: %d\n", res);
-      exit_code = EX_SOFTWARE;
-      break;
+      exit_code = res;
+      goto exit_rc_stop;
     }
   }
   printf("Left input thread loop\n");
 
 
-//exit_rc_stop:
-  if ((res = rcInputStop(&rc)) != 0)
+exit_rc_stop:
+  if ((res = rcInputStop(rc)) != 0)
     fprintf(stderr, "rcInputStop() failed: %d\n", res);
 
 
 exit_rc_close:
-  if ((res = rcInputClose(&rc)) != 0)
+  if ((res = rcInputClose(rc)) != 0)
     fprintf(stderr, "rcInputClose() failed: %d\n", res);
 
 

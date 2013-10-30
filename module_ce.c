@@ -187,14 +187,12 @@ static int do_releaseCodec(CodecEngine* _ce)
 static int do_transcodeFrame(CodecEngine* _ce,
                              const void* _srcFramePtr, size_t _srcFrameSize,
                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
-                             float _detectHueFrom, float _detectHueTo,
-                             float _detectSatFrom, float _detectSatTo,
-                             float _detectValFrom, float _detectValTo,
-                             int* _targetX, int* _targetY, int* _targetMass)
+                             const TargetDetectParams* _targetParams,
+                             TargetLocation* _targetLocation)
 {
   if (_ce->m_srcBuffer == NULL || _ce->m_dstBuffer == NULL || _ce->m_dstInfoBuffer == NULL)
     return ENOTCONN;
-  if (_srcFramePtr == NULL || _dstFramePtr == NULL)
+  if (_srcFramePtr == NULL || _dstFramePtr == NULL || _targetParams == NULL || _targetLocation == NULL)
     return EINVAL;
   if (_srcFrameSize > _ce->m_srcBufferSize || _dstFrameSize > _ce->m_dstBufferSize)
     return ENOSPC;
@@ -205,12 +203,13 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcInArgs.base.size = sizeof(tcInArgs);
   tcInArgs.base.numBytes = _srcFrameSize;
   tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
-  tcInArgs.detectHueFrom = _detectHueFrom;
-  tcInArgs.detectHueTo   = _detectHueTo;
-  tcInArgs.detectSatFrom = _detectSatFrom;
-  tcInArgs.detectSatTo   = _detectSatTo;
-  tcInArgs.detectValFrom = _detectValFrom;
-  tcInArgs.detectValTo   = _detectValTo;
+#warning TODO consider float/int interface
+  tcInArgs.detectHueFrom = _targetParams->m_detectHueFrom;
+  tcInArgs.detectHueTo   = _targetParams->m_detectHueTo;
+  tcInArgs.detectSatFrom = _targetParams->m_detectSatFrom;
+  tcInArgs.detectSatTo   = _targetParams->m_detectSatTo;
+  tcInArgs.detectValFrom = _targetParams->m_detectValFrom;
+  tcInArgs.detectValTo   = _targetParams->m_detectValTo;
 
   VIDTRANSCODE_OutArgs tcOutArgs;
   memset(&tcOutArgs,    0, sizeof(tcOutArgs));
@@ -273,14 +272,18 @@ static int do_transcodeFrame(CodecEngine* _ce,
   memcpy(_dstFramePtr, _ce->m_dstBuffer, *_dstFrameUsed);
 
 
+#warning TODO use outArgs to get target; consider float/int interface
   const char* dspInfo = _ce->m_dstInfoBuffer;
   if (dspInfo && dspInfo[0] != '\0')
-    sscanf(dspInfo, "%i x %i %i", _targetX, _targetY, _targetMass);
+    sscanf(dspInfo, "%i x %i %i",
+           &_targetLocation->m_targetX,
+           &_targetLocation->m_targetY,
+           &_targetLocation->m_targetMass);
   else
   {
-    *_targetX = 0;
-    *_targetY = 0;
-    *_targetMass = -1;
+    _targetLocation->m_targetX = 0;
+    _targetLocation->m_targetY = 0;
+    _targetLocation->m_targetMass = -1;
   }
 
   return 0;
@@ -441,14 +444,12 @@ int codecEngineStop(CodecEngine* _ce)
 int codecEngineTranscodeFrame(CodecEngine* _ce,
                               const void* _srcFramePtr, size_t _srcFrameSize,
                               void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
-                              float _detectHueFrom, float _detectHueTo,
-                              float _detectSatFrom, float _detectSatTo,
-                              float _detectValFrom, float _detectValTo,
-                              int* _targetX, int* _targetY, int* _targetMass)
+                              const TargetDetectParams* _targetParams,
+                              TargetLocation* _targetLocation)
 {
   int res;
 
-  if (_ce == NULL || _targetX == NULL || _targetY == NULL || _targetMass == NULL)
+  if (_ce == NULL || _targetParams == NULL || _targetLocation == NULL)
     return EINVAL;
 
   if (_ce->m_handle == NULL)
@@ -457,17 +458,18 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
   res = do_transcodeFrame(_ce,
                           _srcFramePtr, _srcFrameSize,
                           _dstFramePtr, _dstFrameSize, _dstFrameUsed,
-                          _detectHueFrom, _detectHueTo,
-                          _detectSatFrom, _detectSatTo,
-                          _detectValFrom, _detectValTo,
-                          _targetX, _targetY, _targetMass);
+                          _targetParams,
+                          _targetLocation);
 
   if (s_verbose)
   {
     fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
             _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, *_dstFrameUsed);
-    if (*_targetMass > 0)
-      fprintf(stderr, "Target detected at %d x %d @ %d\n", *_targetX, *_targetY, *_targetMass);
+    if (_targetLocation->m_targetMass > 0)
+      fprintf(stderr, "Target detected at %d x %d @ %d\n",
+              _targetLocation->m_targetX,
+              _targetLocation->m_targetY,
+              _targetLocation->m_targetMass);
   }
 
   return res;

@@ -14,6 +14,7 @@
 #include "internal/module_rc.h"
 #include "internal/module_rover.h"
 #include "internal/module_driver.h"
+#include "internal/runtime.h"
 
 
 
@@ -44,13 +45,13 @@ static bool s_cfgVerbose = false;
 static CodecEngineConfig s_cfgCodecEngine = { "dsp_server.xe674", "vidtranscode_resample" };
 static V4L2Config s_cfgV4L2Input = { "/dev/video0", 352, 288, V4L2_PIX_FMT_YUYV };
 static FBConfig s_cfgFBOutput = { "/dev/fb0" };
-static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 0x14, 0x00, 0x64 }, //msp left1
-                                        { 2, 0x48, 0x15, 0x00, 0x64 }, //msp left2
-                                        { 2, 0x48, 0x16, 0x00, 0x64 }, //msp right1
-                                        { 2, 0x48, 0x17, 0x00, 0x64 }, //msp right2
-                                        { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  },   //up-down1
-                                        { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 },   //up-down2
-                                        { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 } }; //squeeze
+static RoverConfig s_cfgRoverOutput = { { 2, 0x48, 0x14, -100, -1, 0, 1, 100 }, //chasis left1
+                                        { 2, 0x48, 0x15, -100, -1, 0, 1, 100 }, //chasis left2
+                                        { 2, 0x48, 0x16, -100, -1, 0, 1, 100 }, //chasis right1
+                                        { 2, 0x48, 0x17, -100, -1, 0, 1, 100 }, //chasis right2
+                                        { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  },   //hand up-down1
+                                        { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 },   //hand up-down2
+                                        { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 } }; //arm squeeze
 static RCConfig s_cfgRCInput = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", false,
                                  7.0f, 13.0f, 0.85f, 0.15f, 0.8f, 0.2f };
 static DriverConfig s_cfgDriverOutput = { 0, 50, 600 };
@@ -172,80 +173,80 @@ static bool parse_args(int _argc, char* const _argv[])
             }
             break;
 
-          case 6: s_cfgFBOutput.m_path = optarg;					break;
+          case 6: s_cfgFBOutput.m_path = optarg;						break;
 
-          case 7   : s_cfgRoverOutput.m_motor1.m_path = optarg;				break;
-          case 7 +1: s_cfgRoverOutput.m_motor1.m_powerBackFull = atoi(optarg);		break;
-          case 7 +2: s_cfgRoverOutput.m_motor1.m_powerBackZero = atoi(optarg);		break;
-          case 7 +3: s_cfgRoverOutput.m_motor1.m_powerNeutral = atoi(optarg);		break;
-          case 7 +4: s_cfgRoverOutput.m_motor1.m_powerForwardZero = atoi(optarg);	break;
-          case 7 +5: s_cfgRoverOutput.m_motor1.m_powerForwardFull = atoi(optarg);	break;
+          case 7   : s_cfgRoverOutput.m_motorHand1.m_path = optarg;				break;
+          case 7 +1: s_cfgRoverOutput.m_motorHand1.m_powerBackFull = atoi(optarg);		break;
+          case 7 +2: s_cfgRoverOutput.m_motorHand1.m_powerBackZero = atoi(optarg);		break;
+          case 7 +3: s_cfgRoverOutput.m_motorHand1.m_powerNeutral = atoi(optarg);		break;
+          case 7 +4: s_cfgRoverOutput.m_motorHand1.m_powerForwardZero = atoi(optarg);		break;
+          case 7 +5: s_cfgRoverOutput.m_motorHand1.m_powerForwardFull = atoi(optarg);		break;
 
-          case 13  : s_cfgRoverOutput.m_motor2.m_path = optarg;				break;
-          case 13+1: s_cfgRoverOutput.m_motor2.m_powerBackFull = atoi(optarg);		break;
-          case 13+2: s_cfgRoverOutput.m_motor2.m_powerBackZero = atoi(optarg);		break;
-          case 13+3: s_cfgRoverOutput.m_motor2.m_powerNeutral = atoi(optarg);		break;
-          case 13+4: s_cfgRoverOutput.m_motor2.m_powerForwardZero = atoi(optarg);	break;
-          case 13+5: s_cfgRoverOutput.m_motor2.m_powerForwardFull = atoi(optarg);	break;
+          case 13  : s_cfgRoverOutput.m_motorHand2.m_path = optarg;				break;
+          case 13+1: s_cfgRoverOutput.m_motorHand2.m_powerBackFull = atoi(optarg);		break;
+          case 13+2: s_cfgRoverOutput.m_motorHand2.m_powerBackZero = atoi(optarg);		break;
+          case 13+3: s_cfgRoverOutput.m_motorHand2.m_powerNeutral = atoi(optarg);		break;
+          case 13+4: s_cfgRoverOutput.m_motorHand2.m_powerForwardZero = atoi(optarg);		break;
+          case 13+5: s_cfgRoverOutput.m_motorHand2.m_powerForwardFull = atoi(optarg);		break;
 
-          case 19  : s_cfgRoverOutput.m_motor3.m_path = optarg;				break;
-          case 19+1: s_cfgRoverOutput.m_motor3.m_powerBackFull = atoi(optarg);		break;
-          case 19+2: s_cfgRoverOutput.m_motor3.m_powerBackZero = atoi(optarg);		break;
-          case 19+3: s_cfgRoverOutput.m_motor3.m_powerNeutral = atoi(optarg);		break;
-          case 19+4: s_cfgRoverOutput.m_motor3.m_powerForwardZero = atoi(optarg);	break;
-          case 19+5: s_cfgRoverOutput.m_motor3.m_powerForwardFull = atoi(optarg);	break;
+          case 19  : s_cfgRoverOutput.m_motorArm.m_path = optarg;				break;
+          case 19+1: s_cfgRoverOutput.m_motorArm.m_powerBackFull = atoi(optarg);		break;
+          case 19+2: s_cfgRoverOutput.m_motorArm.m_powerBackZero = atoi(optarg);		break;
+          case 19+3: s_cfgRoverOutput.m_motorArm.m_powerNeutral = atoi(optarg);			break;
+          case 19+4: s_cfgRoverOutput.m_motorArm.m_powerForwardZero = atoi(optarg);		break;
+          case 19+5: s_cfgRoverOutput.m_motorArm.m_powerForwardFull = atoi(optarg);		break;
 
-          case 25  : s_cfgRoverOutput.m_motorMsp1.m_mspI2CBusId    = atoi(optarg);	break;
-          case 25+1: s_cfgRoverOutput.m_motorMsp1.m_mspI2CDeviceId = atoi(optarg);	break;
-          case 25+2: s_cfgRoverOutput.m_motorMsp1.m_mspI2CMotorCmd = atoi(optarg);	break;
-          case 25+3: s_cfgRoverOutput.m_motorMsp1.m_powerBackFull  = atoi(optarg);	break;
-          case 25+4: s_cfgRoverOutput.m_motorMsp1.m_powerBackZero  = atoi(optarg);	break;
-          case 25+5: s_cfgRoverOutput.m_motorMsp1.m_powerNeutral   = atoi(optarg);	break;
-          case 25+6: s_cfgRoverOutput.m_motorMsp1.m_powerForwardZero = atoi(optarg);	break;
-          case 25+7: s_cfgRoverOutput.m_motorMsp1.m_powerForwardFull = atoi(optarg);	break;
+          case 25  : s_cfgRoverOutput.m_motorChasisLeft1.m_mspI2CBusId    = atoi(optarg);	break;
+          case 25+1: s_cfgRoverOutput.m_motorChasisLeft1.m_mspI2CDeviceId = atoi(optarg);	break;
+          case 25+2: s_cfgRoverOutput.m_motorChasisLeft1.m_mspI2CMotorCmd = atoi(optarg);	break;
+          case 25+3: s_cfgRoverOutput.m_motorChasisLeft1.m_powerBackFull  = atoi(optarg);	break;
+          case 25+4: s_cfgRoverOutput.m_motorChasisLeft1.m_powerBackZero  = atoi(optarg);	break;
+          case 25+5: s_cfgRoverOutput.m_motorChasisLeft1.m_powerNeutral   = atoi(optarg);	break;
+          case 25+6: s_cfgRoverOutput.m_motorChasisLeft1.m_powerForwardZero = atoi(optarg);	break;
+          case 25+7: s_cfgRoverOutput.m_motorChasisLeft1.m_powerForwardFull = atoi(optarg);	break;
 
-          case 33  : s_cfgRoverOutput.m_motorMsp2.m_mspI2CBusId    = atoi(optarg);	break;
-          case 33+1: s_cfgRoverOutput.m_motorMsp2.m_mspI2CDeviceId = atoi(optarg);	break;
-          case 33+2: s_cfgRoverOutput.m_motorMsp2.m_mspI2CMotorCmd = atoi(optarg);	break;
-          case 33+3: s_cfgRoverOutput.m_motorMsp2.m_powerBackFull  = atoi(optarg);	break;
-          case 33+4: s_cfgRoverOutput.m_motorMsp2.m_powerBackZero  = atoi(optarg);	break;
-          case 33+5: s_cfgRoverOutput.m_motorMsp2.m_powerNeutral   = atoi(optarg);	break;
-          case 33+6: s_cfgRoverOutput.m_motorMsp2.m_powerForwardZero = atoi(optarg);	break;
-          case 33+7: s_cfgRoverOutput.m_motorMsp2.m_powerForwardFull = atoi(optarg);	break;
+          case 33  : s_cfgRoverOutput.m_motorChasisLeft2.m_mspI2CBusId    = atoi(optarg);	break;
+          case 33+1: s_cfgRoverOutput.m_motorChasisLeft2.m_mspI2CDeviceId = atoi(optarg);	break;
+          case 33+2: s_cfgRoverOutput.m_motorChasisLeft2.m_mspI2CMotorCmd = atoi(optarg);	break;
+          case 33+3: s_cfgRoverOutput.m_motorChasisLeft2.m_powerBackFull  = atoi(optarg);	break;
+          case 33+4: s_cfgRoverOutput.m_motorChasisLeft2.m_powerBackZero  = atoi(optarg);	break;
+          case 33+5: s_cfgRoverOutput.m_motorChasisLeft2.m_powerNeutral   = atoi(optarg);	break;
+          case 33+6: s_cfgRoverOutput.m_motorChasisLeft2.m_powerForwardZero = atoi(optarg);	break;
+          case 33+7: s_cfgRoverOutput.m_motorChasisLeft2.m_powerForwardFull = atoi(optarg);	break;
 
-          case 41  : s_cfgRoverOutput.m_motorMsp3.m_mspI2CBusId    = atoi(optarg);	break;
-          case 41+1: s_cfgRoverOutput.m_motorMsp3.m_mspI2CDeviceId = atoi(optarg);	break;
-          case 41+2: s_cfgRoverOutput.m_motorMsp3.m_mspI2CMotorCmd = atoi(optarg);	break;
-          case 41+3: s_cfgRoverOutput.m_motorMsp3.m_powerBackFull  = atoi(optarg);	break;
-          case 41+4: s_cfgRoverOutput.m_motorMsp3.m_powerBackZero  = atoi(optarg);	break;
-          case 41+5: s_cfgRoverOutput.m_motorMsp3.m_powerNeutral   = atoi(optarg);	break;
-          case 41+6: s_cfgRoverOutput.m_motorMsp3.m_powerForwardZero = atoi(optarg);	break;
-          case 41+7: s_cfgRoverOutput.m_motorMsp3.m_powerForwardFull = atoi(optarg);	break;
+          case 41  : s_cfgRoverOutput.m_motorChasisRight1.m_mspI2CBusId    = atoi(optarg);	break;
+          case 41+1: s_cfgRoverOutput.m_motorChasisRight1.m_mspI2CDeviceId = atoi(optarg);	break;
+          case 41+2: s_cfgRoverOutput.m_motorChasisRight1.m_mspI2CMotorCmd = atoi(optarg);	break;
+          case 41+3: s_cfgRoverOutput.m_motorChasisRight1.m_powerBackFull  = atoi(optarg);	break;
+          case 41+4: s_cfgRoverOutput.m_motorChasisRight1.m_powerBackZero  = atoi(optarg);	break;
+          case 41+5: s_cfgRoverOutput.m_motorChasisRight1.m_powerNeutral   = atoi(optarg);	break;
+          case 41+6: s_cfgRoverOutput.m_motorChasisRight1.m_powerForwardZero = atoi(optarg);	break;
+          case 41+7: s_cfgRoverOutput.m_motorChasisRight1.m_powerForwardFull = atoi(optarg);	break;
 
-          case 49  : s_cfgRoverOutput.m_motorMsp4.m_mspI2CBusId    = atoi(optarg);	break;
-          case 49+1: s_cfgRoverOutput.m_motorMsp4.m_mspI2CDeviceId = atoi(optarg);	break;
-          case 49+2: s_cfgRoverOutput.m_motorMsp4.m_mspI2CMotorCmd = atoi(optarg);	break;
-          case 49+3: s_cfgRoverOutput.m_motorMsp4.m_powerBackFull  = atoi(optarg);	break;
-          case 49+4: s_cfgRoverOutput.m_motorMsp4.m_powerBackZero  = atoi(optarg);	break;
-          case 49+5: s_cfgRoverOutput.m_motorMsp4.m_powerNeutral   = atoi(optarg);	break;
-          case 49+6: s_cfgRoverOutput.m_motorMsp4.m_powerForwardZero = atoi(optarg);	break;
-          case 49+7: s_cfgRoverOutput.m_motorMsp4.m_powerForwardFull = atoi(optarg);	break;
+          case 49  : s_cfgRoverOutput.m_motorChasisRight2.m_mspI2CBusId    = atoi(optarg);	break;
+          case 49+1: s_cfgRoverOutput.m_motorChasisRight2.m_mspI2CDeviceId = atoi(optarg);	break;
+          case 49+2: s_cfgRoverOutput.m_motorChasisRight2.m_mspI2CMotorCmd = atoi(optarg);	break;
+          case 49+3: s_cfgRoverOutput.m_motorChasisRight2.m_powerBackFull  = atoi(optarg);	break;
+          case 49+4: s_cfgRoverOutput.m_motorChasisRight2.m_powerBackZero  = atoi(optarg);	break;
+          case 49+5: s_cfgRoverOutput.m_motorChasisRight2.m_powerNeutral   = atoi(optarg);	break;
+          case 49+6: s_cfgRoverOutput.m_motorChasisRight2.m_powerForwardZero = atoi(optarg);	break;
+          case 49+7: s_cfgRoverOutput.m_motorChasisRight2.m_powerForwardFull = atoi(optarg);	break;
 
-          case 57  : s_cfgDriverOutput.m_zeroX    = atoi(optarg);			break;
-          case 57+1: s_cfgDriverOutput.m_zeroY    = atoi(optarg);			break;
-          case 57+2: s_cfgDriverOutput.m_zeroMass = atoi(optarg);			break;
+          case 57  : s_cfgDriverOutput.m_zeroX    = atoi(optarg);				break;
+          case 57+1: s_cfgDriverOutput.m_zeroY    = atoi(optarg);				break;
+          case 57+2: s_cfgDriverOutput.m_zeroMass = atoi(optarg);				break;
 
-          case 60  : s_cfgRCInput.m_port = atoi(optarg);				break;
-          case 60+1: s_cfgRCInput.m_stdin = atoi(optarg);				break;
-          case 60+2: s_cfgRCInput.m_eventInput = optarg;				break;
-          case 60+3: s_cfgRCInput.m_manualMode = atoi(optarg);				break;
+          case 60  : s_cfgRCInput.m_port = atoi(optarg);					break;
+          case 60+1: s_cfgRCInput.m_stdin = atoi(optarg);					break;
+          case 60+2: s_cfgRCInput.m_eventInput = optarg;					break;
+          case 60+3: s_cfgRCInput.m_manualMode = atoi(optarg);					break;
 
-          case 64  : s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);			break;
-          case 64+1: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);	break;
-          case 66  : s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);			break;
-          case 66+1: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);	break;
-          case 68  : s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);			break;
-          case 68+1: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);	break;
+          case 64  : s_cfgRCInput.m_autoTargetDetectHue = atof(optarg);				break;
+          case 64+1: s_cfgRCInput.m_autoTargetDetectHueTolerance = atof(optarg);		break;
+          case 66  : s_cfgRCInput.m_autoTargetDetectSat = atof(optarg);				break;
+          case 66+1: s_cfgRCInput.m_autoTargetDetectSatTolerance = atof(optarg);		break;
+          case 68  : s_cfgRCInput.m_autoTargetDetectVal = atof(optarg);				break;
+          case 68+1: s_cfgRCInput.m_autoTargetDetectValTolerance = atof(optarg);		break;
 
           default:
             return false;
@@ -405,13 +406,13 @@ int main(int _argc, char* const _argv[])
 
   RoverOutput rover;
   memset(&rover, 0, sizeof(rover));
-  rover.m_motorMsp1.m_i2cBusFd = -1;
-  rover.m_motorMsp2.m_i2cBusFd = -1;
-  rover.m_motorMsp3.m_i2cBusFd = -1;
-  rover.m_motorMsp4.m_i2cBusFd = -1;
-  rover.m_motor1.m_fd = -1;
-  rover.m_motor2.m_fd = -1;
-  rover.m_motor3.m_fd = -1;
+  rover.m_motorChasisLeft1.m_i2cBusFd = -1;
+  rover.m_motorChasisLeft2.m_i2cBusFd = -1;
+  rover.m_motorChasisRight1.m_i2cBusFd = -1;
+  rover.m_motorChasisRight2.m_i2cBusFd = -1;
+  rover.m_motorHand1.m_fd = -1;
+  rover.m_motorHand2.m_fd = -1;
+  rover.m_motorArm.m_fd = -1;
   if ((res = roverOutputOpen(&rover, &s_cfgRoverOutput)) != 0)
   {
     fprintf(stderr, "roverOutputOpen() failed: %d\n", res);
@@ -628,33 +629,21 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
     return res;
   }
 
-  float detectHueFrom;
-  float detectHueTo;
-  float detectSatFrom;
-  float detectSatTo;
-  float detectValFrom;
-  float detectValTo;
-  if ((res = rcInputGetAutoTargetDetectParams(_rc,
-                                              &detectHueFrom, &detectHueTo,
-                                              &detectSatFrom, &detectSatTo,
-                                              &detectValFrom, &detectValTo)) != 0)
+  TargetDetectParams targetParams;
+  if ((res = rcInputGetTargetDetectParams(_rc, &targetParams)) != 0)
   {
-    fprintf(stderr, "rcInputGetAutoTargetDetectParams() failed: %d\n", res);
+    fprintf(stderr, "rcInputGetTargetDetectParams() failed: %d\n", res);
     return res;
   }
 
   size_t frameDstUsed = frameDstSize;
-  int targetX;
-  int targetY;
-  int targetMass;
+  TargetLocation targetLocation;
 
   if ((res = codecEngineTranscodeFrame(_ce,
                                        frameSrcPtr, frameSrcSize,
                                        frameDstPtr, frameDstSize, &frameDstUsed,
-                                       detectHueFrom, detectHueTo,
-                                       detectSatFrom, detectSatTo,
-                                       detectValFrom, detectValTo,
-                                       &targetX, &targetY, &targetMass)) != 0)
+                                       &targetParams,
+                                       &targetLocation)) != 0)
   {
     fprintf(stderr, "codecEngineTranscodeFrame(%p[%zu] -> %p[%zu]) failed: %d\n",
             frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, res);
@@ -673,35 +662,37 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
     return res;
   }
 
-  bool ctrlManualMode;
-  if ((res = rcInputGetManualControl(_rc, &ctrlManualMode, NULL, NULL, NULL, NULL)) != 0)
+  DriverManualControl manualControl;
+  if ((res = rcInputGetManualControl(_rc, &manualControl)) != 0)
   {
     fprintf(stderr, "rcInputGetManualControl() failed: %d\n", res);
     return res;
   }
 
-  if (!ctrlManualMode)
+  if (!manualControl.m_manualMode)
   {
-    if ((res = driverOutputControlAuto(_driver, targetX, targetY, targetMass)) != 0)
+    if ((res = driverOutputControlAuto(_driver, &targetLocation)) != 0)
     {
       fprintf(stderr, "driverOutputControlAuto() failed: %d\n", res);
       return res;
     }
 
-    int ctrlChasisLeft;
-    int ctrlChasisRight;
-    int ctrlHand;
-    int ctrlArm;
-    if ((res = driverOutputGetControl(_driver, &ctrlChasisLeft, &ctrlChasisRight, &ctrlHand, &ctrlArm)) != 0)
+    RoverControl roverControl;
+    if ((res = driverOutputGetRoverControl(_driver, &roverControl)) != 0)
     {
-      fprintf(stderr, "driverOutputGetControl() failed: %d\n", res);
-      return res;
+      if (res != ENODATA)
+      {
+        fprintf(stderr, "driverOutputGetRoverControl() failed: %d\n", res);
+        return res;
+      }
     }
-
-    if ((res = roverOutputControl(_rover, ctrlChasisLeft, ctrlChasisRight, ctrlHand, ctrlArm)) != 0)
+    else
     {
-      fprintf(stderr, "roverOutputControl() failed: %d\n", res);
-      return res;
+      if ((res = roverOutputControl(_rover, &roverControl)) != 0)
+      {
+        fprintf(stderr, "roverOutputControl() failed: %d\n", res);
+        return res;
+      }
     }
   }
 
@@ -712,40 +703,37 @@ static int mainLoopRCManualModeUpdate(CodecEngine* _ce, V4L2Input* _v4l2Src, FBO
 {
   int res;
 
-  bool ctrlManualMode;
-  int ctrlChasisLR;
-  int ctrlChasisFB;
-  int ctrlHand;
-  int ctrlArm;
-
-  if ((res = rcInputGetManualControl(_rc, &ctrlManualMode, &ctrlChasisLR, &ctrlChasisFB, &ctrlHand, &ctrlArm)) != 0)
+  DriverManualControl manualControl;
+  if ((res = rcInputGetManualControl(_rc, &manualControl)) != 0)
   {
     fprintf(stderr, "rcInputGetManualControl() failed: %d\n", res);
     return res;
   }
 
-  if (ctrlManualMode)
+  if (manualControl.m_manualMode)
   {
-    if ((res = driverOutputControlManual(_driver, ctrlChasisLR, ctrlChasisFB, ctrlHand, ctrlArm)) != 0)
+    if ((res = driverOutputControlManual(_driver, &manualControl)) != 0)
     {
       fprintf(stderr, "driverOutputControlManual() failed: %d\n", res);
       return res;
     }
 
-    int ctrlChasisLeft;
-    int ctrlChasisRight;
-    int ctrlHand;
-    int ctrlArm;
-    if ((res = driverOutputGetControl(_driver, &ctrlChasisLeft, &ctrlChasisRight, &ctrlHand, &ctrlArm)) != 0)
+    RoverControl roverControl;
+    if ((res = driverOutputGetRoverControl(_driver, &roverControl)) != 0)
     {
-      fprintf(stderr, "driverOutputGetControl() failed: %d\n", res);
-      return res;
+      if (res != ENODATA)
+      {
+        fprintf(stderr, "driverOutputGetRoverControl() failed: %d\n", res);
+        return res;
+      }
     }
-
-    if ((res = roverOutputControl(_rover, ctrlChasisLeft, ctrlChasisRight, ctrlHand, ctrlArm)) != 0)
+    else
     {
-      fprintf(stderr, "roverOutputControl() failed: %d\n", res);
-      return res;
+      if ((res = roverOutputControl(_rover, &roverControl)) != 0)
+      {
+        fprintf(stderr, "roverOutputControl() failed: %d\n", res);
+        return res;
+      }
     }
   }
 

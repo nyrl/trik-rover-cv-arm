@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+#include "internal/common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,13 +35,13 @@ typedef struct RoverConfigMotor
 
 typedef struct RoverConfig // what user wants to set
 {
-  RoverConfigMotorMsp m_motorMsp1;
-  RoverConfigMotorMsp m_motorMsp2;
-  RoverConfigMotorMsp m_motorMsp3;
-  RoverConfigMotorMsp m_motorMsp4;
-  RoverConfigMotor m_motor1;
-  RoverConfigMotor m_motor2;
-  RoverConfigMotor m_motor3;
+  RoverConfigMotorMsp m_motorChasisLeft1;
+  RoverConfigMotorMsp m_motorChasisLeft2;
+  RoverConfigMotorMsp m_motorChasisRight1;
+  RoverConfigMotorMsp m_motorChasisRight2;
+  RoverConfigMotor m_motorHand1;
+  RoverConfigMotor m_motorHand2;
+  RoverConfigMotor m_motorArm;
 } RoverConfig;
 
 
@@ -68,40 +69,17 @@ typedef struct RoverMotor
   int m_powerForwardFull;
 } RoverMotor;
 
-typedef struct RoverControlChasis
-{
-  RoverMotorMsp* m_motorLeft1;
-  RoverMotorMsp* m_motorLeft2;
-  RoverMotorMsp* m_motorRight1;
-  RoverMotorMsp* m_motorRight2;
-} RoverControlChasis;
-
-typedef struct RoverControlHand
-{
-  RoverMotor* m_motor1;
-  RoverMotor* m_motor2;
-} RoverControlHand;
-
-typedef struct RoverControlArm
-{
-  RoverMotor* m_motor;
-} RoverControlArm;
-
 typedef struct RoverOutput
 {
   bool       m_opened;
 
-  RoverMotorMsp m_motorMsp1;
-  RoverMotorMsp m_motorMsp2;
-  RoverMotorMsp m_motorMsp3;
-  RoverMotorMsp m_motorMsp4;
-  RoverMotor m_motor1;
-  RoverMotor m_motor2;
-  RoverMotor m_motor3;
-
-  RoverControlChasis m_ctrlChasis;
-  RoverControlHand   m_ctrlHand;
-  RoverControlArm    m_ctrlArm;
+  RoverMotorMsp m_motorChasisLeft1;
+  RoverMotorMsp m_motorChasisLeft2;
+  RoverMotorMsp m_motorChasisRight1;
+  RoverMotorMsp m_motorChasisRight2;
+  RoverMotor m_motorHand1;
+  RoverMotor m_motorHand2;
+  RoverMotor m_motorArm;
 } RoverOutput;
 
 
@@ -113,7 +91,7 @@ int roverOutputClose(RoverOutput* _rover);
 int roverOutputStart(RoverOutput* _rover);
 int roverOutputStop(RoverOutput* _rover);
 
-int roverOutputControl(RoverOutput* _rover, int _ctrlChasisLeft, int _ctrlChasisRight, int _ctrlHand, int _ctrlArm);
+int roverOutputControl(RoverOutput* _rover, const RoverControl* _roverControl);
 
 
 #ifdef __cplusplus

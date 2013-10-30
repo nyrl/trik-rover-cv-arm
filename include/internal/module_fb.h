@@ -6,6 +6,8 @@
 
 #include <linux/fb.h>
 
+#include "internal/common.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus

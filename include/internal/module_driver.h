@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include "internal/common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,10 +72,10 @@ int driverOutputClose(DriverOutput* _driver);
 int driverOutputStart(DriverOutput* _driver);
 int driverOutputStop(DriverOutput* _driver);
 
-int driverOutputControlAuto(DriverOutput* _driver, int _targetX, int _targetY, int _targetMass);
-int driverOutputControlManual(DriverOutput* _driver, int _ctrlChasisLR, int _ctrlChasisFB, int _ctrlHand, int _ctrlArm);
+int driverOutputControlAuto(DriverOutput* _driver, const TargetLocation* _targetLocation);
+int driverOutputControlManual(DriverOutput* _driver, const DriverManualControl* _manualControl);
 
-int driverOutputGetControl(const DriverOutput* _driver, int* _ctrlChasisLeft, int* _ctrlChasisRight, int* _ctrlHand, int* _ctrlArm);
+int driverOutputGetRoverControl(const DriverOutput* _driver, RoverControl* _roverControl);
 
 
 #ifdef __cplusplus
