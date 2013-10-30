@@ -179,7 +179,7 @@ int threadInput(void* _arg)
   {
     if ((res = threadInputSelectLoop(runtime, rc)) != 0)
     {
-      fprintf(stderr, "input_loop() failed: %d\n", res);
+      fprintf(stderr, "threadInputSelectLoop() failed: %d\n", res);
       exit_code = res;
       goto exit_rc_stop;
     }

@@ -72,8 +72,9 @@ int driverOutputClose(DriverOutput* _driver);
 int driverOutputStart(DriverOutput* _driver);
 int driverOutputStop(DriverOutput* _driver);
 
-int driverOutputControlAuto(DriverOutput* _driver, const TargetLocation* _targetLocation);
-int driverOutputControlManual(DriverOutput* _driver, const DriverManualControl* _manualControl);
+int driverOutputControl(DriverOutput* _driver,
+                        const DriverManualControl* _manualControl,
+                        const TargetLocation* _targetLocation);
 
 int driverOutputGetRoverControl(const DriverOutput* _driver, RoverControl* _roverControl);
 

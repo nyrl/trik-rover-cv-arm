@@ -671,9 +671,9 @@ static int mainLoopV4L2Frame(CodecEngine* _ce, V4L2Input* _v4l2Src, FBOutput* _f
 
   if (!manualControl.m_manualMode)
   {
-    if ((res = driverOutputControlAuto(_driver, &targetLocation)) != 0)
+    if ((res = driverOutputControl(_driver, NULL, &targetLocation)) != 0)
     {
-      fprintf(stderr, "driverOutputControlAuto() failed: %d\n", res);
+      fprintf(stderr, "driverOutputControl() failed: %d\n", res);
       return res;
     }
 
@@ -712,9 +712,9 @@ static int mainLoopRCManualModeUpdate(CodecEngine* _ce, V4L2Input* _v4l2Src, FBO
 
   if (manualControl.m_manualMode)
   {
-    if ((res = driverOutputControlManual(_driver, &manualControl)) != 0)
+    if ((res = driverOutputControl(_driver, &manualControl, NULL)) != 0)
     {
-      fprintf(stderr, "driverOutputControlManual() failed: %d\n", res);
+      fprintf(stderr, "driverOutputControl() failed: %d\n", res);
       return res;
     }
 

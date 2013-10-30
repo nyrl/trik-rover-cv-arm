@@ -503,7 +503,8 @@ int driverOutputStop(DriverOutput* _driver)
   return 0;
 }
 
-int driverOutputControlManual(DriverOutput* _driver, const DriverManualControl* _manualControl)
+#warning Relocate
+int do_driverControlManual(DriverOutput* _driver, const DriverManualControl* _manualControl)
 {
   if (_driver == NULL || _manualControl == NULL)
     return EINVAL;
@@ -515,8 +516,6 @@ int driverOutputControlManual(DriverOutput* _driver, const DriverManualControl* 
     _driver->m_stateEntryTime.tv_sec = 0;
   }
 
-#warning Migrate target location checks from here
-
   do_driverCtrlChasisManual(_driver, _manualControl->m_ctrlChasisLR, _manualControl->m_ctrlChasisFB);
   do_driverCtrlHandManual(_driver, _manualControl->m_ctrlHand);
   do_driverCtrlArmManual(_driver, _manualControl->m_ctrlArm);
@@ -524,7 +523,8 @@ int driverOutputControlManual(DriverOutput* _driver, const DriverManualControl* 
   return 0;
 }
 
-int driverOutputControlAuto(DriverOutput* _driver, const TargetLocation* _targetLocation)
+#warning Relocate
+int do_driverControlAuto(DriverOutput* _driver, const TargetLocation* _targetLocation)
 {
   if (_driver == NULL || _targetLocation == NULL)
     return EINVAL;
@@ -536,6 +536,9 @@ int driverOutputControlAuto(DriverOutput* _driver, const TargetLocation* _target
   clock_gettime(CLOCK_MONOTONIC, &now);
   long long msPassed = (now.tv_sec  - _driver->m_stateEntryTime.tv_sec ) * 1000
                      + (now.tv_nsec - _driver->m_stateEntryTime.tv_nsec) / 1000000;
+
+#warning Migrate target location checks from here
+
 
   switch (_driver->m_state)
   {
@@ -629,6 +632,20 @@ int driverOutputControlAuto(DriverOutput* _driver, const TargetLocation* _target
 
   return 0;
 }
+
+int driverOutputControl(DriverOutput* _driver,
+                        const DriverManualControl* _manualControl,
+                        const TargetLocation* _targetLocation)
+{
+  if (_driver == NULL)
+    return EINVAL;
+
+  if (_manualControl != NULL && _manualControl->m_manualMode)
+    return do_driverControlManual(_driver, _manualControl);
+  else
+    return do_driverControlAuto(_driver, _targetLocation);
+}
+
 
 int driverOutputGetRoverControl(const DriverOutput* _driver,
                                 RoverControl* _roverControl)

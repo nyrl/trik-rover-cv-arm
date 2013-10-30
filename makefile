@@ -156,7 +156,8 @@ APP.srcs =                      \
 	module_rover.c          \
 	module_driver.c         \
 	thread_input.c          \
-	thread_video.c
+	thread_video.c          \
+	thread_rover.c
 
 APP.objs = $(addprefix bin/$(PROFILE)/, \
     $(patsubst %.c,%.o$(SUFFIX),$(APP.srcs)))

@@ -21,7 +21,7 @@ static int threadVideoSelectLoop(Runtime* _runtime, CodecEngine* _ce, V4L2Input*
   int res;
   int maxFd = 0;
   fd_set fdsIn;
-  static const struct timespec s_select_timeout = { .tv_sec=1, .tv_nsec=0 };
+  static const struct timespec s_selectTimeout = { .tv_sec=1, .tv_nsec=0 };
 
   if (_runtime == NULL || _ce == NULL || _v4l2 == NULL || _fb == NULL)
     return EINVAL;
@@ -32,7 +32,7 @@ static int threadVideoSelectLoop(Runtime* _runtime, CodecEngine* _ce, V4L2Input*
   if (maxFd < _v4l2->m_fd)
     maxFd = _v4l2->m_fd;
 
-  if ((res = pselect(maxFd+1, &fdsIn, NULL, NULL, &s_select_timeout, NULL)) < 0)
+  if ((res = pselect(maxFd+1, &fdsIn, NULL, NULL, &s_selectTimeout, NULL)) < 0)
   {
     res = errno;
     fprintf(stderr, "pselect() failed: %d\n", res);
@@ -232,7 +232,7 @@ int threadVideo(void* _arg)
 
     if ((res = threadVideoSelectLoop(runtime, ce, v4l2, fb)) != 0)
     {
-      fprintf(stderr, "video_loop() failed: %d\n", res);
+      fprintf(stderr, "threadVideoSelectLoop() failed: %d\n", res);
       exit_code = res;
       goto exit_fb_stop;
     }
