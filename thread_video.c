@@ -264,6 +264,7 @@ exit_ce_close:
 
 
 exit:
+  runtimeSetTerminate(runtime);
   return (void*)exit_code;
 }
 

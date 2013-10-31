@@ -34,7 +34,7 @@ static const RuntimeConfig s_runtimeConfig = {
 
 
 
-int runtimeReset(Runtime* _runtime)
+void runtimeReset(Runtime* _runtime)
 {
   memset(&_runtime, 0, sizeof(_runtime));
 
@@ -67,8 +67,6 @@ int runtimeReset(Runtime* _runtime)
   memset(&_runtime->m_state.m_targetParams,        0, sizeof(_runtime->m_state.m_targetParams));
   memset(&_runtime->m_state.m_targetLocation,      0, sizeof(_runtime->m_state.m_targetLocation));
   memset(&_runtime->m_state.m_driverManualControl, 0, sizeof(_runtime->m_state.m_driverManualControl));
-
-  return 0;
 }
 
 
@@ -456,22 +454,22 @@ int runtimeStart(Runtime* _runtime)
 
 
 //exit_join_rover_thread:
-  rt->m_terminate = true;
+  runtimeSetTerminate(_runtime);
   pthread_cancel(rt->m_roverThread);
   pthread_join(rt->m_roverThread, NULL);
 
 exit_join_video_thread:
-  rt->m_terminate = true;
+  runtimeSetTerminate(_runtime);
   pthread_cancel(rt->m_videoThread);
   pthread_join(rt->m_videoThread, NULL);
 
 exit_join_input_thread:
-  rt->m_terminate = true;
+  runtimeSetTerminate(_runtime);
   pthread_cancel(rt->m_inputThread);
   pthread_join(rt->m_inputThread, NULL);
 
 exit:
-  rt->m_terminate = true;
+  runtimeSetTerminate(_runtime);
   return exit_code;
 }
 
@@ -487,7 +485,7 @@ int runtimeStop(Runtime* _runtime)
 
   rt = &_runtime->m_threads;
 
-  rt->m_terminate = true;
+  runtimeSetTerminate(_runtime);
   pthread_join(rt->m_roverThread, NULL);
   pthread_join(rt->m_videoThread, NULL);
   pthread_join(rt->m_inputThread, NULL);
@@ -616,13 +614,12 @@ bool runtimeGetTerminate(Runtime* _runtime)
   return _runtime->m_threads.m_terminate;
 }
 
-int runtimeSetTerminate(Runtime* _runtime, bool _terminate)
+void runtimeSetTerminate(Runtime* _runtime)
 {
   if (_runtime == NULL)
-    return EINVAL;
+    return;
 
-  _runtime->m_threads.m_terminate = _terminate;
-  return 0;
+  _runtime->m_threads.m_terminate = true;
 }
 
 int runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetParams)

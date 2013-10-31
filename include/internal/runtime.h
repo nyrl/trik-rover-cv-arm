@@ -66,7 +66,7 @@ typedef struct Runtime
 } Runtime;
 
 
-int runtimeReset(Runtime* _runtime);
+void runtimeReset(Runtime* _runtime);
 bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[]);
 void runtimeArgsHelpMessage(Runtime* _runtime, int _argc, char* const _argv[]);
 
@@ -93,7 +93,7 @@ DriverOutput* runtimeModDriverOutput(Runtime* _runtime);
 
 
 bool runtimeGetTerminate(Runtime* _runtime);
-int  runtimeSetTerminate(Runtime* _runtime, bool _terminate);
+void runtimeSetTerminate(Runtime* _runtime);
 int  runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetParams);
 int  runtimeSetTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetParams);
 int  runtimeGetTargetLocation(Runtime* _runtime, TargetLocation* _targetLocation);

@@ -198,6 +198,7 @@ exit_rc_close:
 
 
 exit:
+  runtimeSetTerminate(runtime);
   return (void*)exit_code;
 }
 
