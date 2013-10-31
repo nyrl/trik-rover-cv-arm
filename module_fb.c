@@ -89,22 +89,18 @@ static int do_fbOutputUnsetFormat(FBOutput* _fb)
   return 0;
 }
 
-static int do_fbOutputGetFormat(FBOutput* _fb,
-                                size_t* _width, size_t* _height,
-                                size_t* _lineLength, size_t* _imageSize, uint32_t* _format)
+static int do_fbOutputGetFormat(FBOutput* _fb, ImageDescription* _imageDesc)
 {
-  if (_fb == NULL)
-    return EINVAL;
-  if (_width == NULL || _height == NULL || _lineLength == NULL || _imageSize == NULL || _format == NULL)
+  if (_fb == NULL || _imageDesc == NULL)
     return EINVAL;
 
-  *_width = _fb->m_fbVarInfo.xres;
-  *_height = _fb->m_fbVarInfo.yres;
-  *_lineLength = _fb->m_fbFixInfo.line_length;
-  *_imageSize = _fb->m_fbFixInfo.smem_len;
+  _imageDesc->m_width      = _fb->m_fbVarInfo.xres;
+  _imageDesc->m_height     = _fb->m_fbVarInfo.yres;
+  _imageDesc->m_lineLength = _fb->m_fbFixInfo.line_length;
+  _imageDesc->m_imageSize  = _fb->m_fbFixInfo.smem_len;
 
 #warning TODO check and get framebuffer format!
-  *_format = V4L2_PIX_FMT_RGB565X;
+  _imageDesc->m_format = V4L2_PIX_FMT_RGB565X;
 
   return 0;
 }
@@ -262,16 +258,14 @@ int fbOutputPutFrame(FBOutput* _fb)
   return 0;
 }
 
-int fbOutputGetFormat(FBOutput* _fb,
-                      size_t* _width, size_t* _height,
-                      size_t* _lineLength, size_t* _imageSize, uint32_t* _format)
+int fbOutputGetFormat(FBOutput* _fb, ImageDescription* _imageDesc)
 {
-  if (_fb == NULL)
+  if (_fb == NULL || _imageDesc == NULL)
     return EINVAL;
   if (_fb->m_fd == -1)
     return ENOTCONN;
 
-  return do_fbOutputGetFormat(_fb, _width, _height, _lineLength, _imageSize, _format);
+  return do_fbOutputGetFormat(_fb, _imageDesc);
 }
 
 

@@ -2,7 +2,6 @@
 #define TRIK_V4L2_DSP_FB_INTERNAL_MODULE_RC_H_
 
 #include <stdbool.h>
-#include <inttypes.h>
 
 #include "internal/common.h"
 

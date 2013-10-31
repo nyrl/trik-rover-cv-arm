@@ -117,19 +117,16 @@ static int do_v4l2InputUnsetFormat(V4L2Input* _v4l2)
 }
 
 static int do_v4l2InputGetFormat(V4L2Input* _v4l2,
-                                 size_t* _width, size_t* _height,
-                                 size_t* _lineLength, size_t* _imageSize, uint32_t* _format)
+                                 ImageDescription* _imageDesc)
 {
-  if (_v4l2 == NULL)
-    return EINVAL;
-  if (_width == NULL || _height == NULL || _lineLength == NULL || _imageSize == NULL || _format == NULL)
+  if (_v4l2 == NULL || _imageDesc == NULL)
     return EINVAL;
 
-  *_width = _v4l2->m_imageFormat.fmt.pix.width;
-  *_height = _v4l2->m_imageFormat.fmt.pix.height;
-  *_lineLength = _v4l2->m_imageFormat.fmt.pix.bytesperline;
-  *_imageSize = _v4l2->m_imageFormat.fmt.pix.sizeimage;
-  *_format = _v4l2->m_imageFormat.fmt.pix.pixelformat;
+  _imageDesc->m_width      = _v4l2->m_imageFormat.fmt.pix.width;
+  _imageDesc->m_height     = _v4l2->m_imageFormat.fmt.pix.height;
+  _imageDesc->m_lineLength = _v4l2->m_imageFormat.fmt.pix.bytesperline;
+  _imageDesc->m_imageSize  = _v4l2->m_imageFormat.fmt.pix.sizeimage;
+  _imageDesc->m_format     = _v4l2->m_imageFormat.fmt.pix.pixelformat;
 
   return 0;
 }
@@ -500,16 +497,14 @@ int v4l2InputPutFrame(V4L2Input* _v4l2, size_t _frameIndex)
   return do_v4l2InputPutFrame(_v4l2, _frameIndex);
 }
 
-int v4l2InputGetFormat(V4L2Input* _v4l2,
-                       size_t* _width, size_t* _height,
-                       size_t* _lineLength, size_t* _imageSize, uint32_t* _format)
+int v4l2InputGetFormat(V4L2Input* _v4l2, ImageDescription* _imageDesc)
 {
-  if (_v4l2 == NULL)
+  if (_v4l2 == NULL || _imageDesc == NULL)
     return EINVAL;
   if (_v4l2->m_fd == -1)
     return ENOTCONN;
 
-  return do_v4l2InputGetFormat(_v4l2, _width, _height, _lineLength, _imageSize, _format);
+  return do_v4l2InputGetFormat(_v4l2, _imageDesc);
 }
 
 int v4l2InputReportFPS(V4L2Input* _v4l2, long long _ms)

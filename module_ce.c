@@ -114,31 +114,35 @@ static XDAS_Int32 do_convertPixelFormat(CodecEngine* _ce, uint32_t _format)
 }
 
 static int do_setupCodec(CodecEngine* _ce, const char* _codecName,
-                         size_t _srcWidth, size_t _srcHeight,
-                         size_t _srcLineLength, size_t _srcImageSize, uint32_t _srcFormat,
-                         size_t _dstWidth, size_t _dstHeight,
-                         size_t _dstLineLength, size_t _dstImageSize, uint32_t _dstFormat)
+                         const ImageDescription* _srcImageDesc,
+                         const ImageDescription* _dstImageDesc)
 {
-  if (_codecName == NULL)
+  if (_codecName == NULL || _srcImageDesc == NULL || _dstImageDesc == NULL)
     return EINVAL;
 
   if (s_verbose)
     fprintf(stderr, "VIDTRANSCODE_control(%c%c%c%c@%zux%zu[%zu] -> %c%c%c%c@%zux%zu[%zu])\n",
-            _srcFormat&0xff, (_srcFormat>>8)&0xff, (_srcFormat>>16)&0xff, (_srcFormat>>24)&0xff,
-            _srcWidth, _srcHeight, _srcLineLength,
-            _dstFormat&0xff, (_dstFormat>>8)&0xff, (_dstFormat>>16)&0xff, (_dstFormat>>24)&0xff,
-            _dstWidth, _dstHeight, _dstLineLength);
+            (_srcImageDesc->m_format    )&0xff,
+            (_srcImageDesc->m_format>> 8)&0xff,
+            (_srcImageDesc->m_format>>16)&0xff,
+            (_srcImageDesc->m_format>>24)&0xff,
+            _srcImageDesc->m_width, _srcImageDesc->m_height, _srcImageDesc->m_lineLength,
+            (_dstImageDesc->m_format    )&0xff,
+            (_dstImageDesc->m_format>> 8)&0xff,
+            (_dstImageDesc->m_format>>16)&0xff,
+            (_dstImageDesc->m_format>>24)&0xff,
+            _dstImageDesc->m_width, _dstImageDesc->m_height, _dstImageDesc->m_lineLength);
 
   TRIK_VIDTRANSCODE_RESAMPLE_Params ceParams;
   memset(&ceParams, 0, sizeof(ceParams));
   ceParams.base.size = sizeof(ceParams);
   ceParams.base.numOutputStreams = 2;
-  ceParams.base.formatInput = do_convertPixelFormat(_ce, _srcFormat);
-  ceParams.base.formatOutput[0] = do_convertPixelFormat(_ce, _dstFormat);
-  ceParams.base.maxHeightInput = _srcHeight;
-  ceParams.base.maxWidthInput = _srcWidth;
-  ceParams.base.maxHeightOutput[0] = _dstHeight;
-  ceParams.base.maxWidthOutput[0] = _dstWidth;
+  ceParams.base.formatInput = do_convertPixelFormat(_ce, _srcImageDesc->m_format);
+  ceParams.base.formatOutput[0] = do_convertPixelFormat(_ce, _dstImageDesc->m_format);
+  ceParams.base.maxHeightInput = _srcImageDesc->m_height;
+  ceParams.base.maxWidthInput = _srcImageDesc->m_width;
+  ceParams.base.maxHeightOutput[0] = _dstImageDesc->m_height;
+  ceParams.base.maxWidthOutput[0] = _dstImageDesc->m_width;
   ceParams.base.dataEndianness = XDM_BYTE;
 
   char* codec = strdup(_codecName);
@@ -154,13 +158,13 @@ static int do_setupCodec(CodecEngine* _ce, const char* _codecName,
   memset(&ceDynamicParams, 0, sizeof(ceDynamicParams));
   ceDynamicParams.base.size = sizeof(ceDynamicParams);
   ceDynamicParams.base.keepInputResolutionFlag[0] = XDAS_FALSE;
-  ceDynamicParams.base.outputHeight[0] = _dstHeight;
-  ceDynamicParams.base.outputWidth[0] = _dstWidth;
+  ceDynamicParams.base.outputHeight[0] = _dstImageDesc->m_height;
+  ceDynamicParams.base.outputWidth[0] = _dstImageDesc->m_width;
   ceDynamicParams.base.keepInputFrameRateFlag[0] = XDAS_TRUE;
-  ceDynamicParams.inputHeight = _srcHeight;
-  ceDynamicParams.inputWidth = _srcWidth;
-  ceDynamicParams.inputLineLength = _srcLineLength;
-  ceDynamicParams.outputLineLength[0] = _dstLineLength;
+  ceDynamicParams.inputHeight = _srcImageDesc->m_height;
+  ceDynamicParams.inputWidth = _srcImageDesc->m_width;
+  ceDynamicParams.inputLineLength = _srcImageDesc->m_lineLength;
+  ceDynamicParams.outputLineLength[0] = _dstImageDesc->m_lineLength;
 
   IVIDTRANSCODE_Status ceStatus;
   memset(&ceStatus, 0, sizeof(ceStatus));
@@ -401,25 +405,21 @@ int codecEngineClose(CodecEngine* _ce)
 
 
 int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config,
-                     size_t _srcWidth, size_t _srcHeight,
-                     size_t _srcLineLength, size_t _srcImageSize, uint32_t _srcFormat,
-                     size_t _dstWidth, size_t _dstHeight,
-                     size_t _dstLineLength, size_t _dstImageSize, uint32_t _dstFormat)
+                     const ImageDescription* _srcImageDesc,
+                     const ImageDescription* _dstImageDesc)
 {
   int res;
 
-  if (_ce == NULL || _config == NULL)
+  if (_ce == NULL || _config == NULL || _srcImageDesc == NULL || _dstImageDesc == NULL)
     return EINVAL;
 
   if (_ce->m_handle == NULL)
     return ENOTCONN;
 
-  if ((res = do_memoryAlloc(_ce, _srcImageSize, _dstImageSize)) != 0)
+  if ((res = do_memoryAlloc(_ce, _srcImageDesc->m_imageSize, _dstImageDesc->m_imageSize)) != 0)
     return res;
 
-  if ((res = do_setupCodec(_ce, _config->m_codecName,
-                           _srcWidth, _srcHeight, _srcLineLength, _srcImageSize, _srcFormat,
-                           _dstWidth, _dstHeight, _dstLineLength, _dstImageSize, _dstFormat)) != 0)
+  if ((res = do_setupCodec(_ce, _config->m_codecName, _srcImageDesc, _dstImageDesc)) != 0)
   {
     do_memoryFree(_ce);
     return res;

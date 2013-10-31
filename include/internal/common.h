@@ -2,11 +2,21 @@
 #define TRIK_V4L2_DSP_FB_INTERNAL_COMMON_H_
 
 #include <stdbool.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
+
+typedef struct ImageDescription
+{
+  size_t m_width;
+  size_t m_height;
+  size_t m_lineLength;
+  size_t m_imageSize;
+  uint32_t m_format;
+} ImageDescription;
 
 typedef struct TargetDetectParams
 {

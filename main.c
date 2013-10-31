@@ -430,24 +430,21 @@ int main(int _argc, char* const _argv[])
   }
 
 
-  size_t srcWidth, srcHeight, srcLineLength, srcImageSize;
-  size_t dstWidth, dstHeight, dstLineLength, dstImageSize;
-  uint32_t srcFormat, dstFormat;
-  if ((res = v4l2InputGetFormat(&v4l2Src, &srcWidth, &srcHeight, &srcLineLength, &srcImageSize, &srcFormat)) != 0)
+  ImageDescription srcImageDesc;
+  ImageDescription dstImageDesc;
+  if ((res = v4l2InputGetFormat(&v4l2Src, &srcImageDesc)) != 0)
   {
     fprintf(stderr, "v4l2InputGetFormat() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
     goto exit_driver_close;
   }
-  if ((res = fbOutputGetFormat(&fbDst, &dstWidth, &dstHeight, &dstLineLength, &dstImageSize, &dstFormat)) != 0)
+  if ((res = fbOutputGetFormat(&fbDst, &dstImageDesc)) != 0)
   {
     fprintf(stderr, "fbOutputGetFormat() failed: %d\n", res);
     exit_code = EX_PROTOCOL;
     goto exit_rover_close;
   }
-  if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine,
-                              srcWidth, srcHeight, srcLineLength, srcImageSize, srcFormat,
-                              dstWidth, dstHeight, dstLineLength, dstImageSize, dstFormat)) != 0)
+  if ((res = codecEngineStart(&codecEngine, &s_cfgCodecEngine, &srcImageDesc, &dstImageDesc)) != 0)
   {
     fprintf(stderr, "codecEngineStart() failed: %d\n", res);
     exit_code = EX_PROTOCOL;

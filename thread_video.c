@@ -156,24 +156,21 @@ void* threadVideo(void* _arg)
   }
 
 
-  size_t srcWidth, srcHeight, srcLineLength, srcImageSize;
-  size_t dstWidth, dstHeight, dstLineLength, dstImageSize;
-  uint32_t srcFormat, dstFormat;
-  if ((res = v4l2InputGetFormat(v4l2, &srcWidth, &srcHeight, &srcLineLength, &srcImageSize, &srcFormat)) != 0)
+  ImageDescription srcImageDesc;
+  ImageDescription dstImageDesc;
+  if ((res = v4l2InputGetFormat(v4l2, &srcImageDesc)) != 0)
   {
     fprintf(stderr, "v4l2InputGetFormat() failed: %d\n", res);
     exit_code = res;
     goto exit_fb_close;
   }
-  if ((res = fbOutputGetFormat(fb, &dstWidth, &dstHeight, &dstLineLength, &dstImageSize, &dstFormat)) != 0)
+  if ((res = fbOutputGetFormat(fb, &dstImageDesc)) != 0)
   {
     fprintf(stderr, "fbOutputGetFormat() failed: %d\n", res);
     exit_code = res;
     goto exit_fb_close;
   }
-  if ((res = codecEngineStart(ce, runtimeCfgCodecEngine(runtime),
-                              srcWidth, srcHeight, srcLineLength, srcImageSize, srcFormat,
-                              dstWidth, dstHeight, dstLineLength, dstImageSize, dstFormat)) != 0)
+  if ((res = codecEngineStart(ce, runtimeCfgCodecEngine(runtime), &srcImageDesc, &dstImageDesc)) != 0)
   {
     fprintf(stderr, "codecEngineStart() failed: %d\n", res);
     exit_code = res;
