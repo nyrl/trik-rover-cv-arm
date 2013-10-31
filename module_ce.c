@@ -252,7 +252,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
     return EILSEQ;
   }
 
-#if 0 // It seems to far that this call is not required at all
+#if 0 // It seems so far that this call is not required at all
   if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[0].accessMask))
     Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize);
   if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[1].accessMask))
