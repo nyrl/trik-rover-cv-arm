@@ -194,7 +194,7 @@ CE_LINKER_FILE = ce_remote_$(PROFILE).cmd
 # Framework Compenents libraries
 FC_LINKER_FILE = fc_$(PROFILE).cmd
 
-PROGRAM = v4l2-dsp-fb
+PROGRAM = rover-cv-arm
 
 #
 #  ======== make commands ========
@@ -202,13 +202,13 @@ PROGRAM = v4l2-dsp-fb
 all:
 	@$(ECHO) "#"
 	@$(ECHO) "# Making $@ ..."
-	@$(MAKE) bin/$(PROFILE)/$(PROGRAM).xv5T
+	@$(MAKE) bin/$(PROFILE)/$(PROGRAM)
 
 
 #
 #  ======== build rules ========
 #
-bin/$(PROFILE)/$(PROGRAM).xv5T: $(APP.objs) $(EXTLIBS_$(PROFILE)) $(CE_LINKER_FILE) $(FC_LINKER_FILE)
+bin/$(PROFILE)/$(PROGRAM): $(APP.objs) $(EXTLIBS_$(PROFILE)) $(CE_LINKER_FILE) $(FC_LINKER_FILE)
 	@$(ECHO) "#"
 	@$(ECHO) "# Making $@ ..."
 	$(CC) -o $@ $^ $(EXTLIBS_$(PROFILE)) $(LDLIBS) $(ALL.defs) $(ALL.libs)
