@@ -39,9 +39,6 @@ typedef struct CodecEngine
   size_t     m_dstBufferSize;
   void*      m_dstBuffer;
 
-  size_t     m_dstInfoBufferSize;
-  void*      m_dstInfoBuffer;
-
   VIDTRANSCODE_Handle m_vidtranscodeHandle;
 } CodecEngine;
 

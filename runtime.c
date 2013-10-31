@@ -16,7 +16,7 @@
 
 static const RuntimeConfig s_runtimeConfig = {
   .m_verbose = false,
-  .m_codecEngineConfig = { "dsp_server.xe674", "vidtranscode_resample" },
+  .m_codecEngineConfig = { "dsp_server.xe674", "vidtranscode_cv" },
   .m_v4l2Config        = { "/dev/video0", 352, 288, V4L2_PIX_FMT_YUYV },
   .m_fbConfig          = { "/dev/fb0" },
   .m_rcConfig          = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", false,
