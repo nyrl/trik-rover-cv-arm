@@ -1,5 +1,6 @@
 
-CFLAGS += -Iinclude -DNATIVE_BUILD
+CFLAGS	+= -Iinclude -DNATIVE_BUILD
+LDFLAGS	+= -lpthread -lv4l2
 
 OBJECTS =                       \
 	main.o                  \
@@ -15,7 +16,10 @@ OBJECTS =                       \
 	thread_rover.o
 
 
+all: rover-cv-native
+
 rover-cv-native: $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -rf *.o rover-cv-native
