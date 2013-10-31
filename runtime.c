@@ -7,6 +7,9 @@
 #include <getopt.h>
 
 #include "internal/runtime.h"
+#include "internal/thread_input.h"
+#include "internal/thread_video.h"
+#include "internal/thread_rover.h"
 
 
 
@@ -57,7 +60,9 @@ int runtimeReset(Runtime* _runtime)
   _runtime->m_modules.m_roverOutput.m_motorArm.m_fd = -1;
   memset(&_runtime->m_modules.m_driverOutput, 0, sizeof(_runtime->m_modules.m_driverOutput));
 
-  _runtime->m_state.m_terminate = false;
+  memset(&_runtime->m_threads, 0, sizeof(_runtime->m_threads));
+  _runtime->m_threads.m_terminate = true;
+
   pthread_mutex_init(&_runtime->m_state.m_mutex, NULL);
   memset(&_runtime->m_state.m_targetParams,        0, sizeof(_runtime->m_state.m_targetParams));
   memset(&_runtime->m_state.m_targetLocation,      0, sizeof(_runtime->m_state.m_targetLocation));
@@ -414,6 +419,85 @@ int runtimeFini(Runtime* _runtime)
 
 
 
+int runtimeStart(Runtime* _runtime)
+{
+  int res;
+  int exit_code = 0;
+  RuntimeThreads* rt;
+
+  if (_runtime == NULL)
+    return EINVAL;
+
+  rt = &_runtime->m_threads;
+  rt->m_terminate = false;
+
+  if ((res = pthread_create(&rt->m_inputThread, NULL, &threadInput, _runtime)) != 0)
+  {
+    fprintf(stderr, "pthread_create(input) failed: %d\n", res);
+    exit_code = res;
+    goto exit;
+  }
+
+  if ((res = pthread_create(&rt->m_videoThread, NULL, &threadVideo, _runtime)) != 0)
+  {
+    fprintf(stderr, "pthread_create(video) failed: %d\n", res);
+    exit_code = res;
+    goto exit_join_input_thread;
+  }
+
+  if ((res = pthread_create(&rt->m_roverThread, NULL, &threadRover, _runtime)) != 0)
+  {
+    fprintf(stderr, "pthread_create(rover) failed: %d\n", res);
+    exit_code = res;
+    goto exit_join_video_thread;
+  }
+
+  return 0;
+
+
+//exit_join_rover_thread:
+  rt->m_terminate = true;
+  pthread_cancel(rt->m_roverThread);
+  pthread_join(rt->m_roverThread, NULL);
+
+exit_join_video_thread:
+  rt->m_terminate = true;
+  pthread_cancel(rt->m_videoThread);
+  pthread_join(rt->m_videoThread, NULL);
+
+exit_join_input_thread:
+  rt->m_terminate = true;
+  pthread_cancel(rt->m_inputThread);
+  pthread_join(rt->m_inputThread, NULL);
+
+exit:
+  rt->m_terminate = true;
+  return exit_code;
+}
+
+
+
+
+int runtimeStop(Runtime* _runtime)
+{
+  RuntimeThreads* rt;
+
+  if (_runtime == NULL)
+    return EINVAL;
+
+  rt = &_runtime->m_threads;
+
+  rt->m_terminate = true;
+  pthread_join(rt->m_roverThread, NULL);
+  pthread_join(rt->m_videoThread, NULL);
+  pthread_join(rt->m_inputThread, NULL);
+
+  return 0;
+}
+
+
+
+
 bool runtimeCfgVerbose(const Runtime* _runtime)
 {
   if (_runtime == NULL)
@@ -529,7 +613,7 @@ bool runtimeGetTerminate(Runtime* _runtime)
   if (_runtime == NULL)
     return true;
 
-  return _runtime->m_state.m_terminate;
+  return _runtime->m_threads.m_terminate;
 }
 
 int runtimeSetTerminate(Runtime* _runtime, bool _terminate)
@@ -537,7 +621,7 @@ int runtimeSetTerminate(Runtime* _runtime, bool _terminate)
   if (_runtime == NULL)
     return EINVAL;
 
-  _runtime->m_state.m_terminate = _terminate;
+  _runtime->m_threads.m_terminate = _terminate;
   return 0;
 }
 

@@ -39,11 +39,18 @@ typedef struct RuntimeModules
   DriverOutput m_driverOutput;
 } RuntimeModules;
 
-typedef struct RuntimeState
+typedef struct RuntimeThreads
 {
   volatile bool           m_terminate;
-  pthread_mutex_t         m_mutex;
 
+  pthread_t               m_inputThread;
+  pthread_t               m_videoThread;
+  pthread_t               m_roverThread;
+} RuntimeThreads;
+
+typedef struct RuntimeState
+{
+  pthread_mutex_t         m_mutex;
   TargetDetectParams      m_targetParams;
   TargetLocation          m_targetLocation;
   DriverManualControl     m_driverManualControl;
@@ -53,6 +60,7 @@ typedef struct Runtime
 {
   RuntimeConfig  m_config;
   RuntimeModules m_modules;
+  RuntimeThreads m_threads;
   RuntimeState   m_state;
 
 } Runtime;
@@ -64,6 +72,8 @@ void runtimeArgsHelpMessage(Runtime* _runtime, int _argc, char* const _argv[]);
 
 int runtimeInit(Runtime* _runtime);
 int runtimeFini(Runtime* _runtime);
+int runtimeStart(Runtime* _runtime);
+int runtimeStop(Runtime* _runtime);
 
 
 bool                     runtimeCfgVerbose(const Runtime* _runtime);
