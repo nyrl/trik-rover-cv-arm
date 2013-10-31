@@ -134,25 +134,25 @@ void* threadRover(void* _arg)
   printf("Left rover thread loop\n");
 
 
-exit_driver_stop:
+ exit_driver_stop:
   if ((res = driverOutputStop(driver)) != 0)
     fprintf(stderr, "driverOutputStop() failed: %d\n", res);
 
-exit_rover_stop:
+ exit_rover_stop:
   if ((res = roverOutputStop(rover)) != 0)
     fprintf(stderr, "roverOutputStop() failed: %d\n", res);
 
 
-exit_driver_close:
+ exit_driver_close:
   if ((res = driverOutputClose(driver)) != 0)
     fprintf(stderr, "driverOutputClose() failed: %d\n", res);
 
-exit_rover_close:
+ exit_rover_close:
   if ((res = roverOutputClose(rover)) != 0)
     fprintf(stderr, "roverOutputClose() failed: %d\n", res);
 
 
-exit:
+ exit:
   runtimeSetTerminate(runtime);
   return (void*)exit_code;
 }

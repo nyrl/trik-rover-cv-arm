@@ -187,17 +187,17 @@ void* threadInput(void* _arg)
   printf("Left input thread loop\n");
 
 
-exit_rc_stop:
+ exit_rc_stop:
   if ((res = rcInputStop(rc)) != 0)
     fprintf(stderr, "rcInputStop() failed: %d\n", res);
 
 
-exit_rc_close:
+ exit_rc_close:
   if ((res = rcInputClose(rc)) != 0)
     fprintf(stderr, "rcInputClose() failed: %d\n", res);
 
 
-exit:
+ exit:
   runtimeSetTerminate(runtime);
   return (void*)exit_code;
 }

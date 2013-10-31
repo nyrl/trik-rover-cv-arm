@@ -70,15 +70,16 @@ int main(int _argc, char* const _argv[])
     sleep(1);
   printf("Terminating\n");
 
-//exit_stop:
+
+ //exit_stop:
   if ((res = runtimeStop(&runtime)) != 0)
     fprintf(stderr, "runtimeStop() failed: %d\n", res);
 
-exit_fini:
+ exit_fini:
   if ((res = runtimeFini(&runtime)) != 0)
     fprintf(stderr, "runtimeStop() failed: %d\n", res);
 
-exit:
+ exit:
   return exit_code;
 }
 

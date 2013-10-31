@@ -453,22 +453,22 @@ int runtimeStart(Runtime* _runtime)
   return 0;
 
 
-//exit_join_rover_thread:
+ //exit_join_rover_thread:
   runtimeSetTerminate(_runtime);
   pthread_cancel(rt->m_roverThread);
   pthread_join(rt->m_roverThread, NULL);
 
-exit_join_video_thread:
+ exit_join_video_thread:
   runtimeSetTerminate(_runtime);
   pthread_cancel(rt->m_videoThread);
   pthread_join(rt->m_videoThread, NULL);
 
-exit_join_input_thread:
+ exit_join_input_thread:
   runtimeSetTerminate(_runtime);
   pthread_cancel(rt->m_inputThread);
   pthread_join(rt->m_inputThread, NULL);
 
-exit:
+ exit:
   runtimeSetTerminate(_runtime);
   return exit_code;
 }

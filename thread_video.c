@@ -237,33 +237,33 @@ void* threadVideo(void* _arg)
   printf("Left video thread loop\n");
 
 
-exit_fb_stop:
+ exit_fb_stop:
   if ((res = fbOutputStop(fb)) != 0)
     fprintf(stderr, "fbOutputStop() failed: %d\n", res);
 
-exit_v4l2_stop:
+ exit_v4l2_stop:
   if ((res = v4l2InputStop(v4l2)) != 0)
     fprintf(stderr, "v4l2InputStop() failed: %d\n", res);
 
-exit_ce_stop:
+ exit_ce_stop:
   if ((res = codecEngineStop(ce)) != 0)
     fprintf(stderr, "codecEngineStop() failed: %d\n", res);
 
 
-exit_fb_close:
+ exit_fb_close:
   if ((res = fbOutputClose(fb)) != 0)
     fprintf(stderr, "fbOutputClose() failed: %d\n", res);
 
-exit_v4l2_close:
+ exit_v4l2_close:
   if ((res = v4l2InputClose(v4l2)) != 0)
     fprintf(stderr, "v4l2InputClose() failed: %d\n", res);
 
-exit_ce_close:
+ exit_ce_close:
   if ((res = codecEngineClose(ce)) != 0)
     fprintf(stderr, "codecEngineClose() failed: %d\n", res);
 
 
-exit:
+ exit:
   runtimeSetTerminate(runtime);
   return (void*)exit_code;
 }
