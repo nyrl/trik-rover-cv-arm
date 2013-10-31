@@ -3,11 +3,17 @@
 
 #include <stdbool.h>
 
-#include <xdc/std.h>
-#include <ti/xdais/xdas.h>
-#include <ti/sdo/ce/Engine.h>
-#include <ti/sdo/ce/osal/Memory.h>
-#include <ti/sdo/ce/vidtranscode/vidtranscode.h>
+#ifdef NATIVE_BUILD
+typedef void* Engine_Handle;
+typedef void* Memory_AllocParams;
+typedef void* VIDTRANSCODE_Handle;
+#else
+# include <xdc/std.h>
+# include <ti/xdais/xdas.h>
+# include <ti/sdo/ce/Engine.h>
+# include <ti/sdo/ce/osal/Memory.h>
+# include <ti/sdo/ce/vidtranscode/vidtranscode.h>
+#endif
 
 #include "internal/common.h"
 
@@ -37,7 +43,6 @@ typedef struct CodecEngine
   void*      m_dstInfoBuffer;
 
   VIDTRANSCODE_Handle m_vidtranscodeHandle;
-
 } CodecEngine;
 
 

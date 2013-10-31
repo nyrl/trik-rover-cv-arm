@@ -1,0 +1,21 @@
+
+CFLAGS += -Iinclude -DNATIVE_BUILD
+
+OBJECTS =                       \
+	main.o                  \
+	runtime.o               \
+	module_ce.native.o      \
+	module_fb.o             \
+	module_v4l2.o           \
+	module_rc.o             \
+	module_rover.o          \
+	module_driver.o         \
+	thread_input.o          \
+	thread_video.o          \
+	thread_rover.o
+
+
+rover-cv-native: $(OBJECTS)
+
+clean:
+	rm -rf *.o rover-cv-native
