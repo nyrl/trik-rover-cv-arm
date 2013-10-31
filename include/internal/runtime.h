@@ -59,7 +59,8 @@ typedef struct Runtime
 
 
 int runtimeReset(Runtime* _runtime);
-int runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[]);
+bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[]);
+void runtimeArgsHelpMessage(Runtime* _runtime, int _argc, char* const _argv[]);
 
 int runtimeInit(Runtime* _runtime);
 int runtimeFini(Runtime* _runtime);
