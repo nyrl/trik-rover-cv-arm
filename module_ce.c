@@ -207,18 +207,16 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcInArgs.base.size = sizeof(tcInArgs);
   tcInArgs.base.numBytes = _srcFrameSize;
   tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
+  tcInArgs.detectHueFrom = _targetParams->m_detectHueFrom; // 0-360
+  tcInArgs.detectHueTo   = _targetParams->m_detectHueTo;   // 0-360
+  tcInArgs.detectSatFrom = _targetParams->m_detectSatFrom; // 0-100
+  tcInArgs.detectSatTo   = _targetParams->m_detectSatTo;   // 0-100
+  tcInArgs.detectValFrom = _targetParams->m_detectValFrom; // 0-100
+  tcInArgs.detectValTo   = _targetParams->m_detectValTo;   // 0-100
 
-#warning TODO rework DSP interface on ints
-  tcInArgs.detectHueFrom = (float)_targetParams->m_detectHueFrom; // already 0-360
-  tcInArgs.detectHueTo   = (float)_targetParams->m_detectHueTo;   // already 0-360
-  tcInArgs.detectSatFrom = (float)_targetParams->m_detectSatFrom / 100.0; // adjusting 0..100 to 0..1
-  tcInArgs.detectSatTo   = (float)_targetParams->m_detectSatTo / 100.0;   // adjusting 0..100 to 0..1
-  tcInArgs.detectValFrom = (float)_targetParams->m_detectValFrom / 100.0; // adjusting 0..100 to 0..1
-  tcInArgs.detectValTo   = (float)_targetParams->m_detectValTo / 100.0;   // adjusting 0..100 to 0..1
-
-  VIDTRANSCODE_OutArgs tcOutArgs;
+  TRIK_VIDTRANSCODE_RESAMPLE_OutArgs tcOutArgs;
   memset(&tcOutArgs,    0, sizeof(tcOutArgs));
-  tcOutArgs.size = sizeof(tcOutArgs);
+  tcOutArgs.base.size = sizeof(tcOutArgs);
 
   XDM1_BufDesc tcInBufDesc;
   memset(&tcInBufDesc,  0, sizeof(tcInBufDesc));
@@ -244,52 +242,45 @@ static int do_transcodeFrame(CodecEngine* _ce,
   Memory_cacheInv(_ce->m_dstBuffer, _ce->m_dstBufferSize); // invalidate *whole* cache, not only expected portion, just in case
   Memory_cacheInv(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize);
 
-  XDAS_Int32 processResult = VIDTRANSCODE_process(_ce->m_vidtranscodeHandle, &tcInBufDesc, &tcOutBufDesc, &tcInArgs.base, &tcOutArgs);
+  XDAS_Int32 processResult = VIDTRANSCODE_process(_ce->m_vidtranscodeHandle, &tcInBufDesc, &tcOutBufDesc, &tcInArgs.base, &tcOutArgs.base);
   if (processResult != IVIDTRANSCODE_EOK)
   {
     fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) failed: %"PRIi32"/%"PRIi32"\n",
-            _srcFrameSize, _dstFrameSize, processResult, tcOutArgs.extendedError);
+            _srcFrameSize, _dstFrameSize, processResult, tcOutArgs.base.extendedError);
     return EILSEQ;
   }
 
 #if 0 // It seems so far that this call is not required at all
-  if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[0].accessMask))
+  if (XDM_ISACCESSMODE_WRITE(tcOutArgs.base.encodedBuf[0].accessMask))
     Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize);
-  if (XDM_ISACCESSMODE_WRITE(tcOutArgs.encodedBuf[1].accessMask))
+  if (XDM_ISACCESSMODE_WRITE(tcOutArgs.base.encodedBuf[1].accessMask))
     Memory_cacheWb(_ce->m_dstInfoBuffer, _ce->m_dstInfoBufferSize);
 #endif
 
-  if (tcOutArgs.encodedBuf[0].bufSize > _dstFrameSize)
+  if (tcOutArgs.base.encodedBuf[0].bufSize > _dstFrameSize)
   {
     *_dstFrameUsed = _dstFrameSize;
     fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) returned too large buffer %zu, truncated\n",
             _srcFrameSize, _dstFrameSize, *_dstFrameUsed);
   }
-  else if (tcOutArgs.encodedBuf[0].bufSize < 0)
+  else if (tcOutArgs.base.encodedBuf[0].bufSize < 0)
   {
     *_dstFrameUsed = 0;
     fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) returned negative buffer size\n",
             _srcFrameSize, _dstFrameSize);
   }
   else
-    *_dstFrameUsed = tcOutArgs.encodedBuf[0].bufSize;
+    *_dstFrameUsed = tcOutArgs.base.encodedBuf[0].bufSize;
 
   memcpy(_dstFramePtr, _ce->m_dstBuffer, *_dstFrameUsed);
 
+  _targetLocation->m_targetX    = tcOutArgs.targetX;
+  _targetLocation->m_targetY    = tcOutArgs.targetY;
+  _targetLocation->m_targetMass = tcOutArgs.targetMass;
 
-#warning TODO rework DSP to use outArgs to get target
   const char* dspInfo = _ce->m_dstInfoBuffer;
-  if (dspInfo && dspInfo[0] != '\0')
-    sscanf(dspInfo, "%i x %i %i",
-           &_targetLocation->m_targetX,
-           &_targetLocation->m_targetY,
-           &_targetLocation->m_targetMass);
-  else
-  {
-    _targetLocation->m_targetX = 0;
-    _targetLocation->m_targetY = 0;
-    _targetLocation->m_targetMass = -1;
-  }
+  if (dspInfo && dspInfo[0] != '\0' && s_verbose)
+    printf("DSP info: %s\n", dspInfo);
 
   return 0;
 }
