@@ -36,7 +36,7 @@ static const RuntimeConfig s_runtimeConfig = {
 
 void runtimeReset(Runtime* _runtime)
 {
-  memset(&_runtime, 0, sizeof(_runtime));
+  memset(_runtime, 0, sizeof(_runtime));
 
   _runtime->m_config = s_runtimeConfig;
 
