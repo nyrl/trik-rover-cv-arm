@@ -22,7 +22,7 @@ typedef struct V4L2Config // what user wants to set
 typedef struct V4L2Input
 {
   int                    m_fd;
-  unsigned               m_frameCounter;
+  long long              m_frameCounter;
   struct v4l2_format     m_imageFormat;
 
   void*                  m_buffers[2];
