@@ -466,7 +466,7 @@ static int do_readConnection(RCInput* _rc)
   if (rd < 0)
   {
     res = errno;
-    fprintf(stderr, "read(%d, %d) failed: %d\n", _rc->m_connectionFd, available, res);
+    fprintf(stderr, "read(%d, %zu) failed: %d\n", _rc->m_connectionFd, available, res);
     do_dropConnection(_rc);
     return res;
   }

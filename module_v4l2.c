@@ -213,7 +213,7 @@ static int do_v4l2InputMmapBuffers(V4L2Input* _v4l2)
   {
     if (v4l2_munmap(_v4l2->m_buffers[idx], _v4l2->m_bufferSize[idx]) != 0)
       // do not update res!
-      fprintf(stderr, "v4l2_munmap(index %zu, ptr %p, size %"PRIu32") failed: %d\n",
+      fprintf(stderr, "v4l2_munmap(index %zu, ptr %p, size %zu) failed: %d\n",
               idx, _v4l2->m_buffers[idx], _v4l2->m_bufferSize[idx], errno);
   }
 
@@ -236,7 +236,7 @@ static int do_v4l2InputMunmapBuffers(V4L2Input* _v4l2)
         && v4l2_munmap(_v4l2->m_buffers[bufferIndex], _v4l2->m_bufferSize[bufferIndex]) != 0)
     {
       res = errno; // last error will be returned
-      fprintf(stderr, "v4l2_munmap(index %zu, ptr %p, size %"PRIu32") failed: %d\n",
+      fprintf(stderr, "v4l2_munmap(index %zu, ptr %p, size %zu) failed: %d\n",
               bufferIndex, _v4l2->m_buffers[bufferIndex], _v4l2->m_bufferSize[bufferIndex], res);
     }
     _v4l2->m_buffers[bufferIndex] = MAP_FAILED;
