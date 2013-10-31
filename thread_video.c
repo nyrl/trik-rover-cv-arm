@@ -109,7 +109,7 @@ static int threadVideoSelectLoop(Runtime* _runtime, CodecEngine* _ce, V4L2Input*
 
 
 
-int threadVideo(void* _arg)
+void* threadVideo(void* _arg)
 {
   int res = 0;
   int exit_code = 0;
@@ -267,7 +267,7 @@ exit_ce_close:
 
 
 exit:
-  return exit_code;
+  return (void*)exit_code;
 }
 
 

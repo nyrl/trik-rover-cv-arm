@@ -6,6 +6,7 @@
 extern "C" {
 #endif // __cplusplus
 
+void* threadInput(void* _arg);
 
 #ifdef __cplusplus
 } // extern "C"

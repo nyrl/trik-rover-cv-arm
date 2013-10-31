@@ -138,7 +138,7 @@ static int threadInputSelectLoop(Runtime* _runtime, RCInput* _rc)
 
 
 
-int threadInput(void* _arg)
+void* threadInput(void* _arg)
 {
   int res = 0;
   int exit_code = 0;
@@ -198,7 +198,7 @@ exit_rc_close:
 
 
 exit:
-  return exit_code;
+  return (void*)exit_code;
 }
 
 
