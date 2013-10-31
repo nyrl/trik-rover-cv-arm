@@ -1,6 +1,6 @@
 
-CFLAGS	+= -Iinclude -DNATIVE_BUILD
-LDFLAGS	+= -lpthread -lv4l2
+CFLAGS	+= -g -Iinclude -DNATIVE_BUILD
+LDFLAGS	+= -g -lpthread -lv4l2
 
 OBJECTS =                       \
 	main.o                  \
