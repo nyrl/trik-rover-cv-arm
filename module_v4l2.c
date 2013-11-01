@@ -388,7 +388,7 @@ int do_v4l2InputReportFPS(V4L2Input* _v4l2, long long _ms)
 
   if (_ms > 0)
   {
-    long long kfps = (frames * 1000) / _ms;
+    long long kfps = (frames * 1000 * 1000) / _ms;
     fprintf(stderr, "V4L2 processing %llu.%03llu fps\n", kfps/1000, kfps%1000);
   }
   else
