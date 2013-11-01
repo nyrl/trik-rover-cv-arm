@@ -212,6 +212,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcOutBufDesc.bufSizes = tcOutBufDesc_bufSizes;
   tcOutBufDesc.bufSizes[0] = _dstFrameSize;
 
+#warning This memcpy is blocking high fps
   memcpy(_ce->m_srcBuffer, _srcFramePtr, _srcFrameSize);
 
   Memory_cacheWbInv(_ce->m_srcBuffer, _ce->m_srcBufferSize); // invalidate and flush *whole* cache, not only written portion, just in case
@@ -245,6 +246,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
   else
     *_dstFrameUsed = tcOutArgs.base.encodedBuf[0].bufSize;
 
+#warning This memcpy is blocking high fps
   memcpy(_dstFramePtr, _ce->m_dstBuffer, *_dstFrameUsed);
 
   _targetLocation->m_targetX    = tcOutArgs.alg.targetX;
