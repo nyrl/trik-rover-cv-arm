@@ -185,8 +185,8 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcInArgs.base.size = sizeof(tcInArgs);
   tcInArgs.base.numBytes = _srcFrameSize;
   tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
-  tcInArgs.alg.detectHueFrom = _targetParams->m_detectHueFrom; // 0-360
-  tcInArgs.alg.detectHueTo   = _targetParams->m_detectHueTo;   // 0-360
+  tcInArgs.alg.detectHueFrom = _targetParams->m_detectHueFrom; // 0-359
+  tcInArgs.alg.detectHueTo   = _targetParams->m_detectHueTo;   // 0-359
   tcInArgs.alg.detectSatFrom = _targetParams->m_detectSatFrom; // 0-100
   tcInArgs.alg.detectSatTo   = _targetParams->m_detectSatTo;   // 0-100
   tcInArgs.alg.detectValFrom = _targetParams->m_detectValFrom; // 0-100

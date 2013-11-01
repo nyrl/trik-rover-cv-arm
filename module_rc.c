@@ -278,9 +278,9 @@ static int makeValueWrap(int _val, int _adj, int _min, int _max)
 {
   _val += _adj;
   while (_val > _max)
-    _val -= (_max-_min);
+    _val -= (_max-_min+1);
   while (_val < _min)
-    _val += (_max-_min);
+    _val += (_max-_min+1);
 
   return _val;
 }
@@ -318,8 +318,8 @@ static int do_readStdin(RCInput* _rc)
 
   switch (key)
   {
-    case '1': adjustValueWrap(&_rc->m_targetDetectHue, +1, 0, 360);           _rc->m_targetDetectParamsUpdated = true; break;
-    case '2': adjustValueWrap(&_rc->m_targetDetectHue, -1, 0, 360);           _rc->m_targetDetectParamsUpdated = true; break;
+    case '1': adjustValueWrap(&_rc->m_targetDetectHue, +1, 0, 359);           _rc->m_targetDetectParamsUpdated = true; break;
+    case '2': adjustValueWrap(&_rc->m_targetDetectHue, -1, 0, 359);           _rc->m_targetDetectParamsUpdated = true; break;
     case '!': adjustValueRange(&_rc->m_targetDetectHueTolerance, +1, 0, 179); _rc->m_targetDetectParamsUpdated = true; break;
     case '@': adjustValueRange(&_rc->m_targetDetectHueTolerance, -1, 0, 179); _rc->m_targetDetectParamsUpdated = true; break;
     case '3': adjustValueRange(&_rc->m_targetDetectSat, +1, 0, 100);          _rc->m_targetDetectParamsUpdated = true; break;
@@ -761,8 +761,8 @@ int rcInputGetTargetDetectParams(RCInput* _rc,
     return ENODATA;
 
   _rc->m_targetDetectParamsUpdated = false;
-  _targetParams->m_detectHueFrom = makeValueWrap( _rc->m_targetDetectHue, -_rc->m_targetDetectHueTolerance, 0, 360);
-  _targetParams->m_detectHueTo   = makeValueWrap( _rc->m_targetDetectHue, +_rc->m_targetDetectHueTolerance, 0, 360);
+  _targetParams->m_detectHueFrom = makeValueWrap( _rc->m_targetDetectHue, -_rc->m_targetDetectHueTolerance, 0, 359);
+  _targetParams->m_detectHueTo   = makeValueWrap( _rc->m_targetDetectHue, +_rc->m_targetDetectHueTolerance, 0, 359);
   _targetParams->m_detectSatFrom = makeValueRange(_rc->m_targetDetectSat, -_rc->m_targetDetectSatTolerance, 0, 100);
   _targetParams->m_detectSatTo   = makeValueRange(_rc->m_targetDetectSat, +_rc->m_targetDetectSatTolerance, 0, 100);
   _targetParams->m_detectValFrom = makeValueRange(_rc->m_targetDetectVal, -_rc->m_targetDetectValTolerance, 0, 100);
