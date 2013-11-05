@@ -215,9 +215,9 @@ void* threadVideo(void* _arg)
 
     last_fps_report_elapsed_ms = (now.tv_sec  - last_fps_report_time.tv_sec )*1000
                                + (now.tv_nsec - last_fps_report_time.tv_nsec)/1000000;
-    if (last_fps_report_elapsed_ms >= 5*1000)
+    if (last_fps_report_elapsed_ms >= 10*1000)
     {
-      last_fps_report_time.tv_sec += 5;
+      last_fps_report_time.tv_sec += 10;
 
       if ((res = codecEngineReportLoad(ce, last_fps_report_elapsed_ms)) != 0)
         fprintf(stderr, "codecEngineReportLoad() failed: %d\n", res);
