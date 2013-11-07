@@ -52,6 +52,7 @@ static int do_memoryAlloc(CodecEngine* _ce, size_t _srcBufferSize, size_t _dstBu
     _ce->m_srcBufferSize = 0;
     return ENOMEM;
   }
+  memset(_ce->m_dstBuffer, 0, _ce->m_dstBufferSize);
 
   return 0;
 }
