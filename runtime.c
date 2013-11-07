@@ -21,14 +21,14 @@ static const RuntimeConfig s_runtimeConfig = {
   .m_fbConfig          = { "/dev/fb0" },
   .m_rcConfig          = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", true,
                            27, 7, 75, 25, 70, 30 },
-  .m_roverConfig       = { { 2, 0x48, 0x14, +100, +1, 0, -1, -100 }, //chasis left1
-                           { 2, 0x48, 0x15, +100, +1, 0, -1, -100 }, //chasis left2
-                           { 2, 0x48, 0x16, -100, -1, 0, +1, +100 }, //chasis right1
-                           { 2, 0x48, 0x17, -100, -1, 0, +1, +100 }, //chasis right2
-                           { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  },   //hand up-down1
-                           { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 },   //hand up-down2
-                           { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 } }, //arm squeeze
-  .m_driverConfig      = { 0, 50, 600 }
+  .m_roverConfig       = { { 2, 0x48, 0x14, +50, +10, 0, -10, -50 }, //chasis left1
+                           { 2, 0x48, 0x15, +50, +10, 0, -10, -50 }, //chasis left2
+                           { 2, 0x48, 0x16, -50, -10, 0, +10, +50 }, //chasis right1
+                           { 2, 0x48, 0x17, -50, -10, 0, +10, +50 }, //chasis right2
+                           { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1700000, 0, 1300000, 700000  },   //hand up-down1
+                           { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1300000, 0, 1700000, 2300000 },   //hand up-down2
+                           { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1300000, 0, 1700000, 2300000 } }, //arm squeeze
+  .m_driverConfig      = { 0, 35, 650 }
 };
 
 
