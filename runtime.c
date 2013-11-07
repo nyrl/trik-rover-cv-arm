@@ -20,7 +20,7 @@ static const RuntimeConfig s_runtimeConfig = {
   .m_v4l2Config        = { "/dev/video0", 320, 240, V4L2_PIX_FMT_YUYV },
   .m_fbConfig          = { "/dev/fb0" },
   .m_rcConfig          = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", true,
-                           7, 13, 85, 15, 80, 20 },
+                           27, 7, 75, 25, 70, 30 },
   .m_roverConfig       = { { 2, 0x48, 0x14, +100, +1, 0, -1, -100 }, //chasis left1
                            { 2, 0x48, 0x15, +100, +1, 0, -1, -100 }, //chasis left2
                            { 2, 0x48, 0x16, -100, -1, 0, +1, +100 }, //chasis right1
