@@ -244,6 +244,17 @@ static int powerProportional(int _val, int _min, int _zero, int _max)
     return 0;
 }
 
+static int powerDelayed(int _power, int _current_power, int _delay)
+{
+  if (sign(_power) != sign(_current_power))
+    _current_power = 0;
+
+  if (abs(_power) < abs(_current_power))
+    return _power;
+
+  return _current_power + (_power-_current_power)/_delay + sign(_power);
+}
+
 
 static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetMass)
 {
@@ -254,22 +265,25 @@ static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int 
 
   yaw = powerProportional(_targetX, -100, _driver->m_zeroX, 100);
 
-  speed = powerProportional(_targetMass, 0, _driver->m_zeroMass, 10000); // back/forward based on ball size
+  speed = -powerProportional(_targetMass, 0, _driver->m_zeroMass, 10000); // back/forward based on ball size
   backSpeed = powerProportional(_targetY, -100, _driver->m_zeroY, 100); // move back/forward if ball leaves range
   if (backSpeed >= 20)
-    speed += (backSpeed-20)*3;
+    speed -= (backSpeed-20)*2;
 
-  int powerL = (-speed+yaw);
-  if (powerL >= 30)
-    powerL = 30+(powerL-30)/2;
-  else if (powerL <= -30)
-    powerL = -30+(powerL+30)/2;
+  int powerL = speed+yaw;
+  if (powerL >= 20)
+    powerL = 20+(powerL-20)/4;
+  else if (powerL <= -20)
+    powerL = -20+(powerL+20)/4;
 
-  int powerR = (-speed-yaw);
-  if (powerR >= 30)
-    powerR = 30+(powerR-30)/2;
-  else if (powerR <= -30)
-    powerR = -30+(powerR+30)/2;
+  int powerR = speed-yaw;
+  if (powerR >= 20)
+    powerR = 20+(powerR-20)/4;
+  else if (powerR <= -20)
+    powerR = -20+(powerR+20)/4;
+
+  powerL = powerDelayed(powerL, chasis->m_motorSpeedLeft,  10);
+  powerR = powerDelayed(powerR, chasis->m_motorSpeedRight, 10);
 
   chasis->m_motorSpeedLeft  = powerL;
   chasis->m_motorSpeedRight = powerR;
@@ -306,7 +320,7 @@ static int do_driverCtrlTracking(DriverOutput* _driver, int _targetX, int _targe
 
   bool hasLock = (   abs(diffX) <= 10
                   && abs(diffY) <= 10
-                  && abs(diffMass) <= 10);
+                  && abs(diffMass) <= 20);
   if (!hasLock)
     _driver->m_stateEntryTime.tv_sec = 0;
 
@@ -369,8 +383,8 @@ static int do_driverCtrlChasisReleasing(DriverOutput* _driver, int _ms)
   }
   else if (_ms < 3500)
   {
-    chasis->m_motorSpeedLeft  =  100;
-    chasis->m_motorSpeedRight = -100;
+    chasis->m_motorSpeedLeft  =  50;
+    chasis->m_motorSpeedRight = -50;
   }
   else if (_ms < 4500)
   {
@@ -379,8 +393,8 @@ static int do_driverCtrlChasisReleasing(DriverOutput* _driver, int _ms)
   }
   else
   {
-    chasis->m_motorSpeedLeft  = -100;
-    chasis->m_motorSpeedRight =  100;
+    chasis->m_motorSpeedLeft  = -50;
+    chasis->m_motorSpeedRight =  50;
   }
 
   return 0;
