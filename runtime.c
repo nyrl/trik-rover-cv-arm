@@ -21,10 +21,10 @@ static const RuntimeConfig s_runtimeConfig = {
   .m_fbConfig          = { "/dev/fb0" },
   .m_rcConfig          = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", false,
                            7, 13, 85, 15, 80, 20 },
-  .m_roverConfig       = { { 2, 0x48, 0x14, -100, -1, 0, 1, 100 }, //chasis left1
-                           { 2, 0x48, 0x15, -100, -1, 0, 1, 100 }, //chasis left2
-                           { 2, 0x48, 0x16, -100, -1, 0, 1, 100 }, //chasis right1
-                           { 2, 0x48, 0x17, -100, -1, 0, 1, 100 }, //chasis right2
+  .m_roverConfig       = { { 2, 0x48, 0x14, +100, +1, 0, -1, -100 }, //chasis left1
+                           { 2, 0x48, 0x15, +100, +1, 0, -1, -100 }, //chasis left2
+                           { 2, 0x48, 0x16, -100, -1, 0, +1, +100 }, //chasis right1
+                           { 2, 0x48, 0x17, -100, -1, 0, +1, +100 }, //chasis right2
                            { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  },   //hand up-down1
                            { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 },   //hand up-down2
                            { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 } }, //arm squeeze
