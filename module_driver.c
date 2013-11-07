@@ -345,7 +345,7 @@ static int do_driverCtrlArmSqueezing(DriverOutput* _driver)
 {
   DriverCtrlArm* arm = &_driver->m_ctrlArm;
 
-  arm->m_motorSpeed = 0;
+  arm->m_motorSpeed = 100;
 
   return 0;
 }
@@ -367,15 +367,20 @@ static int do_driverCtrlChasisReleasing(DriverOutput* _driver, int _ms)
     chasis->m_motorSpeedLeft  = 0;
     chasis->m_motorSpeedRight = 0;
   }
-  else if (_ms < 4000)
+  else if (_ms < 3500)
   {
-    chasis->m_motorSpeedLeft  =  50;
-    chasis->m_motorSpeedRight = -50;
+    chasis->m_motorSpeedLeft  =  100;
+    chasis->m_motorSpeedRight = -100;
+  }
+  else if (_ms < 4500)
+  {
+    chasis->m_motorSpeedLeft  = 0;
+    chasis->m_motorSpeedRight = 0;
   }
   else
   {
-    chasis->m_motorSpeedLeft  = -50;
-    chasis->m_motorSpeedRight =  50;
+    chasis->m_motorSpeedLeft  = -100;
+    chasis->m_motorSpeedRight =  100;
   }
 
   return 0;
