@@ -27,7 +27,6 @@ static int do_driverCtrlChasisSetup(DriverOutput* _driver, const DriverConfig* _
 
   chasis->m_motorSpeedLeft = 0;
   chasis->m_motorSpeedRight = 0;
-  chasis->m_lastSpeed = 0;
   chasis->m_lastYaw = 0;
 
   return 0;
@@ -38,7 +37,6 @@ static int do_driverCtrlHandSetup(DriverOutput* _driver, const DriverConfig* _co
   DriverCtrlHand* hand = &_driver->m_ctrlHand;
 
   hand->m_motorSpeed = 0;
-  hand->m_lastSpeed = 0;
 
   return 0;
 }
@@ -58,7 +56,6 @@ static int do_driverCtrlChasisStart(DriverOutput* _driver)
 
   chasis->m_motorSpeedLeft = 0;
   chasis->m_motorSpeedRight = 0;
-  chasis->m_lastSpeed = 0;
   chasis->m_lastYaw = 0;
 
   return 0;
@@ -69,7 +66,6 @@ static int do_driverCtrlHandStart(DriverOutput* _driver)
   DriverCtrlHand* hand = &_driver->m_ctrlHand;
 
   hand->m_motorSpeed = 0;
-  hand->m_lastSpeed = 0;
 
   return 0;
 }
@@ -227,14 +223,6 @@ static int sign(int _v)
   return (_v < 0) ? -1 : ((_v > 0) ? 0 : 1);
 }
 
-static int powerIntegral(int _power, int _lastPower, int _percent)
-{
-  if (sign(_power) == sign(_lastPower))
-    _power += (_lastPower * _percent) / 100 + sign(_lastPower);
-
-  return _power;
-}
-
 static int powerProportional(int _val, int _min, int _zero, int _max)
 {
   int adj = _val - _zero;
@@ -265,16 +253,11 @@ static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int 
   int backSpeed;
 
   yaw = powerProportional(_targetX, -100, _driver->m_zeroX, 100);
-  yaw = powerIntegral(yaw, chasis->m_lastYaw, 10);
 
   speed = powerProportional(_targetMass, 0, _driver->m_zeroMass, 10000); // back/forward based on ball size
   backSpeed = powerProportional(_targetY, -100, _driver->m_zeroY, 100); // move back/forward if ball leaves range
   if (backSpeed >= 20)
     speed += (backSpeed-20)*3;
-  speed = powerIntegral(speed, chasis->m_lastSpeed, 10);
-
-  chasis->m_lastYaw = yaw;
-  chasis->m_lastSpeed = speed;
 
   int powerL = (-speed+yaw);
   if (powerL >= 30)
@@ -299,10 +282,7 @@ static int do_driverCtrlHandTracking(DriverOutput* _driver, int _targetX, int _t
   DriverCtrlHand* hand = &_driver->m_ctrlHand;
   int power;
 
-  power = powerProportional(_targetY, -100, _driver->m_zeroY, 100);
-  power = powerIntegral(power, hand->m_lastSpeed, 10);
-
-  hand->m_lastSpeed = power;
+  power = -powerProportional(_targetY, -100, _driver->m_zeroY, 100);
 
   hand->m_motorSpeed = power;
 
