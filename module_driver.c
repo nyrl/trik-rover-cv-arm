@@ -16,7 +16,7 @@ static int do_driverCtrlSetup(DriverOutput* _driver, const DriverConfig* _config
 {
   _driver->m_zeroX    = _config->m_zeroX;
   _driver->m_zeroY    = _config->m_zeroY;
-  _driver->m_zeroMass = _config->m_zeroMass;
+  _driver->m_zeroSize = _config->m_zeroSize;
 
   return 0;
 }
@@ -27,7 +27,6 @@ static int do_driverCtrlChasisSetup(DriverOutput* _driver, const DriverConfig* _
 
   chasis->m_motorSpeedLeft = 0;
   chasis->m_motorSpeedRight = 0;
-  chasis->m_lastYaw = 0;
 
   return 0;
 }
@@ -56,7 +55,6 @@ static int do_driverCtrlChasisStart(DriverOutput* _driver)
 
   chasis->m_motorSpeedLeft = 0;
   chasis->m_motorSpeedRight = 0;
-  chasis->m_lastYaw = 0;
 
   return 0;
 }
@@ -256,34 +254,27 @@ static int powerDelayed(int _power, int _current_power, int _delay)
 }
 
 
-static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetMass)
+static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetSize)
 {
   DriverCtrlChasis* chasis = &_driver->m_ctrlChasis;
   int yaw;
   int speed;
-  int backSpeed;
+  int backFactor;
 
   yaw = powerProportional(_targetX, -100, _driver->m_zeroX, 100);
 
-  speed = -powerProportional(_targetMass, 0, _driver->m_zeroMass, 10000); // back/forward based on ball size
-  backSpeed = powerProportional(_targetY, -100, _driver->m_zeroY, 100); // move back/forward if ball leaves range
-  if (backSpeed >= 20)
-    speed -= (backSpeed-20)*2;
+  speed = -powerProportional(_targetSize, 0, _driver->m_zeroSize, 100); // back/forward based on ball size
+  backFactor = powerProportional(_targetY, -100, _driver->m_zeroY, 100); // move back if ball is too low
+  if (backFactor >= 20)
+    speed -= (backFactor-20)*2;
+  else if (backFactor >= 50)
+    speed -= (50-20)*2 + (backFactor-50)*4;
 
   int powerL = speed+yaw;
-  if (powerL >= 20)
-    powerL = 20+(powerL-20)/4;
-  else if (powerL <= -20)
-    powerL = -20+(powerL+20)/4;
-
   int powerR = speed-yaw;
-  if (powerR >= 20)
-    powerR = 20+(powerR-20)/4;
-  else if (powerR <= -20)
-    powerR = -20+(powerR+20)/4;
 
-  powerL = powerDelayed(powerL, chasis->m_motorSpeedLeft,  10);
-  powerR = powerDelayed(powerR, chasis->m_motorSpeedRight, 10);
+  powerL = powerDelayed(powerL, chasis->m_motorSpeedLeft,  20);
+  powerR = powerDelayed(powerR, chasis->m_motorSpeedRight, 20);
 
   chasis->m_motorSpeedLeft  = powerL;
   chasis->m_motorSpeedRight = powerR;
@@ -291,19 +282,21 @@ static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int 
   return 0;
 }
 
-static int do_driverCtrlHandTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetMass)
+static int do_driverCtrlHandTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetSize)
 {
   DriverCtrlHand* hand = &_driver->m_ctrlHand;
   int power;
 
   power = -powerProportional(_targetY, -100, _driver->m_zeroY, 100);
 
+  power = powerDelayed(power, hand->m_motorSpeed, 20);
+
   hand->m_motorSpeed = power;
 
   return 0;
 }
 
-static int do_driverCtrlArmTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetMass)
+static int do_driverCtrlArmTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetSize)
 {
   DriverCtrlArm* arm = &_driver->m_ctrlArm;
 
@@ -312,25 +305,25 @@ static int do_driverCtrlArmTracking(DriverOutput* _driver, int _targetX, int _ta
   return 0;
 }
 
-static int do_driverCtrlTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetMass)
+static int do_driverCtrlTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetSize)
 {
   int diffX = powerProportional(_targetX, -100, _driver->m_zeroX, 100);
   int diffY = powerProportional(_targetY, -100, _driver->m_zeroY, 100);
-  int diffMass = powerProportional(_targetMass, 0, _driver->m_zeroMass, 10000);
+  int diffSize = powerProportional(_targetSize, 0, _driver->m_zeroSize, 100);
 
   bool hasLock = (   abs(diffX) <= 10
                   && abs(diffY) <= 10
-                  && abs(diffMass) <= 20);
+                  && abs(diffSize) <= 10);
   if (!hasLock)
     _driver->m_stateEntryTime.tv_sec = 0;
 
   if (s_verbose)
     fprintf(stderr, "%d %d %d %s (%d->%d %d->%d %d->%d)\n",
-            diffX, diffY, diffMass,
+            diffX, diffY, diffSize,
             hasLock?" ### LOCK ### ":"",
             _targetX, _driver->m_zeroX,
             _targetY, _driver->m_zeroY,
-            _targetMass, _driver->m_zeroMass);
+            _targetSize, _driver->m_zeroSize);
 
   return 0;
 }
@@ -569,7 +562,7 @@ int do_driverControlAuto(DriverOutput* _driver, const TargetLocation* _targetLoc
       do_driverCtrlHandSearching(_driver);
       do_driverCtrlArmSearching(_driver);
       do_driverCtrlSearching(_driver);
-      if (_targetLocation->m_targetMass > 0)
+      if (_targetLocation->m_targetSize > 0)
       {
         fprintf(stderr, "*** FOUND TARGET ***\n");
         _driver->m_state = StateTracking;
@@ -578,11 +571,11 @@ int do_driverControlAuto(DriverOutput* _driver, const TargetLocation* _targetLoc
       break;
 
     case StateTracking:
-      do_driverCtrlChasisTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetMass);
-      do_driverCtrlHandTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetMass);
-      do_driverCtrlArmTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetMass);
-      do_driverCtrlTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetMass);
-      if (_targetLocation->m_targetMass <= 0)
+      do_driverCtrlChasisTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetSize);
+      do_driverCtrlHandTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetSize);
+      do_driverCtrlArmTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetSize);
+      do_driverCtrlTracking(_driver, _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetSize);
+      if (_targetLocation->m_targetSize <= 0)
       {
         fprintf(stderr, "*** LOST TARGET ***\n");
         _driver->m_state = StateSearching;
@@ -601,7 +594,7 @@ int do_driverControlAuto(DriverOutput* _driver, const TargetLocation* _targetLoc
       do_driverCtrlHandSqueezing(_driver);
       do_driverCtrlArmSqueezing(_driver);
       do_driverCtrlSqueezing(_driver);
-      if (_targetLocation->m_targetMass <= 0)
+      if (_targetLocation->m_targetSize <= 0)
       {
         fprintf(stderr, "*** LOCK FAILED ***\n");
         _driver->m_state = StatePreparing;

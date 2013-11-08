@@ -32,7 +32,7 @@ typedef struct TargetLocation
 {
   int m_targetX;
   int m_targetY;
-  int m_targetMass;
+  int m_targetSize;
 } TargetLocation;
 
 typedef struct DriverManualControl

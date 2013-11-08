@@ -64,7 +64,7 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
 
   _targetLocation->m_targetX = 0;
   _targetLocation->m_targetY = 0;
-  _targetLocation->m_targetMass = -1;
+  _targetLocation->m_targetSize = 0;
 
   return 0;
 }

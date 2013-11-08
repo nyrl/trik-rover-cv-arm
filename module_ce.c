@@ -252,7 +252,7 @@ static int do_transcodeFrame(CodecEngine* _ce,
 
   _targetLocation->m_targetX    = tcOutArgs.alg.targetX;
   _targetLocation->m_targetY    = tcOutArgs.alg.targetY;
-  _targetLocation->m_targetMass = tcOutArgs.alg.targetMass;
+  _targetLocation->m_targetSize = tcOutArgs.alg.targetSize;
 
   return 0;
 }
@@ -429,11 +429,11 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
   {
     fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
             _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, *_dstFrameUsed);
-    if (_targetLocation->m_targetMass > 0)
+    if (_targetLocation->m_targetSize > 0)
       fprintf(stderr, "Target detected at %d x %d @ %d\n",
               _targetLocation->m_targetX,
               _targetLocation->m_targetY,
-              _targetLocation->m_targetMass);
+              _targetLocation->m_targetSize);
   }
 
   return res;

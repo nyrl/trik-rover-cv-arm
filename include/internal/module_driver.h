@@ -15,7 +15,7 @@ typedef struct DriverConfig // what user wants to set
 {
   int m_zeroX;
   int m_zeroY;
-  int m_zeroMass;
+  int m_zeroSize;
 } DriverConfig;
 
 
@@ -23,16 +23,11 @@ typedef struct DriverCtrlChasis
 {
   int         m_motorSpeedLeft;
   int         m_motorSpeedRight;
-
-  int         m_lastSpeed; // -100..100
-  int         m_lastYaw;   // -100..100
 } DriverCtrlChasis;
 
 typedef struct DriverCtrlHand
 {
   int         m_motorSpeed;
-
-  int         m_lastSpeed; // -100..100
 } DriverCtrlHand;
 
 typedef struct DriverCtrlArm
@@ -44,7 +39,7 @@ typedef struct DriverOutput
 {
   int              m_zeroX;
   int              m_zeroY;
-  int              m_zeroMass;
+  int              m_zeroSize;
 
   DriverCtrlChasis m_ctrlChasis;
   DriverCtrlHand   m_ctrlHand;

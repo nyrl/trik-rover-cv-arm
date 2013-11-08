@@ -28,7 +28,7 @@ static const RuntimeConfig s_runtimeConfig = {
                            { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1700000, 0, 1300000, 700000  },   //hand up-down1
                            { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1300000, 0, 1700000, 2300000 },   //hand up-down2
                            { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1300000, 0, 1700000, 2300000 } }, //arm squeeze
-  .m_driverConfig      = { 0, 50, 600 }
+  .m_driverConfig      = { 0, 50, 30 }
 };
 
 
@@ -140,7 +140,7 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
     { "rover-p4-forward-full",	1,	NULL,	0   },
     { "target-zero-x",		1,	NULL,	0   }, // 57
     { "target-zero-y",		1,	NULL,	0   },
-    { "target-zero-mass",	1,	NULL,	0   },
+    { "target-zero-size",	1,	NULL,	0   },
     { "rc-port",		1,	NULL,	0   }, // 60
     { "rc-stdin",		1,	NULL,	0   },
     { "rc-event-input",		1,	NULL,	0   },
@@ -252,7 +252,7 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
 
           case 57  : cfg->m_driverConfig.m_zeroX    = atoi(optarg);				break;
           case 57+1: cfg->m_driverConfig.m_zeroY    = atoi(optarg);				break;
-          case 57+2: cfg->m_driverConfig.m_zeroMass = atoi(optarg);				break;
+          case 57+2: cfg->m_driverConfig.m_zeroSize = atoi(optarg);				break;
 
           case 60  : cfg->m_rcConfig.m_port = atoi(optarg);					break;
           case 60+1: cfg->m_rcConfig.m_stdin = atoi(optarg);					break;
@@ -314,7 +314,7 @@ void runtimeArgsHelpMessage(Runtime* _runtime, int _argc, char* const _argv[])
                   "   --rover-pN-forward-full <rover-powermotorN-full-forward-power>\n"
                   "   --target-zero-x         <target-center-X>\n"
                   "   --target-zero-y         <target-center-Y>\n"
-                  "   --target-zero-mass      <target-center-mass>\n"
+                  "   --target-zero-size      <target-center-size>\n"
                   "   --rc-port               <remote-control-port>\n"
                   "   --rc-stdin              <remote-control-via-stdin 0/1>\n"
                   "   --rc-event-input        <remote-control-via-event-input-path>\n"
