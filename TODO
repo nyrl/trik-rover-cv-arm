@@ -5,4 +5,4 @@
 5) Add encoder motors
 6) Add image filtering and clustering: denoise, clasterize, pick the largest
 7) Add tags, remove outdated stuff, fix algorithm implementation: specialize template, move static data to allocated
-
+8) Optimize memcpy's
