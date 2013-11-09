@@ -21,8 +21,8 @@
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
-/* Define to 1 if you have the `v4l2_open' library (-lv4l2_open). */
-#undef HAVE_LIBV4L2_OPEN
+/* Define to 1 if you have the `v4l2' library (-lv4l2). */
+#undef HAVE_LIBV4L2
 
 /* Define to 1 if you have the <linux/fb.h> header file. */
 #undef HAVE_LINUX_FB_H
@@ -86,6 +86,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the <vidtranscode_cv.h> header file. */
+#undef HAVE_VIDTRANSCODE_CV_H
 
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL

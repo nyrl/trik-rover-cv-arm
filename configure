@@ -16114,6 +16114,8 @@ if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
 
+else
+  as_fn_error $? "Mandatory system headers are missing" "$LINENO" 5
 fi
 
 done
@@ -16127,6 +16129,8 @@ if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
 
+else
+  as_fn_error $? "Mandatory system headers are missing" "$LINENO" 5
 fi
 
 done
@@ -16140,6 +16144,8 @@ if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
 
+else
+  as_fn_error $? "Mandatory network headers are missing" "$LINENO" 5
 fi
 
 done
@@ -16153,11 +16159,13 @@ if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
 
+else
+  as_fn_error $? "Mandatory terminal headers are missing" "$LINENO" 5
 fi
 
 done
 
-for ac_header in linux/videodev2.h linux/fb.h linux/i2c-dev.h linux/input.h
+for ac_header in linux/videodev2.h linux/fb.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -16166,6 +16174,37 @@ if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
 
+else
+  as_fn_error $? "Mandatory framebuffer headers are missing" "$LINENO" 5
+fi
+
+done
+
+for ac_header in linux/i2c-dev.h linux/input.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+else
+  as_fn_error $? "Mandatory linux I/O headers are missing" "$LINENO" 5
+fi
+
+done
+
+for ac_header in vidtranscode_cv.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "vidtranscode_cv.h" "ac_cv_header_vidtranscode_cv_h" "$ac_includes_default"
+if test "x$ac_cv_header_vidtranscode_cv_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_VIDTRANSCODE_CV_H 1
+_ACEOF
+
+else
+  as_fn_error $? "vidtranscode_cv.h is mandatory" "$LINENO" 5
 fi
 
 done
@@ -16476,15 +16515,17 @@ _ACEOF
 
   LIBS="-lpthread $LIBS"
 
+else
+  as_fn_error $? "libpthread is mandatory" "$LINENO" 5
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for v4l2 in -lv4l2_open" >&5
-$as_echo_n "checking for v4l2 in -lv4l2_open... " >&6; }
-if ${ac_cv_lib_v4l2_open_v4l2+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for v4l2_open in -lv4l2" >&5
+$as_echo_n "checking for v4l2_open in -lv4l2... " >&6; }
+if ${ac_cv_lib_v4l2_v4l2_open+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lv4l2_open  $LIBS"
+LIBS="-lv4l2  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16494,33 +16535,35 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char v4l2 ();
+char v4l2_open ();
 int
 main ()
 {
-return v4l2 ();
+return v4l2_open ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_v4l2_open_v4l2=yes
+  ac_cv_lib_v4l2_v4l2_open=yes
 else
-  ac_cv_lib_v4l2_open_v4l2=no
+  ac_cv_lib_v4l2_v4l2_open=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_v4l2_open_v4l2" >&5
-$as_echo "$ac_cv_lib_v4l2_open_v4l2" >&6; }
-if test "x$ac_cv_lib_v4l2_open_v4l2" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_v4l2_v4l2_open" >&5
+$as_echo "$ac_cv_lib_v4l2_v4l2_open" >&6; }
+if test "x$ac_cv_lib_v4l2_v4l2_open" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBV4L2_OPEN 1
+#define HAVE_LIBV4L2 1
 _ACEOF
 
-  LIBS="-lv4l2_open $LIBS"
+  LIBS="-lv4l2 $LIBS"
 
+else
+  as_fn_error $? "libv4l2 is mandatory" "$LINENO" 5
 fi
 
 

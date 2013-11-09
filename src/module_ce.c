@@ -1,3 +1,4 @@
+#include "config.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -9,7 +10,7 @@
 
 #include <linux/videodev2.h>
 
-#include <trik/vidtranscode_cv/trik_vidtranscode_cv.h>
+#include "trik_vidtranscode_cv.h"
 
 #include "internal/module_ce.h"
 

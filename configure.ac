@@ -23,11 +23,13 @@ PKG_PROG_PKG_CONFIG
 
 
 # Checks for header files.
-AC_CHECK_HEADERS([unistd.h assert.h errno.h getopt.h inttypes.h sysexits.h time.h])
-AC_CHECK_HEADERS([sys/ioctl.h sys/mman.h sys/select.h sys/types.h sys/stat.h])
-AC_CHECK_HEADERS([sys/socket.h netdb.h])
-AC_CHECK_HEADERS([fcntl.h termios.h])
-AC_CHECK_HEADERS([linux/videodev2.h linux/fb.h linux/i2c-dev.h linux/input.h])
+AC_CHECK_HEADERS([unistd.h assert.h errno.h getopt.h inttypes.h sysexits.h time.h],,[AC_MSG_ERROR([Mandatory system headers are missing])])
+AC_CHECK_HEADERS([sys/ioctl.h sys/mman.h sys/select.h sys/types.h sys/stat.h],,[AC_MSG_ERROR([Mandatory system headers are missing])])
+AC_CHECK_HEADERS([sys/socket.h netdb.h],,[AC_MSG_ERROR([Mandatory network headers are missing])])
+AC_CHECK_HEADERS([fcntl.h termios.h],,[AC_MSG_ERROR([Mandatory terminal headers are missing])])
+AC_CHECK_HEADERS([linux/videodev2.h linux/fb.h],,[AC_MSG_ERROR([Mandatory framebuffer headers are missing])])
+AC_CHECK_HEADERS([linux/i2c-dev.h linux/input.h],,[AC_MSG_ERROR([Mandatory linux I/O headers are missing])])
+AC_CHECK_HEADERS([vidtranscode_cv.h],,[AC_MSG_ERROR([vidtranscode_cv.h is mandatory])])
 
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -39,8 +41,8 @@ AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 
 # Checks for library functions.
-AC_CHECK_LIB([pthread], [pthread_create])
-AC_CHECK_LIB([v4l2_open], [v4l2])
+AC_CHECK_LIB([pthread], [pthread_create],,[AC_MSG_ERROR([libpthread is mandatory])])
+AC_CHECK_LIB([v4l2], [v4l2_open],,[AC_MSG_ERROR([libv4l2 is mandatory])])
 
 # Check for C++0x support features
 AC_LANG(C++)

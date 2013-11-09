@@ -1,0 +1,12 @@
+/Makefile
+/autom4te.cache
+/build/.deps
+/build/Makefile
+/build/*.o
+/config.h
+/config.h.in~
+/config.log
+/config.status
+/libtool
+/stamp-h1
+
