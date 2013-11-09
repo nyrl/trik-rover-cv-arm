@@ -29,7 +29,6 @@ AC_CHECK_HEADERS([sys/socket.h netdb.h],,[AC_MSG_ERROR([Mandatory network header
 AC_CHECK_HEADERS([fcntl.h termios.h],,[AC_MSG_ERROR([Mandatory terminal headers are missing])])
 AC_CHECK_HEADERS([linux/videodev2.h linux/fb.h],,[AC_MSG_ERROR([Mandatory framebuffer headers are missing])])
 AC_CHECK_HEADERS([linux/i2c-dev.h linux/input.h],,[AC_MSG_ERROR([Mandatory linux I/O headers are missing])])
-AC_CHECK_HEADERS([vidtranscode_cv.h],,[AC_MSG_ERROR([vidtranscode_cv.h is mandatory])])
 
 
 # Checks for typedefs, structures, and compiler characteristics.

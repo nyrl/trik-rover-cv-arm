@@ -87,9 +87,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if you have the <vidtranscode_cv.h> header file. */
-#undef HAVE_VIDTRANSCODE_CV_H
-
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL
 
