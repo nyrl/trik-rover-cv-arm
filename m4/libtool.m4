@@ -94,7 +94,8 @@ _LT_SET_OPTIONS([$0], [$1])
 LIBTOOL_DEPS="$ltmain"
 
 # Always use our own libtool.
-LIBTOOL='$(SHELL) $(top_builddir)/libtool'
+LIBTOOL='$(top_builddir)'
+LIBTOOL="$LIBTOOL/${host_alias}-libtool"
 AC_SUBST(LIBTOOL)dnl
 
 _LT_SETUP
@@ -206,7 +207,7 @@ aix3*)
 esac
 
 # Global variables:
-ofile=libtool
+ofile=${host_alias}-libtool
 can_build_shared=yes
 
 # All known linkers require a `.a' archive for static linking (except MSVC,
@@ -1224,27 +1225,27 @@ _LT_DECL([], [ECHO], [1], [An echo program that protects backslashes])
 # ----------------
 AC_DEFUN([_LT_WITH_SYSROOT],
 [AC_MSG_CHECKING([for sysroot])
-AC_ARG_WITH([sysroot],
-[  --with-sysroot[=DIR] Search for dependent libraries within DIR
+AC_ARG_WITH([libtool-sysroot],
+[  --with-libtool-sysroot[=DIR] Search for dependent libraries within DIR
                         (or the compiler's sysroot if not specified).],
-[], [with_sysroot=no])
+[], [with_libtool_sysroot=no])
 
 dnl lt_sysroot will always be passed unquoted.  We quote it here
 dnl in case the user passed a directory name.
 lt_sysroot=
-case ${with_sysroot} in #(
+case ${with_libtool_sysroot} in #(
  yes)
    if test "$GCC" = yes; then
      lt_sysroot=`$CC --print-sysroot 2>/dev/null`
    fi
    ;; #(
  /*)
-   lt_sysroot=`echo "$with_sysroot" | sed -e "$sed_quote_subst"`
+   lt_sysroot=`echo "$with_libtool_sysroot" | sed -e "$sed_quote_subst"`
    ;; #(
  no|'')
    ;; #(
  *)
-   AC_MSG_RESULT([${with_sysroot}])
+   AC_MSG_RESULT([${with_libtool_sysroot}])
    AC_MSG_ERROR([The sysroot must be an absolute path.])
    ;;
 esac
@@ -2684,18 +2685,6 @@ linux* | k*bsd*-gnu | kopensolaris*-gnu)
   dynamic_linker='GNU/Linux ld.so'
   ;;
 
-netbsdelf*-gnu)
-  version_type=linux
-  need_lib_prefix=no
-  need_version=no
-  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
-  soname_spec='${libname}${release}${shared_ext}$major'
-  shlibpath_var=LD_LIBRARY_PATH
-  shlibpath_overrides_runpath=no
-  hardcode_into_libs=yes
-  dynamic_linker='NetBSD ld.elf_so'
-  ;;
-
 netbsd*)
   version_type=sunos
   need_lib_prefix=no
@@ -3301,7 +3290,7 @@ linux* | k*bsd*-gnu | kopensolaris*-gnu)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
-netbsd* | netbsdelf*-gnu)
+netbsd*)
   if echo __ELF__ | $CC -E - | $GREP __ELF__ > /dev/null; then
     lt_cv_deplibs_check_method='match_pattern /lib[[^/]]+(\.so\.[[0-9]]+\.[[0-9]]+|_pic\.a)$'
   else
@@ -4113,7 +4102,7 @@ m4_if([$1], [CXX], [
 	    ;;
 	esac
 	;;
-      netbsd* | netbsdelf*-gnu)
+      netbsd*)
 	;;
       *qnx* | *nto*)
         # QNX uses GNU C++, but need to define -shared option too, otherwise
@@ -4590,9 +4579,6 @@ m4_if([$1], [CXX], [
       ;;
     esac
     ;;
-  linux* | k*bsd*-gnu | gnu*)
-    _LT_TAGVAR(link_all_deplibs, $1)=no
-    ;;
   *)
     _LT_TAGVAR(export_symbols_cmds, $1)='$NM $libobjs $convenience | $global_symbol_pipe | $SED '\''s/.* //'\'' | sort | uniq > $export_symbols'
     ;;
@@ -4654,9 +4640,6 @@ dnl Note also adjust exclude_expsyms for C++ above.
     ;;
   openbsd*)
     with_gnu_ld=no
-    ;;
-  linux* | k*bsd*-gnu | gnu*)
-    _LT_TAGVAR(link_all_deplibs, $1)=no
     ;;
   esac
 
@@ -4879,7 +4862,7 @@ _LT_EOF
       fi
       ;;
 
-    netbsd* | netbsdelf*-gnu)
+    netbsd*)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	_LT_TAGVAR(archive_cmds, $1)='$LD -Bshareable $libobjs $deplibs $linker_flags -o $lib'
 	wlarc=
@@ -5056,7 +5039,6 @@ _LT_EOF
 	if test "$aix_use_runtimelinking" = yes; then
 	  shared_flag="$shared_flag "'${wl}-G'
 	fi
-	_LT_TAGVAR(link_all_deplibs, $1)=no
       else
 	# not using gcc
 	if test "$host_cpu" = ia64; then
@@ -5361,7 +5343,7 @@ _LT_EOF
       _LT_TAGVAR(link_all_deplibs, $1)=yes
       ;;
 
-    netbsd* | netbsdelf*-gnu)
+    netbsd*)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	_LT_TAGVAR(archive_cmds, $1)='$LD -Bshareable -o $lib $libobjs $deplibs $linker_flags'  # a.out
       else

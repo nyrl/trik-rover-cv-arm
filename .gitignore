@@ -2,11 +2,12 @@
 /autom4te.cache
 /build/.deps
 /build/Makefile
+/build/rover-cv
 /build/*.o
 /config.h
 /config.h.in~
 /config.log
 /config.status
 /libtool
+/*-libtool
 /stamp-h1
-
