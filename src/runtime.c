@@ -153,7 +153,8 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
     { "target-val",		1,	NULL,	0   }, // 68
     { "target-val-tolerance",	1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
-    { "help",			0,	NULL,	'h' }
+    { "help",			0,	NULL,	'h' },
+    { NULL,			0,	NULL,	0   }
   };
 
   if (_runtime == NULL)
