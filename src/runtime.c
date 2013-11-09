@@ -284,7 +284,7 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
 
 
 
-void runtimeArgsHelpMessage(Runtime* _runtime, int _argc, char* const _argv[])
+void runtimeArgsHelpMessage(Runtime* _runtime, const char* _arg0)
 {
   if (_runtime == NULL)
     return;
@@ -328,7 +328,7 @@ void runtimeArgsHelpMessage(Runtime* _runtime, int _argc, char* const _argv[])
                   "   --target-val-tolerance  <target-value-tolerance>\n"
                   "   --verbose\n"
                   "   --help\n",
-          _argv[0]);
+          _arg0);
 }
 
 

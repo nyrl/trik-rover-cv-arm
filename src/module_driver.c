@@ -24,6 +24,8 @@ static int do_driverCtrlSetup(DriverOutput* _driver, const DriverConfig* _config
 
 static int do_driverCtrlChasisSetup(DriverOutput* _driver, const DriverConfig* _config)
 {
+  (void)_config;
+
   DriverCtrlChasis* chasis = &_driver->m_ctrlChasis;
 
   chasis->m_motorSpeedLeft = 0;
@@ -34,6 +36,8 @@ static int do_driverCtrlChasisSetup(DriverOutput* _driver, const DriverConfig* _
 
 static int do_driverCtrlHandSetup(DriverOutput* _driver, const DriverConfig* _config)
 {
+  (void)_config;
+
   DriverCtrlHand* hand = &_driver->m_ctrlHand;
 
   hand->m_motorSpeed = 0;
@@ -43,6 +47,8 @@ static int do_driverCtrlHandSetup(DriverOutput* _driver, const DriverConfig* _co
 
 static int do_driverCtrlArmSetup(DriverOutput* _driver, const DriverConfig* _config)
 {
+  (void)_config;
+
   DriverCtrlArm* arm = &_driver->m_ctrlArm;
 
   arm->m_motorSpeed = 0;
@@ -145,6 +151,10 @@ static int do_driverCtrlArmManual(DriverOutput* _driver, int _ctrlArm)
 
 static int do_driverCtrlManual(DriverOutput* _driver, int _ctrlChasisLR, int _ctrlChasisFB)
 {
+  (void)_driver;
+  (void)_ctrlChasisLR;
+  (void)_ctrlChasisFB;
+
   return 0;
 }
 
@@ -179,6 +189,8 @@ static int do_driverCtrlArmPreparing(DriverOutput* _driver)
 
 static int do_driverCtrlPreparing(DriverOutput* _driver)
 {
+  (void)_driver;
+
   return 0;
 }
 
@@ -213,6 +225,8 @@ static int do_driverCtrlArmSearching(DriverOutput* _driver)
 
 static int do_driverCtrlSearching(DriverOutput* _driver)
 {
+  (void)_driver;
+
   return 0;
 }
 
@@ -285,6 +299,9 @@ static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int 
 
 static int do_driverCtrlHandTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetSize)
 {
+  (void)_targetX;
+  (void)_targetSize;
+
   DriverCtrlHand* hand = &_driver->m_ctrlHand;
   int power;
 
@@ -299,6 +316,10 @@ static int do_driverCtrlHandTracking(DriverOutput* _driver, int _targetX, int _t
 
 static int do_driverCtrlArmTracking(DriverOutput* _driver, int _targetX, int _targetY, int _targetSize)
 {
+  (void)_targetX;
+  (void)_targetY;
+  (void)_targetSize;
+
   DriverCtrlArm* arm = &_driver->m_ctrlArm;
 
   arm->m_motorSpeed = 0;
@@ -360,6 +381,7 @@ static int do_driverCtrlArmSqueezing(DriverOutput* _driver)
 
 static int do_driverCtrlSqueezing(DriverOutput* _driver)
 {
+  (void)_driver;
 #warning Check lock is stable
 
   return 0;
@@ -420,6 +442,9 @@ static int do_driverCtrlArmReleasing(DriverOutput* _driver, int _ms)
 
 static int do_driverCtrlReleasing(DriverOutput* _driver, int _ms)
 {
+  (void)_driver;
+  (void)_ms;
+
   return 0;
 }
 

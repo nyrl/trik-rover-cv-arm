@@ -104,6 +104,8 @@ static int do_openStdin(RCInput* _rc, bool m_stdin)
 
 static int do_closeStdin(RCInput* _rc)
 {
+  (void)_rc;
+
   return 0;
 }
 

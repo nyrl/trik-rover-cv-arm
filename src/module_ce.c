@@ -79,6 +79,8 @@ static int do_memoryFree(CodecEngine* _ce)
 
 static XDAS_Int32 do_convertPixelFormat(CodecEngine* _ce, uint32_t _format)
 {
+  (void)_ce;
+
   switch (_format)
   {
     case V4L2_PIX_FMT_RGB24:	return TRIK_VIDTRANSCODE_CV_VIDEO_FORMAT_RGB888;
@@ -233,17 +235,17 @@ static int do_transcodeFrame(CodecEngine* _ce,
     Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize);
 #endif
 
-  if (tcOutArgs.base.encodedBuf[0].bufSize > _dstFrameSize)
-  {
-    *_dstFrameUsed = _dstFrameSize;
-    fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) returned too large buffer %zu, truncated\n",
-            _srcFrameSize, _dstFrameSize, *_dstFrameUsed);
-  }
-  else if (tcOutArgs.base.encodedBuf[0].bufSize < 0)
+  if (tcOutArgs.base.encodedBuf[0].bufSize < 0)
   {
     *_dstFrameUsed = 0;
     fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) returned negative buffer size\n",
             _srcFrameSize, _dstFrameSize);
+  }
+  else if ((size_t)(tcOutArgs.base.encodedBuf[0].bufSize) > _dstFrameSize)
+  {
+    *_dstFrameUsed = _dstFrameSize;
+    fprintf(stderr, "VIDTRANSCODE_process(%zu -> %zu) returned too large buffer %zu, truncated\n",
+            _srcFrameSize, _dstFrameSize, *_dstFrameUsed);
   }
   else
     *_dstFrameUsed = tcOutArgs.base.encodedBuf[0].bufSize;

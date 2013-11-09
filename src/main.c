@@ -41,13 +41,14 @@ int main(int _argc, char* const _argv[])
   int res = 0;
   int exit_code = EX_OK;
   Runtime runtime;
+  const char* arg0 = _argv[0];
 
   sigactions_setup();
 
   runtimeReset(&runtime);
   if (!runtimeParseArgs(&runtime, _argc, _argv))
   {
-    runtimeArgsHelpMessage(&runtime, _argc, _argv);
+    runtimeArgsHelpMessage(&runtime, arg0);
     exit_code = EX_USAGE;
     goto exit;
   }
