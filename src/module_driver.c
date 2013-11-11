@@ -280,10 +280,10 @@ static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int 
 
   speed = -powerProportional(_targetSize, 0, _driver->m_zeroSize, 100); // back/forward based on ball size
   backFactor = powerProportional(_targetY, -100, _driver->m_zeroY, 100); // move back if ball is too low
-  if (backFactor >= 20)
-    speed -= (backFactor-20)*2;
-  else if (backFactor >= 50)
+  if (backFactor >= 50)
     speed -= (50-20)*2 + (backFactor-50)*4;
+  else if (backFactor >= 20)
+    speed -= (backFactor-20)*2;
 
   int powerL = speed+yaw;
   int powerR = speed-yaw;
