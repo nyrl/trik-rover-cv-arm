@@ -19,7 +19,7 @@
 static int threadRoverSelectLoop(Runtime* _runtime, RoverOutput* _rover, DriverOutput* _driver)
 {
   int res;
-  static const struct timespec s_selectTimeout = { .tv_sec=0, .tv_nsec=10*1000*1000 }; // 10ms loop
+  static const struct timespec s_selectTimeout = { .tv_sec=0, .tv_nsec=20*1000*1000 }; // 20ms loop
 
   if (_runtime == NULL || _rover == NULL || _driver == NULL)
     return EINVAL;

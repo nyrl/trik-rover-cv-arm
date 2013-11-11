@@ -26,9 +26,9 @@ static const RuntimeConfig s_runtimeConfig = {
                            { 2, 0x48, 0x15, +70, +15, 0, -15, -70 }, //chasis left2
                            { 2, 0x48, 0x16, -70, -15, 0, +15, +70 }, //chasis right1
                            { 2, 0x48, 0x17, -70, -15, 0, +15, +70 }, //chasis right2
-                           { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1700000, 0, 1300000, 700000  },   //hand up-down1
-                           { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1300000, 0, 1700000, 2300000 },   //hand up-down2
-                           { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1300000, 0, 1700000, 2300000 } }, //arm squeeze
+                           { "/sys/class/pwm/ecap.0/duty_ns",     2300000, 1600000, 0, 1400000, 700000  },   //hand up-down1
+                           { "/sys/class/pwm/ecap.1/duty_ns",     700000,  1400000, 0, 1600000, 2300000 },   //hand up-down2
+                           { "/sys/class/pwm/ehrpwm.1:1/duty_ns", 700000,  1400000, 0, 1600000, 2300000 } }, //arm squeeze
   .m_driverConfig      = { 0, 50, 30 }
 };
 

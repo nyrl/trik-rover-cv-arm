@@ -280,10 +280,15 @@ static int do_driverCtrlChasisTracking(DriverOutput* _driver, int _targetX, int 
 
   speed = -powerProportional(_targetSize, 0, _driver->m_zeroSize, 100); // back/forward based on ball size
   backFactor = powerProportional(_targetY, -100, _driver->m_zeroY, 100); // move back if ball is too low
-  if (backFactor >= 50)
-    speed -= (50-20)*2 + (backFactor-50)*4;
-  else if (backFactor >= 20)
-    speed -= (backFactor-20)*2;
+  if (speed >= 0)
+  {
+    if (backFactor >= 50)
+      speed = -(backFactor-50)*2;
+    else if (backFactor >= 20)
+      speed = 0;
+    else if (backFactor >= 0)
+      speed /= 2;
+  }
 
   int powerL = speed+yaw;
   int powerR = speed-yaw;
@@ -304,8 +309,12 @@ static int do_driverCtrlHandTracking(DriverOutput* _driver, int _targetX, int _t
 
   DriverCtrlHand* hand = &_driver->m_ctrlHand;
   int power;
+  int forwardFactor;
 
   power = -powerProportional(_targetY, -100, _driver->m_zeroY, 100);
+  forwardFactor = -powerProportional(_targetSize, 0, _driver->m_zeroSize, 100); // lower hand faster if movement forward blocked by hand
+  if (forwardFactor >= 0 && power <= 0)
+    power -= forwardFactor;
 
   power = powerDelayed(power, hand->m_motorSpeed, 20);
 
@@ -421,9 +430,9 @@ static int do_driverCtrlHandReleasing(DriverOutput* _driver, int _ms)
   DriverCtrlHand* hand = &_driver->m_ctrlHand;
 
   if (_ms < 4000)
-    hand->m_motorSpeed =  100;
+    hand->m_motorSpeed = 100;
   else
-    hand->m_motorSpeed = -100;
+    hand->m_motorSpeed = 0;
 
   return 0;
 }
