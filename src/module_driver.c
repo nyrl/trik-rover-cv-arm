@@ -233,7 +233,7 @@ static int do_driverCtrlSearching(DriverOutput* _driver)
 
 static int sign(int _v)
 {
-  return (_v < 0) ? -1 : ((_v > 0) ? 0 : 1);
+  return (_v < 0) ? -1 : ((_v > 0) ? 1 : 0);
 }
 
 static int powerProportional(int _val, int _min, int _zero, int _max)
