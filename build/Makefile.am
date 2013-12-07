@@ -6,14 +6,11 @@ nodist_rover_cv_SOURCES	= $(top_srcdir)/config.h
 
 rover_cv_SOURCES	= $(top_srcdir)/src/main.c \
 			  $(top_srcdir)/src/module_ce.c \
-			  $(top_srcdir)/src/module_driver.c \
 			  $(top_srcdir)/src/module_fb.c \
 			  $(top_srcdir)/src/module_rc.c \
-			  $(top_srcdir)/src/module_rover.c \
 			  $(top_srcdir)/src/module_v4l2.c \
 			  $(top_srcdir)/src/runtime.c \
 			  $(top_srcdir)/src/thread_input.c \
-			  $(top_srcdir)/src/thread_rover.c \
 			  $(top_srcdir)/src/thread_video.c
 
 
