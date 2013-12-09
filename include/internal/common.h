@@ -35,24 +35,6 @@ typedef struct TargetLocation
   int m_targetSize;
 } TargetLocation;
 
-typedef struct DriverManualControl
-{
-  bool m_manualMode;
-
-  int  m_ctrlChasisLR;
-  int  m_ctrlChasisFB;
-  int  m_ctrlHand;
-  int  m_ctrlArm;
-} DriverManualControl;
-
-typedef struct RoverControl
-{
-  int m_chasisLeftSpeed;
-  int m_chasisRightSpeed;
-  int m_handSpeed;
-  int m_armSpeed;
-} RoverControl;
-
 
 #ifdef __cplusplus
 } // extern "C"

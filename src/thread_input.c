@@ -97,24 +97,6 @@ static int threadInputSelectLoop(Runtime* _runtime, RCInput* _rc)
     }
   }
 
-  DriverManualControl driverManualControl;
-  if ((res = rcInputGetManualControl(_rc, &driverManualControl)) != 0)
-  {
-    if (res != ENODATA)
-    {
-      fprintf(stderr, "rcInputGetManualControl() failed: %d\n", res);
-      return res;
-    }
-  }
-  else
-  {
-    if ((res = runtimeSetDriverManualControl(_runtime, &driverManualControl)) != 0)
-    {
-      fprintf(stderr, "runtimeSetDriverManualControl() failed: %d\n", res);
-      return res;
-    }
-  }
-
   TargetDetectParams targetParams;
   if ((res = rcInputGetTargetDetectParams(_rc, &targetParams)) != 0)
   {

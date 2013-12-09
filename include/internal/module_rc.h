@@ -15,7 +15,6 @@ typedef struct RCConfig // what user wants to set
   int m_port;
   bool m_stdin;
   const char* m_eventInput;
-  bool  m_manualMode;
 
   int  m_targetDetectHue;
   int  m_targetDetectHueTolerance;
@@ -34,9 +33,6 @@ typedef struct RCInput
   char*                    m_readBuffer;
   size_t                   m_readBufferSize;
   size_t                   m_readBufferUsed;
-
-  bool                     m_manualControlUpdated;
-  DriverManualControl      m_manualControl;
 
   bool                     m_targetDetectParamsUpdated;
   int                      m_targetDetectHue;
@@ -63,7 +59,6 @@ int rcInputReadEventInput(RCInput* _rc);
 int rcInputAcceptConnection(RCInput* _rc);
 int rcInputReadConnection(RCInput* _rc);
 
-int rcInputGetManualControl(RCInput* _rc, DriverManualControl* _manualControl);
 int rcInputGetTargetDetectParams(RCInput* _rc, TargetDetectParams* _targetParams);
 
 #ifdef __cplusplus

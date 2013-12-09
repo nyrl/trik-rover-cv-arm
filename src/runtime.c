@@ -19,7 +19,7 @@ static const RuntimeConfig s_runtimeConfig = {
   .m_codecEngineConfig = { "dsp_server.xe674", "vidtranscode_cv" },
   .m_v4l2Config        = { "/dev/video0", 320, 240, V4L2_PIX_FMT_YUYV },
   .m_fbConfig          = { "/dev/fb0" },
-  .m_rcConfig          = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event", true,
+  .m_rcConfig          = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event",
                            27, 7, 75, 25, 70, 30 }
 };
 
@@ -42,15 +42,6 @@ void runtimeReset(Runtime* _runtime)
   _runtime->m_modules.m_rcInput.m_eventInputFd = -1;
   _runtime->m_modules.m_rcInput.m_serverFd = -1;
   _runtime->m_modules.m_rcInput.m_connectionFd = -1;
-  memset(&_runtime->m_modules.m_roverOutput,  0, sizeof(_runtime->m_modules.m_roverOutput));
-  _runtime->m_modules.m_roverOutput.m_motorChasisLeft1.m_i2cBusFd = -1;
-  _runtime->m_modules.m_roverOutput.m_motorChasisLeft2.m_i2cBusFd = -1;
-  _runtime->m_modules.m_roverOutput.m_motorChasisRight1.m_i2cBusFd = -1;
-  _runtime->m_modules.m_roverOutput.m_motorChasisRight2.m_i2cBusFd = -1;
-  _runtime->m_modules.m_roverOutput.m_motorHand1.m_fd = -1;
-  _runtime->m_modules.m_roverOutput.m_motorHand2.m_fd = -1;
-  _runtime->m_modules.m_roverOutput.m_motorArm.m_fd = -1;
-  memset(&_runtime->m_modules.m_driverOutput, 0, sizeof(_runtime->m_modules.m_driverOutput));
 
   memset(&_runtime->m_threads, 0, sizeof(_runtime->m_threads));
   _runtime->m_threads.m_terminate = true;
@@ -58,7 +49,6 @@ void runtimeReset(Runtime* _runtime)
   pthread_mutex_init(&_runtime->m_state.m_mutex, NULL);
   memset(&_runtime->m_state.m_targetParams,        0, sizeof(_runtime->m_state.m_targetParams));
   memset(&_runtime->m_state.m_targetLocation,      0, sizeof(_runtime->m_state.m_targetLocation));
-  memset(&_runtime->m_state.m_driverManualControl, 0, sizeof(_runtime->m_state.m_driverManualControl));
 }
 
 
@@ -83,12 +73,11 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
     { "rc-port",		1,	NULL,	0   }, // 7
     { "rc-stdin",		1,	NULL,	0   },
     { "rc-event-input",		1,	NULL,	0   },
-    { "rc-manual",		1,	NULL,	0   },
-    { "target-hue",		1,	NULL,	0   }, // 11
+    { "target-hue",		1,	NULL,	0   }, // 10
     { "target-hue-tolerance",	1,	NULL,	0   },
-    { "target-sat",		1,	NULL,	0   }, // 13
+    { "target-sat",		1,	NULL,	0   }, // 12
     { "target-sat-tolerance",	1,	NULL,	0   },
-    { "target-val",		1,	NULL,	0   }, // 15
+    { "target-val",		1,	NULL,	0   }, // 14
     { "target-val-tolerance",	1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
@@ -136,14 +125,13 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
           case 7  : cfg->m_rcConfig.m_port = atoi(optarg);					break;
           case 7+1: cfg->m_rcConfig.m_stdin = atoi(optarg);					break;
           case 7+2: cfg->m_rcConfig.m_eventInput = optarg;					break;
-          case 7+3: cfg->m_rcConfig.m_manualMode = atoi(optarg);				break;
 
-          case 11  : cfg->m_rcConfig.m_targetDetectHue = atoi(optarg);				break;
-          case 11+1: cfg->m_rcConfig.m_targetDetectHueTolerance = atoi(optarg);			break;
-          case 13  : cfg->m_rcConfig.m_targetDetectSat = atoi(optarg);				break;
-          case 13+1: cfg->m_rcConfig.m_targetDetectSatTolerance = atoi(optarg);			break;
-          case 15  : cfg->m_rcConfig.m_targetDetectVal = atoi(optarg);				break;
-          case 15+1: cfg->m_rcConfig.m_targetDetectValTolerance = atoi(optarg);			break;
+          case 10  : cfg->m_rcConfig.m_targetDetectHue = atoi(optarg);				break;
+          case 10+1: cfg->m_rcConfig.m_targetDetectHueTolerance = atoi(optarg);			break;
+          case 12  : cfg->m_rcConfig.m_targetDetectSat = atoi(optarg);				break;
+          case 12+1: cfg->m_rcConfig.m_targetDetectSatTolerance = atoi(optarg);			break;
+          case 14  : cfg->m_rcConfig.m_targetDetectVal = atoi(optarg);				break;
+          case 14+1: cfg->m_rcConfig.m_targetDetectValTolerance = atoi(optarg);			break;
 
           default:
             return false;
@@ -180,7 +168,6 @@ void runtimeArgsHelpMessage(Runtime* _runtime, const char* _arg0)
                   "   --rc-port               <remote-control-port>\n"
                   "   --rc-stdin              <remote-control-via-stdin 0/1>\n"
                   "   --rc-event-input        <remote-control-via-event-input-path>\n"
-                  "   --rc-manual             <remote-control-manual-mode 0/1>\n"
                   "   --target-hue            <target-hue>\n"
                   "   --target-hue-tolerance  <target-hue-tolerance>\n"
                   "   --target-sat            <target-saturation>\n"
@@ -230,18 +217,6 @@ int runtimeInit(Runtime* _runtime)
     exit_code = res;
   }
 
-  if ((res = roverOutputInit(verbose)) != 0)
-  {
-    fprintf(stderr, "roverOutputInit() failed: %d\n", res);
-    exit_code = res;
-  }
-
-  if ((res = driverOutputInit(verbose)) != 0)
-  {
-    fprintf(stderr, "driverOutputInit() failed: %d\n", res);
-    exit_code = res;
-  }
-
   return exit_code;
 }
 
@@ -254,12 +229,6 @@ int runtimeFini(Runtime* _runtime)
 
   if (_runtime == NULL)
     return EINVAL;
-
-  if ((res = driverOutputFini()) != 0)
-    fprintf(stderr, "driverOutputFini() failed: %d\n", res);
-
-  if ((res = roverOutputFini()) != 0)
-    fprintf(stderr, "roverOutputFini() failed: %d\n", res);
 
   if ((res = rcInputFini()) != 0)
     fprintf(stderr, "rcInputFini() failed: %d\n", res);
@@ -308,7 +277,7 @@ int runtimeStart(Runtime* _runtime)
   return 0;
 
 
- exit_join_video_thread:
+ //exit_join_video_thread:
   runtimeSetTerminate(_runtime);
   pthread_cancel(rt->m_videoThread);
   pthread_join(rt->m_videoThread, NULL);
@@ -479,28 +448,6 @@ int runtimeSetTargetLocation(Runtime* _runtime, const TargetLocation* _targetLoc
 
   pthread_mutex_lock(&_runtime->m_state.m_mutex);
   _runtime->m_state.m_targetLocation = *_targetLocation;
-  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
-  return 0;
-}
-
-int runtimeGetDriverManualControl(Runtime* _runtime, DriverManualControl* _manualControl)
-{
-  if (_runtime == NULL || _manualControl == NULL)
-    return EINVAL;
-
-  pthread_mutex_lock(&_runtime->m_state.m_mutex);
-  *_manualControl = _runtime->m_state.m_driverManualControl;
-  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
-  return 0;
-}
-
-int runtimeSetDriverManualControl(Runtime* _runtime, const DriverManualControl* _manualControl)
-{
-  if (_runtime == NULL || _manualControl == NULL)
-    return EINVAL;
-
-  pthread_mutex_lock(&_runtime->m_state.m_mutex);
-  _runtime->m_state.m_driverManualControl = *_manualControl;
   pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }
