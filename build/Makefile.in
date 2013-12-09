@@ -68,10 +68,9 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_rover_cv_OBJECTS = main.$(OBJEXT) module_ce.$(OBJEXT) \
-	module_driver.$(OBJEXT) module_fb.$(OBJEXT) \
-	module_rc.$(OBJEXT) module_rover.$(OBJEXT) \
-	module_v4l2.$(OBJEXT) runtime.$(OBJEXT) thread_input.$(OBJEXT) \
-	thread_rover.$(OBJEXT) thread_video.$(OBJEXT)
+	module_fb.$(OBJEXT) module_rc.$(OBJEXT) module_v4l2.$(OBJEXT) \
+	runtime.$(OBJEXT) thread_input.$(OBJEXT) \
+	thread_video.$(OBJEXT)
 nodist_rover_cv_OBJECTS =
 rover_cv_OBJECTS = $(am_rover_cv_OBJECTS) $(nodist_rover_cv_OBJECTS)
 rover_cv_LDADD = $(LDADD)
@@ -227,14 +226,11 @@ AM_CXXFLAGS = -Weffc++
 nodist_rover_cv_SOURCES = $(top_srcdir)/config.h
 rover_cv_SOURCES = $(top_srcdir)/src/main.c \
 			  $(top_srcdir)/src/module_ce.c \
-			  $(top_srcdir)/src/module_driver.c \
 			  $(top_srcdir)/src/module_fb.c \
 			  $(top_srcdir)/src/module_rc.c \
-			  $(top_srcdir)/src/module_rover.c \
 			  $(top_srcdir)/src/module_v4l2.c \
 			  $(top_srcdir)/src/runtime.c \
 			  $(top_srcdir)/src/thread_input.c \
-			  $(top_srcdir)/src/thread_rover.c \
 			  $(top_srcdir)/src/thread_video.c
 
 all: all-am
@@ -329,14 +325,11 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_ce.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_driver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_fb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_rc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_rover.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_v4l2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runtime.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thread_input.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thread_rover.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thread_video.Po@am__quote@
 
 .c.o:
@@ -388,20 +381,6 @@ module_ce.obj: $(top_srcdir)/src/module_ce.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module_ce.obj `if test -f '$(top_srcdir)/src/module_ce.c'; then $(CYGPATH_W) '$(top_srcdir)/src/module_ce.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/module_ce.c'; fi`
 
-module_driver.o: $(top_srcdir)/src/module_driver.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module_driver.o -MD -MP -MF $(DEPDIR)/module_driver.Tpo -c -o module_driver.o `test -f '$(top_srcdir)/src/module_driver.c' || echo '$(srcdir)/'`$(top_srcdir)/src/module_driver.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/module_driver.Tpo $(DEPDIR)/module_driver.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/module_driver.c' object='module_driver.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module_driver.o `test -f '$(top_srcdir)/src/module_driver.c' || echo '$(srcdir)/'`$(top_srcdir)/src/module_driver.c
-
-module_driver.obj: $(top_srcdir)/src/module_driver.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module_driver.obj -MD -MP -MF $(DEPDIR)/module_driver.Tpo -c -o module_driver.obj `if test -f '$(top_srcdir)/src/module_driver.c'; then $(CYGPATH_W) '$(top_srcdir)/src/module_driver.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/module_driver.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/module_driver.Tpo $(DEPDIR)/module_driver.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/module_driver.c' object='module_driver.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module_driver.obj `if test -f '$(top_srcdir)/src/module_driver.c'; then $(CYGPATH_W) '$(top_srcdir)/src/module_driver.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/module_driver.c'; fi`
-
 module_fb.o: $(top_srcdir)/src/module_fb.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module_fb.o -MD -MP -MF $(DEPDIR)/module_fb.Tpo -c -o module_fb.o `test -f '$(top_srcdir)/src/module_fb.c' || echo '$(srcdir)/'`$(top_srcdir)/src/module_fb.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/module_fb.Tpo $(DEPDIR)/module_fb.Po
@@ -429,20 +408,6 @@ module_rc.obj: $(top_srcdir)/src/module_rc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/module_rc.c' object='module_rc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module_rc.obj `if test -f '$(top_srcdir)/src/module_rc.c'; then $(CYGPATH_W) '$(top_srcdir)/src/module_rc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/module_rc.c'; fi`
-
-module_rover.o: $(top_srcdir)/src/module_rover.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module_rover.o -MD -MP -MF $(DEPDIR)/module_rover.Tpo -c -o module_rover.o `test -f '$(top_srcdir)/src/module_rover.c' || echo '$(srcdir)/'`$(top_srcdir)/src/module_rover.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/module_rover.Tpo $(DEPDIR)/module_rover.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/module_rover.c' object='module_rover.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module_rover.o `test -f '$(top_srcdir)/src/module_rover.c' || echo '$(srcdir)/'`$(top_srcdir)/src/module_rover.c
-
-module_rover.obj: $(top_srcdir)/src/module_rover.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module_rover.obj -MD -MP -MF $(DEPDIR)/module_rover.Tpo -c -o module_rover.obj `if test -f '$(top_srcdir)/src/module_rover.c'; then $(CYGPATH_W) '$(top_srcdir)/src/module_rover.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/module_rover.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/module_rover.Tpo $(DEPDIR)/module_rover.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/module_rover.c' object='module_rover.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module_rover.obj `if test -f '$(top_srcdir)/src/module_rover.c'; then $(CYGPATH_W) '$(top_srcdir)/src/module_rover.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/module_rover.c'; fi`
 
 module_v4l2.o: $(top_srcdir)/src/module_v4l2.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module_v4l2.o -MD -MP -MF $(DEPDIR)/module_v4l2.Tpo -c -o module_v4l2.o `test -f '$(top_srcdir)/src/module_v4l2.c' || echo '$(srcdir)/'`$(top_srcdir)/src/module_v4l2.c
@@ -485,20 +450,6 @@ thread_input.obj: $(top_srcdir)/src/thread_input.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/thread_input.c' object='thread_input.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o thread_input.obj `if test -f '$(top_srcdir)/src/thread_input.c'; then $(CYGPATH_W) '$(top_srcdir)/src/thread_input.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/thread_input.c'; fi`
-
-thread_rover.o: $(top_srcdir)/src/thread_rover.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT thread_rover.o -MD -MP -MF $(DEPDIR)/thread_rover.Tpo -c -o thread_rover.o `test -f '$(top_srcdir)/src/thread_rover.c' || echo '$(srcdir)/'`$(top_srcdir)/src/thread_rover.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/thread_rover.Tpo $(DEPDIR)/thread_rover.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/thread_rover.c' object='thread_rover.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o thread_rover.o `test -f '$(top_srcdir)/src/thread_rover.c' || echo '$(srcdir)/'`$(top_srcdir)/src/thread_rover.c
-
-thread_rover.obj: $(top_srcdir)/src/thread_rover.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT thread_rover.obj -MD -MP -MF $(DEPDIR)/thread_rover.Tpo -c -o thread_rover.obj `if test -f '$(top_srcdir)/src/thread_rover.c'; then $(CYGPATH_W) '$(top_srcdir)/src/thread_rover.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/thread_rover.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/thread_rover.Tpo $(DEPDIR)/thread_rover.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/thread_rover.c' object='thread_rover.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o thread_rover.obj `if test -f '$(top_srcdir)/src/thread_rover.c'; then $(CYGPATH_W) '$(top_srcdir)/src/thread_rover.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/thread_rover.c'; fi`
 
 thread_video.o: $(top_srcdir)/src/thread_video.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT thread_video.o -MD -MP -MF $(DEPDIR)/thread_video.Tpo -c -o thread_video.o `test -f '$(top_srcdir)/src/thread_video.c' || echo '$(srcdir)/'`$(top_srcdir)/src/thread_video.c
