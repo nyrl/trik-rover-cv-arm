@@ -10,7 +10,6 @@
 #include "internal/runtime.h"
 #include "internal/thread_input.h"
 #include "internal/thread_video.h"
-#include "internal/thread_rover.h"
 
 
 
@@ -306,20 +305,8 @@ int runtimeStart(Runtime* _runtime)
     goto exit_join_input_thread;
   }
 
-  if ((res = pthread_create(&rt->m_roverThread, NULL, &threadRover, _runtime)) != 0)
-  {
-    fprintf(stderr, "pthread_create(rover) failed: %d\n", res);
-    exit_code = res;
-    goto exit_join_video_thread;
-  }
-
   return 0;
 
-
- //exit_join_rover_thread:
-  runtimeSetTerminate(_runtime);
-  pthread_cancel(rt->m_roverThread);
-  pthread_join(rt->m_roverThread, NULL);
 
  exit_join_video_thread:
   runtimeSetTerminate(_runtime);
@@ -349,7 +336,6 @@ int runtimeStop(Runtime* _runtime)
   rt = &_runtime->m_threads;
 
   runtimeSetTerminate(_runtime);
-  pthread_join(rt->m_roverThread, NULL);
   pthread_join(rt->m_videoThread, NULL);
   pthread_join(rt->m_inputThread, NULL);
 
@@ -399,22 +385,6 @@ const RCConfig* runtimeCfgRCInput(const Runtime* _runtime)
   return &_runtime->m_config.m_rcConfig;
 }
 
-const RoverConfig* runtimeCfgRoverOutput(const Runtime* _runtime)
-{
-  if (_runtime == NULL)
-    return NULL;
-
-  return &_runtime->m_config.m_roverConfig;
-}
-
-const DriverConfig* runtimeCfgDriverOutput(const Runtime* _runtime)
-{
-  if (_runtime == NULL)
-    return NULL;
-
-  return &_runtime->m_config.m_driverConfig;
-}
-
 
 
 
@@ -448,22 +418,6 @@ RCInput* runtimeModRCInput(Runtime* _runtime)
     return NULL;
 
   return &_runtime->m_modules.m_rcInput;
-}
-
-RoverOutput* runtimeModRoverOutput(Runtime* _runtime)
-{
-  if (_runtime == NULL)
-    return NULL;
-
-  return &_runtime->m_modules.m_roverOutput;
-}
-
-DriverOutput* runtimeModDriverOutput(Runtime* _runtime)
-{
-  if (_runtime == NULL)
-    return NULL;
-
-  return &_runtime->m_modules.m_driverOutput;
 }
 
 
