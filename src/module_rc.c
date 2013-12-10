@@ -72,6 +72,7 @@ static int do_closeFifoInput(RCInput* _rc)
     fprintf(stderr, "close() failed: %d\n", res);
     exit_code = res;
   }
+  _rc->m_fifoInputFd = -1;
 
   if (_rc->m_fifoInputName != NULL)
   {
@@ -89,6 +90,33 @@ static int do_closeFifoInput(RCInput* _rc)
   }
 
   return exit_code;
+}
+
+static int do_reopenFifoInput(RCInput* _rc)
+{
+  int res;
+  if (_rc == NULL)
+    return EINVAL;
+
+  if (   _rc->m_fifoInputFd != -1
+      && close(_rc->m_fifoInputFd) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "close() failed: %d\n", res);
+    _rc->m_fifoInputFd = -1;
+    return res;
+  }
+
+  _rc->m_fifoInputFd = open(_rc->m_fifoInputName, O_RDONLY|O_NONBLOCK);
+  if (_rc->m_fifoInputFd < 0)
+  {
+    res = errno;
+    fprintf(stderr, "open(%s) failed: %d\n", _rc->m_fifoInputName, errno);
+    _rc->m_fifoInputFd = -1;
+    return res;
+  }
+
+  return 0;
 }
 
 
@@ -119,7 +147,7 @@ static int do_openFifoOutput(RCInput* _rc, const char* _fifoOutputName)
   if (fifoOutputRdFd < 0)
   {
     res = errno;
-    fprintf(stderr, "open(%s, RD_ONLY) failed: %d\n", _fifoOutputName, errno);
+    fprintf(stderr, "open(%s, RD_ONLY side) failed: %d\n", _fifoOutputName, errno);
     unlink(_fifoOutputName);
     return res;
   }
@@ -128,13 +156,18 @@ static int do_openFifoOutput(RCInput* _rc, const char* _fifoOutputName)
   if (_rc->m_fifoOutputFd < 0)
   {
     res = errno;
-    fprintf(stderr, "open(%s, WR_ONLY) failed: %d\n", _fifoOutputName, errno);
+    fprintf(stderr, "open(%s, WR_ONLY side) failed: %d\n", _fifoOutputName, errno);
     close(fifoOutputRdFd);
     _rc->m_fifoOutputFd = -1;
     unlink(_fifoOutputName);
     return res;
   }
-  close(fifoOutputRdFd);
+
+  if (close(fifoOutputRdFd) != 0)
+  {
+    res = errno;
+    fprintf(stderr, "close(RD_ONLY side) failed: %d\n", res);
+  }
 
   _rc->m_fifoOutputName = strdup(_fifoOutputName);
 
@@ -156,6 +189,7 @@ static int do_closeFifoOutput(RCInput* _rc)
     fprintf(stderr, "close() failed: %d\n", res);
     exit_code = res;
   }
+  _rc->m_fifoOutputFd = -1;
 
   if (_rc->m_fifoOutputName != NULL)
   {
@@ -218,15 +252,25 @@ static int do_readFifoInput(RCInput* _rc)
 
   const size_t available = _rc->m_fifoInputReadBufferSize - _rc->m_fifoInputReadBufferUsed - 1; //reserve space for appended trailing zero
   const ssize_t read_res = read(_rc->m_fifoInputFd, _rc->m_fifoInputReadBuffer+_rc->m_fifoInputReadBufferUsed, available);
-  if (read_res < 0)
+  if (read_res <= 0)
   {
-    res = errno;
-    fprintf(stderr, "read(%d, %zu) failed: %d\n", _rc->m_fifoInputFd, available, res);
-#warning TODO
-  }
-  else if (read_res == 0)
-  {
-#warning TODO
+    if (read_res == 0)
+      fprintf(stderr, "read(%d, %zu) eof\n", _rc->m_fifoInputFd, available);
+    else
+    {
+      res = errno;
+      fprintf(stderr, "read(%d, %zu) failed: %d\n", _rc->m_fifoInputFd, available, res);
+    }
+
+    if ((res = do_reopenFifoInput(_rc)) != 0)
+    {
+      fprintf(stderr, "reopen fifo input failed: %d\n", res);
+      return res;
+    }
+
+    fprintf(stderr, "reopened input fifo\n");
+
+    return 0;
   }
   else
   {
@@ -235,9 +279,13 @@ static int do_readFifoInput(RCInput* _rc)
   }
 
 
+
+
 #warning TODO parse input data
   fprintf(stderr, "IN: %s\n", _rc->m_fifoInputReadBuffer);
   _rc->m_fifoInputReadBufferUsed = 0;
+
+
 
   return 0;
 }
