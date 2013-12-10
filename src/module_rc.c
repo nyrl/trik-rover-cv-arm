@@ -115,15 +115,27 @@ static int do_openFifoOutput(RCInput* _rc, const char* _fifoOutputName)
       fprintf(stderr, "mkfifo(%s) failed, continuing: %d\n", _fifoOutputName, res);
   }
 
+  int fifoOutputRdFd = open(_fifoOutputName, O_RDONLY|O_NONBLOCK);
+  if (fifoOutputRdFd < 0)
+  {
+    res = errno;
+    fprintf(stderr, "open(%s, RD_ONLY) failed: %d\n", _fifoOutputName, errno);
+    unlink(_fifoOutputName);
+    return res;
+  }
+
   _rc->m_fifoOutputFd = open(_fifoOutputName, O_WRONLY|O_NONBLOCK);
   if (_rc->m_fifoOutputFd < 0)
   {
     res = errno;
-    fprintf(stderr, "open(%s) failed: %d\n", _fifoOutputName, errno);
+    fprintf(stderr, "open(%s, WR_ONLY) failed: %d\n", _fifoOutputName, errno);
+    close(fifoOutputRdFd);
     _rc->m_fifoOutputFd = -1;
     unlink(_fifoOutputName);
     return res;
   }
+  close(fifoOutputRdFd);
+
   _rc->m_fifoOutputName = strdup(_fifoOutputName);
 
   return 0;
