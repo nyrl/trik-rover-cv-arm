@@ -12,35 +12,28 @@ extern "C" {
 
 typedef struct RCConfig // what user wants to set
 {
-  int m_port;
-  bool m_stdin;
-  const char* m_eventInput;
-
-  int  m_targetDetectHue;
-  int  m_targetDetectHueTolerance;
-  int  m_targetDetectSat;
-  int  m_targetDetectSatTolerance;
-  int  m_targetDetectVal;
-  int  m_targetDetectValTolerance;
+  const char* m_fifoInput;
+  const char* m_fifoOutput;
 } RCConfig;
 
 typedef struct RCInput
 {
-  int                      m_stdinFd;
-  int                      m_eventInputFd;
-  int                      m_serverFd;
-  int                      m_connectionFd;
-  char*                    m_readBuffer;
-  size_t                   m_readBufferSize;
-  size_t                   m_readBufferUsed;
+  int                      m_fifoInputFd;
+  char*                    m_fifoInputName;
+  char*                    m_fifoInputReadBuffer;
+  size_t                   m_fifoInputReadBufferSize;
+  size_t                   m_fifoInputReadBufferUsed;
+
+  int                      m_fifoOutputFd;
+  char*                    m_fifoOutputName;
 
   bool                     m_targetDetectParamsUpdated;
-  int                      m_targetDetectHue;
-  int                      m_targetDetectHueTolerance;
-  int                      m_targetDetectSat;
-  int                      m_targetDetectSatTolerance;
-  int                      m_targetDetectVal;
-  int                      m_targetDetectValTolerance;
+  int                      m_targetDetectHueFrom;
+  int                      m_targetDetectHueTo;
+  int                      m_targetDetectSatFrom;
+  int                      m_targetDetectSatTo;
+  int                      m_targetDetectValFrom;
+  int                      m_targetDetectValTo;
 } RCInput;
 
 
@@ -54,10 +47,7 @@ int rcInputClose(RCInput* _rc);
 int rcInputStart(RCInput* _rc);
 int rcInputStop(RCInput* _rc);
 
-int rcInputReadStdin(RCInput* _rc);
-int rcInputReadEventInput(RCInput* _rc);
-int rcInputAcceptConnection(RCInput* _rc);
-int rcInputReadConnection(RCInput* _rc);
+int rcInputReadFifoInput(RCInput* _rc);
 
 int rcInputGetTargetDetectParams(RCInput* _rc, TargetDetectParams* _targetParams);
 

@@ -19,8 +19,7 @@ static const RuntimeConfig s_runtimeConfig = {
   .m_codecEngineConfig = { "dsp_server.xe674", "vidtranscode_cv" },
   .m_v4l2Config        = { "/dev/video0", 320, 240, V4L2_PIX_FMT_YUYV },
   .m_fbConfig          = { "/dev/fb0" },
-  .m_rcConfig          = { 4444, false, "/dev/input/by-path/platform-gpio-keys-event",
-                           27, 7, 75, 25, 70, 30 }
+  .m_rcConfig          = { "/tmp/dsp-detector.in.fifo", "/tmp/dsp-detector.out.fifo" }
 };
 
 
@@ -38,10 +37,8 @@ void runtimeReset(Runtime* _runtime)
   memset(&_runtime->m_modules.m_fbOutput,     0, sizeof(_runtime->m_modules.m_fbOutput));
   _runtime->m_modules.m_fbOutput.m_fd = -1;
   memset(&_runtime->m_modules.m_rcInput,      0, sizeof(_runtime->m_modules.m_rcInput));
-  _runtime->m_modules.m_rcInput.m_stdinFd = -1;
-  _runtime->m_modules.m_rcInput.m_eventInputFd = -1;
-  _runtime->m_modules.m_rcInput.m_serverFd = -1;
-  _runtime->m_modules.m_rcInput.m_connectionFd = -1;
+  _runtime->m_modules.m_rcInput.m_fifoInputFd  = -1;
+  _runtime->m_modules.m_rcInput.m_fifoOutputFd = -1;
 
   memset(&_runtime->m_threads, 0, sizeof(_runtime->m_threads));
   _runtime->m_threads.m_terminate = true;
@@ -70,15 +67,8 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
     { "v4l2-height",		1,	NULL,	0   },
     { "v4l2-format",		1,	NULL,	0   },
     { "fb-path",		1,	NULL,	0   }, // 6
-    { "rc-port",		1,	NULL,	0   }, // 7
-    { "rc-stdin",		1,	NULL,	0   },
-    { "rc-event-input",		1,	NULL,	0   },
-    { "target-hue",		1,	NULL,	0   }, // 10
-    { "target-hue-tolerance",	1,	NULL,	0   },
-    { "target-sat",		1,	NULL,	0   }, // 12
-    { "target-sat-tolerance",	1,	NULL,	0   },
-    { "target-val",		1,	NULL,	0   }, // 14
-    { "target-val-tolerance",	1,	NULL,	0   },
+    { "rc-fifo-in",		1,	NULL,	0   }, // 7
+    { "rc-fifo-out",		1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
     { NULL,			0,	NULL,	0   }
@@ -122,16 +112,8 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
 
           case 6: cfg->m_fbConfig.m_path = optarg;						break;
 
-          case 7  : cfg->m_rcConfig.m_port = atoi(optarg);					break;
-          case 7+1: cfg->m_rcConfig.m_stdin = atoi(optarg);					break;
-          case 7+2: cfg->m_rcConfig.m_eventInput = optarg;					break;
-
-          case 10  : cfg->m_rcConfig.m_targetDetectHue = atoi(optarg);				break;
-          case 10+1: cfg->m_rcConfig.m_targetDetectHueTolerance = atoi(optarg);			break;
-          case 12  : cfg->m_rcConfig.m_targetDetectSat = atoi(optarg);				break;
-          case 12+1: cfg->m_rcConfig.m_targetDetectSatTolerance = atoi(optarg);			break;
-          case 14  : cfg->m_rcConfig.m_targetDetectVal = atoi(optarg);				break;
-          case 14+1: cfg->m_rcConfig.m_targetDetectValTolerance = atoi(optarg);			break;
+          case 7  : cfg->m_rcConfig.m_fifoInput  = optarg;					break;
+          case 7+1: cfg->m_rcConfig.m_fifoOutput = optarg;					break;
 
           default:
             return false;
@@ -165,15 +147,8 @@ void runtimeArgsHelpMessage(Runtime* _runtime, const char* _arg0)
                   "   --v4l2-height  <input-height>\n"
                   "   --v4l2-format  <input-pixel-format>\n"
                   "   --fb-path      <output-device-path>\n"
-                  "   --rc-port               <remote-control-port>\n"
-                  "   --rc-stdin              <remote-control-via-stdin 0/1>\n"
-                  "   --rc-event-input        <remote-control-via-event-input-path>\n"
-                  "   --target-hue            <target-hue>\n"
-                  "   --target-hue-tolerance  <target-hue-tolerance>\n"
-                  "   --target-sat            <target-saturation>\n"
-                  "   --target-sat-tolerance  <target-saturation-tolerance>\n"
-                  "   --target-val            <target-value>\n"
-                  "   --target-val-tolerance  <target-value-tolerance>\n"
+                  "   --rc-fifo-in            <remote-control-fifo-input>\n"
+                  "   --rc-fifo-out           <remote-control-fifo-output>\n"
                   "   --verbose\n"
                   "   --help\n",
           _arg0);

@@ -27,31 +27,12 @@ static int threadInputSelectLoop(Runtime* _runtime, RCInput* _rc)
 
   FD_ZERO(&fdsIn);
 
-  FD_SET(_rc->m_serverFd, &fdsIn);
-  if (maxFd < _rc->m_serverFd)
-    maxFd = _rc->m_serverFd;
-
-  if (_rc->m_stdinFd != -1)
+  if (_rc->m_fifoInputFd != -1)
   {
-    FD_SET(_rc->m_stdinFd, &fdsIn);
-    if (maxFd < _rc->m_stdinFd)
-      maxFd = _rc->m_stdinFd;
+    FD_SET(_rc->m_fifoInputFd, &fdsIn);
+    if (maxFd < _rc->m_fifoInputFd)
+      maxFd = _rc->m_fifoInputFd;
   }
-
-  if (_rc->m_eventInputFd != -1)
-  {
-    FD_SET(_rc->m_eventInputFd, &fdsIn);
-    if (maxFd < _rc->m_eventInputFd)
-      maxFd = _rc->m_eventInputFd;
-  }
-
-  if (_rc->m_connectionFd != -1)
-  {
-    FD_SET(_rc->m_connectionFd, &fdsIn);
-    if (maxFd < _rc->m_connectionFd)
-      maxFd = _rc->m_connectionFd;
-  }
-
 
   if ((res = pselect(maxFd+1, &fdsIn, NULL, NULL, &s_selectTimeout, NULL)) < 0)
   {
@@ -61,38 +42,11 @@ static int threadInputSelectLoop(Runtime* _runtime, RCInput* _rc)
   }
 
 
-  if (FD_ISSET(_rc->m_serverFd, &fdsIn))
+  if (_rc->m_fifoInputFd != -1 && FD_ISSET(_rc->m_fifoInputFd, &fdsIn))
   {
-    if ((res = rcInputAcceptConnection(_rc)) != 0)
+    if ((res = rcInputReadFifoInput(_rc)) != 0)
     {
-      fprintf(stderr, "rcInputAcceptConnection() failed: %d\n", res);
-      return res;
-    }
-  }
-
-  if (_rc->m_stdinFd != -1 && FD_ISSET(_rc->m_stdinFd, &fdsIn))
-  {
-    if ((res = rcInputReadStdin(_rc)) != 0)
-    {
-      fprintf(stderr, "rcInputReadStdin() failed: %d\n", res);
-      return res;
-    }
-  }
-
-  if (_rc->m_eventInputFd != -1 && FD_ISSET(_rc->m_eventInputFd, &fdsIn))
-  {
-    if ((res = rcInputReadEventInput(_rc)) != 0)
-    {
-      fprintf(stderr, "rcInputReadEventInput() failed: %d\n", res);
-      return res;
-    }
-  }
-
-  if (_rc->m_connectionFd != -1 && FD_ISSET(_rc->m_connectionFd, &fdsIn))
-  {
-    if ((res = rcInputReadConnection(_rc)) != 0)
-    {
-      fprintf(stderr, "rcInputReadConnection() failed: %d\n", res);
+      fprintf(stderr, "rcInputReadFifoInput() failed: %d\n", res);
       return res;
     }
   }

@@ -31,6 +31,8 @@ static void sigactions_setup()
     fprintf(stderr, "sigaction(SIGTERM) failed: %d\n", errno);
   if (sigaction(SIGINT,  &action, NULL) != 0)
     fprintf(stderr, "sigaction(SIGINT) failed: %d\n", errno);
+  if (sigaction(SIGPIPE, SIG_IGN) != 0)
+    fprintf(stderr, "sigaction(SIGPINE, SIG_IGN) failed: %d\n", errno);
 }
 
 
