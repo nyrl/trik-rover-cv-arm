@@ -215,12 +215,12 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcInArgs.base.size = sizeof(tcInArgs);
   tcInArgs.base.numBytes = _srcFrameSize;
   tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
-  tcInArgs.alg.detectHueFrom = makeValueWrap( _targetDetectParams->m_targetDetectHue, -_targetDetectParams->m_targetDetectHueTolerance, 0, 359);
-  tcInArgs.alg.detectHueTo   = makeValueWrap( _targetDetectParams->m_targetDetectHue, +_targetDetectParams->m_targetDetectHueTolerance, 0, 359);
-  tcInArgs.alg.detectSatFrom = makeValueRange(_targetDetectParams->m_targetDetectSat, -_targetDetectParams->m_targetDetectSatTolerance, 0, 100);
-  tcInArgs.alg.detectSatTo   = makeValueRange(_targetDetectParams->m_targetDetectSat, +_targetDetectParams->m_targetDetectSatTolerance, 0, 100);
-  tcInArgs.alg.detectValFrom = makeValueRange(_targetDetectParams->m_targetDetectVal, -_targetDetectParams->m_targetDetectValTolerance, 0, 100);
-  tcInArgs.alg.detectValTo   = makeValueRange(_targetDetectParams->m_targetDetectVal, +_targetDetectParams->m_targetDetectValTolerance, 0, 100);
+  tcInArgs.alg.detectHueFrom = makeValueWrap( _targetDetectParams->m_detectHue, -_targetDetectParams->m_detectHueTolerance, 0, 359);
+  tcInArgs.alg.detectHueTo   = makeValueWrap( _targetDetectParams->m_detectHue, +_targetDetectParams->m_detectHueTolerance, 0, 359);
+  tcInArgs.alg.detectSatFrom = makeValueRange(_targetDetectParams->m_detectSat, -_targetDetectParams->m_detectSatTolerance, 0, 100);
+  tcInArgs.alg.detectSatTo   = makeValueRange(_targetDetectParams->m_detectSat, +_targetDetectParams->m_detectSatTolerance, 0, 100);
+  tcInArgs.alg.detectValFrom = makeValueRange(_targetDetectParams->m_detectVal, -_targetDetectParams->m_detectValTolerance, 0, 100);
+  tcInArgs.alg.detectValTo   = makeValueRange(_targetDetectParams->m_detectVal, +_targetDetectParams->m_detectValTolerance, 0, 100);
   tcInArgs.alg.autoDetectHsv = _targetDetectCommand->m_cmd;
 
   TRIK_VIDTRANSCODE_CV_OutArgs tcOutArgs;
@@ -279,12 +279,12 @@ static int do_transcodeFrame(CodecEngine* _ce,
   _targetLocation->m_targetY    = tcOutArgs.alg.targetY;
   _targetLocation->m_targetSize = tcOutArgs.alg.targetSize;
 
-  _targetDetectParams->m_detectHue          = tcOutArgs.alg.detectHue;
-  _targetDetectParams->m_detectHueTolerance = tcOutArgs.alg.detectHueTolerance;
-  _targetDetectParams->m_detectSat          = tcOutArgs.alg.detectSat;
-  _targetDetectParams->m_detectSatTolerance = tcOutArgs.alg.detectSatTolerance;
-  _targetDetectParams->m_detectVal          = tcOutArgs.alg.detectVal;
-  _targetDetectParams->m_detectValTolerance = tcOutArgs.alg.detectValTolerance;
+  _targetDetectParamsResult->m_detectHue          = tcOutArgs.alg.detectHue;
+  _targetDetectParamsResult->m_detectHueTolerance = tcOutArgs.alg.detectHueTolerance;
+  _targetDetectParamsResult->m_detectSat          = tcOutArgs.alg.detectSat;
+  _targetDetectParamsResult->m_detectSatTolerance = tcOutArgs.alg.detectSatTolerance;
+  _targetDetectParamsResult->m_detectVal          = tcOutArgs.alg.detectVal;
+  _targetDetectParamsResult->m_detectValTolerance = tcOutArgs.alg.detectValTolerance;
 
   return 0;
 }
