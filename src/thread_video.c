@@ -64,11 +64,17 @@ static int threadVideoSelectLoop(Runtime* _runtime, CodecEngine* _ce, V4L2Input*
   }
 
 
-  TargetDetectParams targetParams;
-  TargetLocation     targetLocation;
-  if ((res = runtimeGetTargetDetectParams(_runtime, &targetParams)) != 0)
+  TargetDetectParams  targetDetectParams;
+  TargetDetectCommand targetDetectCommand;
+  TargetLocation      targetLocation;
+  if ((res = runtimeGetTargetDetectParams(_runtime, &targetDetectParams)) != 0)
   {
     fprintf(stderr, "runtimeGetTargetDetectParams() failed: %d\n", res);
+    return res;
+  }
+  if ((res = runtimeFetchTargetDetectCommand(_runtime, &targetDetectCommand)) != 0)
+  {
+    fprintf(stderr, "runtimeGetTargetDetectCommand() failed: %d\n", res);
     return res;
   }
 
@@ -76,7 +82,8 @@ static int threadVideoSelectLoop(Runtime* _runtime, CodecEngine* _ce, V4L2Input*
   if ((res = codecEngineTranscodeFrame(_ce,
                                        frameSrcPtr, frameSrcSize,
                                        frameDstPtr, frameDstSize, &frameDstUsed,
-                                       &targetParams,
+                                       &targetDetectParams,
+                                       &targetDetectCommand,
                                        &targetLocation)) != 0)
   {
     fprintf(stderr, "codecEngineTranscodeFrame(%p[%zu] -> %p[%zu]) failed: %d\n",

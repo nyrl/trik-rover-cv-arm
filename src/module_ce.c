@@ -173,12 +173,15 @@ static int do_releaseCodec(CodecEngine* _ce)
 static int do_transcodeFrame(CodecEngine* _ce,
                              const void* _srcFramePtr, size_t _srcFrameSize,
                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
-                             const TargetDetectParams* _targetParams,
+                             const TargetDetectParams* _targetDetectParams,
+                             const TargetDetectCommand* _targetDetectCommand,
                              TargetLocation* _targetLocation)
 {
   if (_ce->m_srcBuffer == NULL || _ce->m_dstBuffer == NULL)
     return ENOTCONN;
-  if (_srcFramePtr == NULL || _dstFramePtr == NULL || _targetParams == NULL || _targetLocation == NULL)
+  if (   _srcFramePtr == NULL || _dstFramePtr == NULL
+      || _targetDetectParams == NULL || _targetDetectCommand == NULL
+      || _targetLocation == NULL)
     return EINVAL;
   if (_srcFrameSize > _ce->m_srcBufferSize || _dstFrameSize > _ce->m_dstBufferSize)
     return ENOSPC;
@@ -189,12 +192,14 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcInArgs.base.size = sizeof(tcInArgs);
   tcInArgs.base.numBytes = _srcFrameSize;
   tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
-  tcInArgs.alg.detectHueFrom = _targetParams->m_detectHueFrom; // 0-359
-  tcInArgs.alg.detectHueTo   = _targetParams->m_detectHueTo;   // 0-359
-  tcInArgs.alg.detectSatFrom = _targetParams->m_detectSatFrom; // 0-100
-  tcInArgs.alg.detectSatTo   = _targetParams->m_detectSatTo;   // 0-100
-  tcInArgs.alg.detectValFrom = _targetParams->m_detectValFrom; // 0-100
-  tcInArgs.alg.detectValTo   = _targetParams->m_detectValTo;   // 0-100
+  tcInArgs.alg.detectHueFrom = _targetDetectParams->m_detectHueFrom; // 0-359
+  tcInArgs.alg.detectHueTo   = _targetDetectParams->m_detectHueTo;   // 0-359
+  tcInArgs.alg.detectSatFrom = _targetDetectParams->m_detectSatFrom; // 0-100
+  tcInArgs.alg.detectSatTo   = _targetDetectParams->m_detectSatTo;   // 0-100
+  tcInArgs.alg.detectValFrom = _targetDetectParams->m_detectValFrom; // 0-100
+  tcInArgs.alg.detectValTo   = _targetDetectParams->m_detectValTo;   // 0-100
+
+#warning TODO target detect command
 
   TRIK_VIDTRANSCODE_CV_OutArgs tcOutArgs;
   memset(&tcOutArgs,    0, sizeof(tcOutArgs));
@@ -229,11 +234,6 @@ static int do_transcodeFrame(CodecEngine* _ce,
             _srcFrameSize, _dstFrameSize, processResult, tcOutArgs.base.extendedError);
     return EILSEQ;
   }
-
-#if 0 // It seems so far that this call is not required at all
-  if (XDM_ISACCESSMODE_WRITE(tcOutArgs.base.encodedBuf[0].accessMask))
-    Memory_cacheWb(_ce->m_dstBuffer, _ce->m_dstBufferSize);
-#endif
 
   if (tcOutArgs.base.encodedBuf[0].bufSize < 0)
   {
@@ -411,12 +411,13 @@ int codecEngineStop(CodecEngine* _ce)
 int codecEngineTranscodeFrame(CodecEngine* _ce,
                               const void* _srcFramePtr, size_t _srcFrameSize,
                               void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
-                              const TargetDetectParams* _targetParams,
+                              const TargetDetectParams* _targetDetectParams,
+                              const TargetDetectCommand* _targetDetectCommand,
                               TargetLocation* _targetLocation)
 {
   int res;
 
-  if (_ce == NULL || _targetParams == NULL || _targetLocation == NULL)
+  if (_ce == NULL || _targetDetectParams == NULL || _targetDetectCommand == NULL || _targetLocation == NULL)
     return EINVAL;
 
   if (_ce->m_handle == NULL)
@@ -425,7 +426,8 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
   res = do_transcodeFrame(_ce,
                           _srcFramePtr, _srcFrameSize,
                           _dstFramePtr, _dstFrameSize, _dstFrameUsed,
-                          _targetParams,
+                          _targetDetectParams,
+                          _targetDetectCommand,
                           _targetLocation);
 
   if (s_verbose)

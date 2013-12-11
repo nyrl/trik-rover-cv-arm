@@ -34,6 +34,9 @@ typedef struct RCInput
   int                      m_targetDetectSatTo;
   int                      m_targetDetectValFrom;
   int                      m_targetDetectValTo;
+
+  bool                     m_targetDetectCommandUpdated;
+  int                      m_targetDetectCommand;
 } RCInput;
 
 
@@ -49,7 +52,8 @@ int rcInputStop(RCInput* _rc);
 
 int rcInputReadFifoInput(RCInput* _rc);
 
-int rcInputGetTargetDetectParams(RCInput* _rc, TargetDetectParams* _targetParams);
+int rcInputGetTargetDetectParams(RCInput* _rc, TargetDetectParams* _targetDetectParams);
+int rcInputGetTargetDetectCommand(RCInput* _rc, TargetDetectCommand* _targetDetectCommand);
 
 #ifdef __cplusplus
 } // extern "C"

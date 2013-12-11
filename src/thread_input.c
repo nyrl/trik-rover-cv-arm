@@ -51,8 +51,8 @@ static int threadInputSelectLoop(Runtime* _runtime, RCInput* _rc)
     }
   }
 
-  TargetDetectParams targetParams;
-  if ((res = rcInputGetTargetDetectParams(_rc, &targetParams)) != 0)
+  TargetDetectParams targetDetectParams;
+  if ((res = rcInputGetTargetDetectParams(_rc, &targetDetectParams)) != 0)
   {
     if (res != ENODATA)
     {
@@ -62,9 +62,27 @@ static int threadInputSelectLoop(Runtime* _runtime, RCInput* _rc)
   }
   else
   {
-    if ((res = runtimeSetTargetDetectParams(_runtime, &targetParams)) != 0)
+    if ((res = runtimeSetTargetDetectParams(_runtime, &targetDetectParams)) != 0)
     {
       fprintf(stderr, "runtimeSetTargetDetectParams() failed: %d\n", res);
+      return res;
+    }
+  }
+
+  TargetDetectCommand targetDetectCommand;
+  if ((res = rcInputGetTargetDetectCommand(_rc, &targetDetectCommand)) != 0)
+  {
+    if (res != ENODATA)
+    {
+      fprintf(stderr, "rcInputGetTargetDetectCommand() failed: %d\n", res);
+      return res;
+    }
+  }
+  else
+  {
+    if ((res = runtimeSetTargetDetectCommand(_runtime, &targetDetectCommand)) != 0)
+    {
+      fprintf(stderr, "runtimeSetTargetDetectCommand() failed: %d\n", res);
       return res;
     }
   }

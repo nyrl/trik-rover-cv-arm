@@ -44,7 +44,8 @@ void runtimeReset(Runtime* _runtime)
   _runtime->m_threads.m_terminate = true;
 
   pthread_mutex_init(&_runtime->m_state.m_mutex, NULL);
-  memset(&_runtime->m_state.m_targetParams,        0, sizeof(_runtime->m_state.m_targetParams));
+  memset(&_runtime->m_state.m_targetDetectParams,  0, sizeof(_runtime->m_state.m_targetDetectParams));
+  memset(&_runtime->m_state.m_targetDetectCommand, 0, sizeof(_runtime->m_state.m_targetDetectCommand));
   memset(&_runtime->m_state.m_targetLocation,      0, sizeof(_runtime->m_state.m_targetLocation));
 }
 
@@ -383,24 +384,47 @@ void runtimeSetTerminate(Runtime* _runtime)
   _runtime->m_threads.m_terminate = true;
 }
 
-int runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetParams)
+int runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetDetectParams)
 {
-  if (_runtime == NULL || _targetParams == NULL)
+  if (_runtime == NULL || _targetDetectParams == NULL)
     return EINVAL;
 
   pthread_mutex_lock(&_runtime->m_state.m_mutex);
-  *_targetParams = _runtime->m_state.m_targetParams;
+  *_targetDetectParams = _runtime->m_state.m_targetDetectParams;
   pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }
 
-int runtimeSetTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetParams)
+int runtimeSetTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetDetectParams)
 {
-  if (_runtime == NULL || _targetParams == NULL)
+  if (_runtime == NULL || _targetDetectParams == NULL)
     return EINVAL;
 
   pthread_mutex_lock(&_runtime->m_state.m_mutex);
-  _runtime->m_state.m_targetParams = *_targetParams;
+  _runtime->m_state.m_targetDetectParams = *_targetDetectParams;
+  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
+  return 0;
+}
+
+int runtimeFetchTargetDetectCommand(Runtime* _runtime, TargetDetectCommand* _targetDetectCommand)
+{
+  if (_runtime == NULL || _targetDetectCommand == NULL)
+    return EINVAL;
+
+  pthread_mutex_lock(&_runtime->m_state.m_mutex);
+  *_targetDetectCommand = _runtime->m_state.m_targetDetectCommand;
+  _runtime->m_state.m_targetDetectCommand.m_cmd = 0;
+  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
+  return 0;
+}
+
+int runtimeSetTargetDetectCommand(Runtime* _runtime, const TargetDetectCommand* _targetDetectCommand)
+{
+  if (_runtime == NULL || _targetDetectCommand == NULL)
+    return EINVAL;
+
+  pthread_mutex_lock(&_runtime->m_state.m_mutex);
+  _runtime->m_state.m_targetDetectCommand = *_targetDetectCommand;
   pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }

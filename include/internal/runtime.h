@@ -44,7 +44,8 @@ typedef struct RuntimeThreads
 typedef struct RuntimeState
 {
   pthread_mutex_t         m_mutex;
-  TargetDetectParams      m_targetParams;
+  TargetDetectParams      m_targetDetectParams;
+  TargetDetectCommand     m_targetDetectCommand;
   TargetLocation          m_targetLocation;
 } RuntimeState;
 
@@ -82,8 +83,10 @@ RCInput*      runtimeModRCInput(Runtime* _runtime);
 
 bool runtimeGetTerminate(Runtime* _runtime);
 void runtimeSetTerminate(Runtime* _runtime);
-int  runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetParams);
-int  runtimeSetTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetParams);
+int  runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetDetectParams);
+int  runtimeSetTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetDetectParams);
+int  runtimeFetchTargetDetectCommand(Runtime* _runtime, TargetDetectCommand* _targetDetectCommand);
+int  runtimeSetTargetDetectCommand(Runtime* _runtime, const TargetDetectCommand* _targetDetectCommand);
 int  runtimeGetTargetLocation(Runtime* _runtime, TargetLocation* _targetLocation);
 int  runtimeSetTargetLocation(Runtime* _runtime, const TargetLocation* _targetLocation);
 

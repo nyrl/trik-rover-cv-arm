@@ -216,6 +216,7 @@ static int do_startTargetDetectParams(RCInput* _rc)
     return EINVAL;
 
   _rc->m_targetDetectParamsUpdated = true;
+  _rc->m_targetDetectCommandUpdated = true;
 
   return 0;
 }
@@ -226,6 +227,7 @@ static int do_stopTargetDetectParams(RCInput* _rc)
     return EINVAL;
 
   _rc->m_targetDetectParamsUpdated = false;
+  _rc->m_targetDetectCommandUpdated = false;
 
   return 0;
 }
@@ -272,20 +274,47 @@ static int do_readFifoInput(RCInput* _rc)
 
     return 0;
   }
-  else
+
+  _rc->m_fifoInputReadBufferUsed += read_res;
+  _rc->m_fifoInputReadBuffer[_rc->m_fifoInputReadBufferUsed] = '\0';
+
+  char* parseAt = _rc->m_fifoInputReadBuffer;
+  char* parseTill;
+  while ((parseTill = strchr(parseAt, '\n')) != NULL)
   {
-    _rc->m_fifoInputReadBufferUsed += read_res;
-    _rc->m_fifoInputReadBuffer[_rc->m_fifoInputReadBufferUsed] = '\0';
+    *parseTill = '\0';
+
+    if (strncmp(parseAt, "detect", strlen("detect")) == 0)
+    {
+      _rc->m_targetDetectCommand = 1;
+      _rc->m_targetDetectCommandUpdated = true;
+    }
+    else if (strncmp(parseAt, "hsv ", strlen("hsv ")) == 0)
+    {
+      int hueFrom, hueTo, satFrom, satTo, valFrom, valTo;
+      parseAt += strlen("hsv ");
+
+      if ((sscanf(parseAt, "%d %d %d %d %d %d", &hueFrom, &hueTo, &satFrom, &satTo, &valFrom, &valTo)) != 6)
+        fprintf(stderr, "Cannot parse hsv command, args '%s'\n", parseAt);
+      else
+      {
+        _rc->m_targetDetectHueFrom = hueFrom;
+        _rc->m_targetDetectHueTo   = hueTo;
+        _rc->m_targetDetectSatFrom = satFrom;
+        _rc->m_targetDetectSatTo   = satTo;
+        _rc->m_targetDetectValFrom = valFrom;
+        _rc->m_targetDetectValTo   = valTo;
+        _rc->m_targetDetectParamsUpdated = true;
+      }
+    }
+    else
+      fprintf(stderr, "Unknown command '%s'\n", parseAt);
+
+    parseAt = parseTill+1;
   }
 
-
-
-
-#warning TODO parse input data
-  fprintf(stderr, "IN: %s\n", _rc->m_fifoInputReadBuffer);
-  _rc->m_fifoInputReadBufferUsed = 0;
-
-
+  _rc->m_fifoInputReadBufferUsed -= (parseAt-_rc->m_fifoInputReadBuffer);
+  memmove(_rc->m_fifoInputReadBuffer, parseAt, _rc->m_fifoInputReadBufferUsed);
 
   return 0;
 }
@@ -387,21 +416,35 @@ int rcInputReadFifoInput(RCInput* _rc)
 
 
 int rcInputGetTargetDetectParams(RCInput* _rc,
-                                 TargetDetectParams* _targetParams)
+                                 TargetDetectParams* _targetDetectParams)
 {
-  if (_rc == NULL)
+  if (_rc == NULL || _targetDetectParams == NULL)
     return EINVAL;
 
   if (!_rc->m_targetDetectParamsUpdated)
     return ENODATA;
 
   _rc->m_targetDetectParamsUpdated = false;
-  _targetParams->m_detectHueFrom = _rc->m_targetDetectHueFrom;
-  _targetParams->m_detectHueTo   = _rc->m_targetDetectHueTo;
-  _targetParams->m_detectSatFrom = _rc->m_targetDetectSatFrom;
-  _targetParams->m_detectSatTo   = _rc->m_targetDetectSatTo;
-  _targetParams->m_detectValFrom = _rc->m_targetDetectValFrom;
-  _targetParams->m_detectValTo   = _rc->m_targetDetectValTo;
+  _targetDetectParams->m_detectHueFrom = _rc->m_targetDetectHueFrom;
+  _targetDetectParams->m_detectHueTo   = _rc->m_targetDetectHueTo;
+  _targetDetectParams->m_detectSatFrom = _rc->m_targetDetectSatFrom;
+  _targetDetectParams->m_detectSatTo   = _rc->m_targetDetectSatTo;
+  _targetDetectParams->m_detectValFrom = _rc->m_targetDetectValFrom;
+  _targetDetectParams->m_detectValTo   = _rc->m_targetDetectValTo;
+
+  return 0;
+}
+
+int rcInputGetTargetDetectCommand(RCInput* _rc, TargetDetectCommand* _targetDetectCommand)
+{
+  if (_rc == NULL || _targetDetectCommand == NULL)
+    return EINVAL;
+
+  if (!_rc->m_targetDetectCommandUpdated)
+    return ENODATA;
+
+  _rc->m_targetDetectCommandUpdated = false;
+  _targetDetectCommand->m_cmd = _rc->m_targetDetectCommand;
 
   return 0;
 }

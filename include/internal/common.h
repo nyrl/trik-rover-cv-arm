@@ -28,6 +28,11 @@ typedef struct TargetDetectParams
   int m_detectValTo;
 } TargetDetectParams;
 
+typedef struct TargetDetectCommand
+{
+  int m_cmd;
+} TargetDetectCommand;
+
 typedef struct TargetLocation
 {
   int m_targetX;
