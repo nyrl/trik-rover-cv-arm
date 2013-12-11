@@ -459,7 +459,7 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
                           _targetDetectParams,
                           _targetDetectCommand,
                           _targetLocation,
-                          _targetDetectParams);
+                          _targetDetectParamsResult);
 
   if (s_verbose)
   {
