@@ -20,12 +20,12 @@ typedef struct ImageDescription
 
 typedef struct TargetDetectParams
 {
-  int m_detectHueFrom;
-  int m_detectHueTo;
-  int m_detectSatFrom;
-  int m_detectSatTo;
-  int m_detectValFrom;
-  int m_detectValTo;
+  int m_detectHue;
+  int m_detectHueTolerance;
+  int m_detectSat;
+  int m_detectSatTolerance;
+  int m_detectVal;
+  int m_detectValTolerance;
 } TargetDetectParams;
 
 typedef struct TargetDetectCommand

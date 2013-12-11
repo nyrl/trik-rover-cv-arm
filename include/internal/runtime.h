@@ -46,7 +46,6 @@ typedef struct RuntimeState
   pthread_mutex_t         m_mutex;
   TargetDetectParams      m_targetDetectParams;
   TargetDetectCommand     m_targetDetectCommand;
-  TargetLocation          m_targetLocation;
 } RuntimeState;
 
 typedef struct Runtime
@@ -87,8 +86,9 @@ int  runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _target
 int  runtimeSetTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetDetectParams);
 int  runtimeFetchTargetDetectCommand(Runtime* _runtime, TargetDetectCommand* _targetDetectCommand);
 int  runtimeSetTargetDetectCommand(Runtime* _runtime, const TargetDetectCommand* _targetDetectCommand);
-int  runtimeGetTargetLocation(Runtime* _runtime, TargetLocation* _targetLocation);
-int  runtimeSetTargetLocation(Runtime* _runtime, const TargetLocation* _targetLocation);
+
+int  runtimeReportTargetLocation(Runtime* _runtime, const TargetLocation* _targetLocation);
+int  runtimeReportTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetDetectParams);
 
 
 #ifdef __cplusplus

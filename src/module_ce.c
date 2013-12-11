@@ -170,18 +170,41 @@ static int do_releaseCodec(CodecEngine* _ce)
   return 0;
 }
 
+static int makeValueRange(int _val, int _adj, int _min, int _max)
+{
+  _val += _adj;
+  if (_val > _max)
+    return _max;
+  else if (_val < _min)
+    return _min;
+  else
+    return _val;
+}
+
+static int makeValueWrap(int _val, int _adj, int _min, int _max)
+{
+  _val += _adj;
+  while (_val > _max)
+    _val -= (_max-_min+1);
+  while (_val < _min)
+    _val += (_max-_min+1);
+
+  return _val;
+}
+
 static int do_transcodeFrame(CodecEngine* _ce,
                              const void* _srcFramePtr, size_t _srcFrameSize,
                              void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
                              const TargetDetectParams* _targetDetectParams,
                              const TargetDetectCommand* _targetDetectCommand,
-                             TargetLocation* _targetLocation)
+                             TargetLocation* _targetLocation,
+                             TargetDetectParams* _targetDetectParamsResult)
 {
   if (_ce->m_srcBuffer == NULL || _ce->m_dstBuffer == NULL)
     return ENOTCONN;
   if (   _srcFramePtr == NULL || _dstFramePtr == NULL
       || _targetDetectParams == NULL || _targetDetectCommand == NULL
-      || _targetLocation == NULL)
+      || _targetLocation == NULL || _targetDetectParamsResult == NULL)
     return EINVAL;
   if (_srcFrameSize > _ce->m_srcBufferSize || _dstFrameSize > _ce->m_dstBufferSize)
     return ENOSPC;
@@ -192,14 +215,13 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcInArgs.base.size = sizeof(tcInArgs);
   tcInArgs.base.numBytes = _srcFrameSize;
   tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
-  tcInArgs.alg.detectHueFrom = _targetDetectParams->m_detectHueFrom; // 0-359
-  tcInArgs.alg.detectHueTo   = _targetDetectParams->m_detectHueTo;   // 0-359
-  tcInArgs.alg.detectSatFrom = _targetDetectParams->m_detectSatFrom; // 0-100
-  tcInArgs.alg.detectSatTo   = _targetDetectParams->m_detectSatTo;   // 0-100
-  tcInArgs.alg.detectValFrom = _targetDetectParams->m_detectValFrom; // 0-100
-  tcInArgs.alg.detectValTo   = _targetDetectParams->m_detectValTo;   // 0-100
-
-#warning TODO target detect command
+  tcInArgs.alg.detectHueFrom = makeValueWrap( _targetDetectParams->m_targetDetectHue, -_targetDetectParams->m_targetDetectHueTolerance, 0, 359);
+  tcInArgs.alg.detectHueTo   = makeValueWrap( _targetDetectParams->m_targetDetectHue, +_targetDetectParams->m_targetDetectHueTolerance, 0, 359);
+  tcInArgs.alg.detectSatFrom = makeValueRange(_targetDetectParams->m_targetDetectSat, -_targetDetectParams->m_targetDetectSatTolerance, 0, 100);
+  tcInArgs.alg.detectSatTo   = makeValueRange(_targetDetectParams->m_targetDetectSat, +_targetDetectParams->m_targetDetectSatTolerance, 0, 100);
+  tcInArgs.alg.detectValFrom = makeValueRange(_targetDetectParams->m_targetDetectVal, -_targetDetectParams->m_targetDetectValTolerance, 0, 100);
+  tcInArgs.alg.detectValTo   = makeValueRange(_targetDetectParams->m_targetDetectVal, +_targetDetectParams->m_targetDetectValTolerance, 0, 100);
+  tcInArgs.alg.autoDetectHsv = _targetDetectCommand->m_cmd;
 
   TRIK_VIDTRANSCODE_CV_OutArgs tcOutArgs;
   memset(&tcOutArgs,    0, sizeof(tcOutArgs));
@@ -256,6 +278,13 @@ static int do_transcodeFrame(CodecEngine* _ce,
   _targetLocation->m_targetX    = tcOutArgs.alg.targetX;
   _targetLocation->m_targetY    = tcOutArgs.alg.targetY;
   _targetLocation->m_targetSize = tcOutArgs.alg.targetSize;
+
+  _targetDetectParams->m_detectHue          = tcOutArgs.alg.detectHue;
+  _targetDetectParams->m_detectHueTolerance = tcOutArgs.alg.detectHueTolerance;
+  _targetDetectParams->m_detectSat          = tcOutArgs.alg.detectSat;
+  _targetDetectParams->m_detectSatTolerance = tcOutArgs.alg.detectSatTolerance;
+  _targetDetectParams->m_detectVal          = tcOutArgs.alg.detectVal;
+  _targetDetectParams->m_detectValTolerance = tcOutArgs.alg.detectValTolerance;
 
   return 0;
 }
@@ -413,11 +442,12 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
                               void* _dstFramePtr, size_t _dstFrameSize, size_t* _dstFrameUsed,
                               const TargetDetectParams* _targetDetectParams,
                               const TargetDetectCommand* _targetDetectCommand,
-                              TargetLocation* _targetLocation)
+                              TargetLocation* _targetLocation,
+                              TargetDetectParams* _targetDetectParamsResult)
 {
   int res;
 
-  if (_ce == NULL || _targetDetectParams == NULL || _targetDetectCommand == NULL || _targetLocation == NULL)
+  if (_ce == NULL || _targetDetectParams == NULL || _targetDetectCommand == NULL || _targetLocation == NULL || _targetDetectParamsResult == NULL)
     return EINVAL;
 
   if (_ce->m_handle == NULL)
@@ -428,7 +458,8 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
                           _dstFramePtr, _dstFrameSize, _dstFrameUsed,
                           _targetDetectParams,
                           _targetDetectCommand,
-                          _targetLocation);
+                          _targetLocation,
+                          _targetDetectParams);
 
   if (s_verbose)
   {

@@ -28,12 +28,12 @@ typedef struct RCInput
   char*                    m_fifoOutputName;
 
   bool                     m_targetDetectParamsUpdated;
-  int                      m_targetDetectHueFrom;
-  int                      m_targetDetectHueTo;
-  int                      m_targetDetectSatFrom;
-  int                      m_targetDetectSatTo;
-  int                      m_targetDetectValFrom;
-  int                      m_targetDetectValTo;
+  int                      m_targetDetectHue;
+  int                      m_targetDetectHueTolerance;
+  int                      m_targetDetectSat;
+  int                      m_targetDetectSatTolerance;
+  int                      m_targetDetectVal;
+  int                      m_targetDetectValTolerance;
 
   bool                     m_targetDetectCommandUpdated;
   int                      m_targetDetectCommand;

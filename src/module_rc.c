@@ -291,19 +291,19 @@ static int do_readFifoInput(RCInput* _rc)
     }
     else if (strncmp(parseAt, "hsv ", strlen("hsv ")) == 0)
     {
-      int hueFrom, hueTo, satFrom, satTo, valFrom, valTo;
+      int hue, hueTol, sat, satTol, val, valTol;
       parseAt += strlen("hsv ");
 
-      if ((sscanf(parseAt, "%d %d %d %d %d %d", &hueFrom, &hueTo, &satFrom, &satTo, &valFrom, &valTo)) != 6)
+      if ((sscanf(parseAt, "%d %d %d %d %d %d", &hue, &hueTol, &sat, &satTol, &val, &valTol)) != 6)
         fprintf(stderr, "Cannot parse hsv command, args '%s'\n", parseAt);
       else
       {
-        _rc->m_targetDetectHueFrom = hueFrom;
-        _rc->m_targetDetectHueTo   = hueTo;
-        _rc->m_targetDetectSatFrom = satFrom;
-        _rc->m_targetDetectSatTo   = satTo;
-        _rc->m_targetDetectValFrom = valFrom;
-        _rc->m_targetDetectValTo   = valTo;
+        _rc->m_targetDetectHue          = hue;
+        _rc->m_targetDetectHueTolerance = hueTol;
+        _rc->m_targetDetectSat          = sat;
+        _rc->m_targetDetectSatTolerance = satTol;
+        _rc->m_targetDetectVal          = val;
+        _rc->m_targetDetectValTolerance = valTol;
         _rc->m_targetDetectParamsUpdated = true;
       }
     }
@@ -425,12 +425,12 @@ int rcInputGetTargetDetectParams(RCInput* _rc,
     return ENODATA;
 
   _rc->m_targetDetectParamsUpdated = false;
-  _targetDetectParams->m_detectHueFrom = _rc->m_targetDetectHueFrom;
-  _targetDetectParams->m_detectHueTo   = _rc->m_targetDetectHueTo;
-  _targetDetectParams->m_detectSatFrom = _rc->m_targetDetectSatFrom;
-  _targetDetectParams->m_detectSatTo   = _rc->m_targetDetectSatTo;
-  _targetDetectParams->m_detectValFrom = _rc->m_targetDetectValFrom;
-  _targetDetectParams->m_detectValTo   = _rc->m_targetDetectValTo;
+  _targetDetectParams->m_detectHue          = _rc->m_targetDetectHue;
+  _targetDetectParams->m_detectHueTolerance = _rc->m_targetDetectHueTolerance;
+  _targetDetectParams->m_detectSat          = _rc->m_targetDetectSat;
+  _targetDetectParams->m_detectSatTolerance = _rc->m_targetDetectSatTolerance;
+  _targetDetectParams->m_detectVal          = _rc->m_targetDetectVal;
+  _targetDetectParams->m_detectValTolerance = _rc->m_targetDetectValTolerance;
 
   return 0;
 }

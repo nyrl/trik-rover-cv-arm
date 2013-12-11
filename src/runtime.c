@@ -46,7 +46,6 @@ void runtimeReset(Runtime* _runtime)
   pthread_mutex_init(&_runtime->m_state.m_mutex, NULL);
   memset(&_runtime->m_state.m_targetDetectParams,  0, sizeof(_runtime->m_state.m_targetDetectParams));
   memset(&_runtime->m_state.m_targetDetectCommand, 0, sizeof(_runtime->m_state.m_targetDetectCommand));
-  memset(&_runtime->m_state.m_targetLocation,      0, sizeof(_runtime->m_state.m_targetLocation));
 }
 
 
@@ -429,25 +428,36 @@ int runtimeSetTargetDetectCommand(Runtime* _runtime, const TargetDetectCommand* 
   return 0;
 }
 
-int runtimeGetTargetLocation(Runtime* _runtime, TargetLocation* _targetLocation)
+int runtimeReportTargetLocation(Runtime* _runtime, const TargetLocation* _targetLocation)
 {
   if (_runtime == NULL || _targetLocation == NULL)
     return EINVAL;
 
-  pthread_mutex_lock(&_runtime->m_state.m_mutex);
-  *_targetLocation = _runtime->m_state.m_targetLocation;
-  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
+#warning TMP
+  printf("TARGET %d %d %d\n", _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetSize);
+  int m_detectHue;
+  int m_detectHueTolerance;
+  int m_detectSat;
+  int m_detectSatTolerance;
+  int m_detectVal;
+  int m_detectValTolerance;
+#warning TODO
+
   return 0;
 }
 
-int runtimeSetTargetLocation(Runtime* _runtime, const TargetLocation* _targetLocation)
+int runtimeReportTargetDetectParams(Runtime* _runtime, const TargetDetectParams* _targetDetectParams)
 {
-  if (_runtime == NULL || _targetLocation == NULL)
+  if (_runtime == NULL || _targetDetectParams == NULL)
     return EINVAL;
 
-  pthread_mutex_lock(&_runtime->m_state.m_mutex);
-  _runtime->m_state.m_targetLocation = *_targetLocation;
-  pthread_mutex_unlock(&_runtime->m_state.m_mutex);
+#warning TMP
+  printf("HSV %d %d %d %d %d %d\n",
+         _targetDetectParams->m_detectHue, _targetDetectParams->m_detectHueTolerance,
+         _targetDetectParams->m_detectSat, _targetDetectParams->m_detectSatTolerance,
+         _targetDetectParams->m_detectVal, _targetDetectParams->m_detectValTolerance);
+#warning TODO
+
   return 0;
 }
 

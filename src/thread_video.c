@@ -67,6 +67,7 @@ static int threadVideoSelectLoop(Runtime* _runtime, CodecEngine* _ce, V4L2Input*
   TargetDetectParams  targetDetectParams;
   TargetDetectCommand targetDetectCommand;
   TargetLocation      targetLocation;
+  TargetDetectParams  targetDetectParamsResult;
   if ((res = runtimeGetTargetDetectParams(_runtime, &targetDetectParams)) != 0)
   {
     fprintf(stderr, "runtimeGetTargetDetectParams() failed: %d\n", res);
@@ -84,7 +85,8 @@ static int threadVideoSelectLoop(Runtime* _runtime, CodecEngine* _ce, V4L2Input*
                                        frameDstPtr, frameDstSize, &frameDstUsed,
                                        &targetDetectParams,
                                        &targetDetectCommand,
-                                       &targetLocation)) != 0)
+                                       &targetLocation,
+                                       &targetDetectParamsResult)) != 0)
   {
     fprintf(stderr, "codecEngineTranscodeFrame(%p[%zu] -> %p[%zu]) failed: %d\n",
             frameSrcPtr, frameSrcSize, frameDstPtr, frameDstSize, res);
@@ -105,10 +107,24 @@ static int threadVideoSelectLoop(Runtime* _runtime, CodecEngine* _ce, V4L2Input*
   }
 
 
-  if ((res = runtimeSetTargetLocation(_runtime, &targetLocation)) != 0)
+  switch (targetDetectCommand.m_cmd)
   {
-    fprintf(stderr, "runtimeSetTargetLocation() failed: %d\n", res);
-    return res;
+    case 1:
+      if ((res = runtimeReportTargetDetectParams(_runtime, &targetDetectParamsResult)) != 0)
+      {
+        fprintf(stderr, "runtimeReportTargetDetectParams() failed: %d\n", res);
+        return res;
+      }
+      break;
+
+    case 0:
+    default:
+      if ((res = runtimeReportTargetLocation(_runtime, &targetLocation)) != 0)
+      {
+        fprintf(stderr, "runtimeReportTargetLocation() failed: %d\n", res);
+        return res;
+      }
+      break;
   }
 
   return 0;
