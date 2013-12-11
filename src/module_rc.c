@@ -449,4 +449,30 @@ int rcInputGetTargetDetectCommand(RCInput* _rc, TargetDetectCommand* _targetDete
   return 0;
 }
 
+#warning TODO code below if unsafe since it is used from another thread; consider reworking
+int rcInputUnsafeReportTargetLocation(RCInput* _rc, const TargetLocation* _targetLocation)
+{
+  if (_rc == NULL || _targetLocation == NULL)
+    return EINVAL;
+
+  if (!_rc->m_fifoOutputFd != -1)
+    dprintf(_rc->m_fifoOutputFd, "loc: %d %d %d\n", _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetSize);
+
+  return 0;
+}
+
+#warning TODO code below if unsafe since it is used from another thread; consider reworking
+int rcInputUnsafeReportTargetDetectParams(RCInput* _rc, const TargetDetectParams* _targetDetectParams)
+{
+  if (_rc == NULL || _targetDetectParams == NULL)
+    return EINVAL;
+
+  if (!_rc->m_fifoOutputFd != -1)
+    dprintf(_rc->m_fifoOutputFd, "hsv: %d %d %d %d %d %d\n",
+            _targetDetectParams->m_detectHue, _targetDetectParams->m_detectHueTolerance,
+            _targetDetectParams->m_detectSat, _targetDetectParams->m_detectSatTolerance,
+            _targetDetectParams->m_detectVal, _targetDetectParams->m_detectValTolerance);
+
+  return 0;
+}
 

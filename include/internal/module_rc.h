@@ -55,6 +55,9 @@ int rcInputReadFifoInput(RCInput* _rc);
 int rcInputGetTargetDetectParams(RCInput* _rc, TargetDetectParams* _targetDetectParams);
 int rcInputGetTargetDetectCommand(RCInput* _rc, TargetDetectCommand* _targetDetectCommand);
 
+int rcInputUnsafeReportTargetLocation(RCInput* _rc, const TargetLocation* _targetLocation);
+int rcInputUnsafeReportTargetDetectParams(RCInput* _rc, const TargetDetectParams* _targetDetectParams);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus

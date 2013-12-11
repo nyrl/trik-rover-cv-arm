@@ -433,15 +433,8 @@ int runtimeReportTargetLocation(Runtime* _runtime, const TargetLocation* _target
   if (_runtime == NULL || _targetLocation == NULL)
     return EINVAL;
 
-#warning TMP
-  printf("TARGET %d %d %d\n", _targetLocation->m_targetX, _targetLocation->m_targetY, _targetLocation->m_targetSize);
-  int m_detectHue;
-  int m_detectHueTolerance;
-  int m_detectSat;
-  int m_detectSatTolerance;
-  int m_detectVal;
-  int m_detectValTolerance;
-#warning TODO
+#warning Unsafe
+  rcInputUnsafeReportTargetLocation(&_runtime->m_modules.m_rcInput, _targetLocation);
 
   return 0;
 }
@@ -451,12 +444,8 @@ int runtimeReportTargetDetectParams(Runtime* _runtime, const TargetDetectParams*
   if (_runtime == NULL || _targetDetectParams == NULL)
     return EINVAL;
 
-#warning TMP
-  printf("HSV %d %d %d %d %d %d\n",
-         _targetDetectParams->m_detectHue, _targetDetectParams->m_detectHueTolerance,
-         _targetDetectParams->m_detectSat, _targetDetectParams->m_detectSatTolerance,
-         _targetDetectParams->m_detectVal, _targetDetectParams->m_detectValTolerance);
-#warning TODO
+#warning Unsafe
+  rcInputUnsafeReportTargetDetectParams(&_runtime->m_modules.m_rcInput, _targetDetectParams);
 
   return 0;
 }
