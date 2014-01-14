@@ -25,8 +25,8 @@ typedef struct V4L2Input
   long long              m_frameCounter;
   struct v4l2_format     m_imageFormat;
 
-  void*                  m_buffers[2];
-  size_t                 m_bufferSize[2];
+  void*                  m_buffers[3];
+  size_t                 m_bufferSize[3];
 } V4L2Input;
 
 
