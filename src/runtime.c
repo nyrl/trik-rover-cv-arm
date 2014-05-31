@@ -101,10 +101,11 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
             else if (!strcasecmp(optarg, "rgb565x"))	cfg->m_v4l2Config.m_format = V4L2_PIX_FMT_RGB565X;
             else if (!strcasecmp(optarg, "yuv444"))	cfg->m_v4l2Config.m_format = V4L2_PIX_FMT_YUV32;
             else if (!strcasecmp(optarg, "yuv422"))	cfg->m_v4l2Config.m_format = V4L2_PIX_FMT_YUYV;
+            else if (!strcasecmp(optarg, "yuv422p"))	cfg->m_v4l2Config.m_format = V4L2_PIX_FMT_YUV422P;
             else
             {
               fprintf(stderr, "Unknown v4l2 format '%s'\n"
-                              "Known formats: rgb888, rgb565, rgb565x, yuv444, yuv422\n",
+                              "Known formats: rgb888, rgb565, rgb565x, yuv444, yuv422, yuv422p\n",
                       optarg);
               return false;
             }

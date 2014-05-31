@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -65,6 +66,9 @@ static int do_v4l2InputSetFormat(V4L2Input* _v4l2, size_t _width, size_t _height
   _v4l2->m_imageFormat.fmt.pix.height = _height;
   _v4l2->m_imageFormat.fmt.pix.pixelformat = _format;
   _v4l2->m_imageFormat.fmt.pix.field = V4L2_FIELD_NONE;
+
+  if (v4l2_ioctl(_v4l2->m_fd, VIDIOC_TRY_FMT, &_v4l2->m_imageFormat) != 0)
+    fprintf(stderr, "v4l2_ioctl(VIDIOC_TRY_FMT) failed: %d\n", errno);
 
   if (v4l2_ioctl(_v4l2->m_fd, VIDIOC_S_FMT, &_v4l2->m_imageFormat) != 0)
   {
